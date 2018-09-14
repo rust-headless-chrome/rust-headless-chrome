@@ -4,13 +4,14 @@ extern crate regex;
 use std::io::Read;
 use std::process::Command;
 //use websocket::{ClientBuilder, Message};
-use std::process::{Stdio, ChildStderr};
+use std::process::{Stdio, Child, ChildStderr};
 use regex::Regex;
 
-fn oh_boy(stderr: &mut ChildStderr) -> Option<()> {
-    let re = Regex::new(r"listening on .*/devtools/browser/(.*)\n").unwrap();
+#[derive(Debug)]
+struct BrowserId(String);
 
-    // TODO: closure regex
+fn browser_id_from_output(stderr: &mut ChildStderr) -> Option<BrowserId> {
+    let re = Regex::new(r"listening on .*/devtools/browser/(.*)\n").unwrap();
 
     let extract = |text: &str| -> Option<String> {
         let caps = re.captures(text);
@@ -24,31 +25,34 @@ fn oh_boy(stderr: &mut ChildStderr) -> Option<()> {
         if bytes_read > 0 {
             let chrome_output = String::from_utf8_lossy(&buf);
             eprintln!("chrome_output = {:#?}", chrome_output);
-            let browser_id = match extract(&chrome_output) {
-                Some(browser_id) => browser_id,
+            // TODO: surely this can get stuck waiting forever for chrome to give us the output?
+            match extract(&chrome_output) {
+                Some(browser_id) => return Some(BrowserId(browser_id)),
                 None => continue
             };
-
-            eprintln!("browser_id = {:#?}", browser_id);
         }
     }
 }
 
-fn main() {
-    let mut chrome_process = Command::new("/usr/bin/google-chrome")
+
+fn chrome () -> Child {
+     Command::new("/usr/bin/google-chrome")
         .args(&["--headless", "--remote-debugging-port=9393"])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
+        .unwrap()
+}
 
-    let y = &mut chrome_process;
+fn main() {
+    let mut chrome_process = chrome();
 
-    // can read from this badboy now
-    match y.stderr {
-        Some(ref mut stderr) => oh_boy(stderr),
-        None => panic!("asdf")
+    let browser_id = match chrome_process.stderr.as_mut() {
+        Some(ref mut stderr) => browser_id_from_output(stderr),
+        None => panic!("chrome didn't launch properly maybe?")
     };
 
-    y.wait().unwrap();
+    eprintln!("browser_id = {:#?}", browser_id.unwrap());
+
+    chrome_process.wait().unwrap();
 }
