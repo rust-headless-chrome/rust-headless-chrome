@@ -12,7 +12,7 @@ use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
-use serde_json::{Value, Error};
+use serde_json::{Value};
 use websocket::message::OwnedMessage::Text;
 
 #[derive(Debug)]
@@ -22,14 +22,6 @@ impl fmt::Display for BrowserId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
-}
-
-fn connect_to_remote_debugging_port(browser_id: BrowserId) -> Result<Client<TcpStream>, WebSocketError> {
-    let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", browser_id);
-    eprintln!("ws_url = {}", ws_url);
-    ClientBuilder::new(ws_url)
-        .unwrap()
-        .connect_insecure()
 }
 
 fn chrome() -> Child {
@@ -66,29 +58,52 @@ fn browser_id_from_output(stderr: &mut ChildStderr) -> Option<BrowserId> {
     }
 }
 
-// TODO: instead of arbitrary value, have a type
-fn call_method(client: &mut Client<TcpStream>, method: &str) -> Value {
-    let json = json!({
-        "method": method,
-        "params": {},
-        "id": 1
-    });
+struct Browser {
+    client: Client<TcpStream>
+}
 
-    eprintln!("data = {:#?}", json.to_string());
-    let message = Message::text(json.to_string());
+impl Browser {
+    fn connect(id: &BrowserId) -> Result<Browser, WebSocketError> {
+        let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", id);
+        eprintln!("ws_url = {}", ws_url);
+        let client = ClientBuilder::new(ws_url)
+            .unwrap()
+            .connect_insecure()?;
 
-    if let Err(error) = client.send_message(&message) {
-        eprintln!("problem sending message! error: = {:#?}", error);
+        Ok(Browser { client })
     }
 
-    let response = match client.recv_message() {
-        Ok(msg) => match msg {
-            Text(ref msg_text) => serde_json::from_str(msg_text).unwrap(),
-            _ => panic!("received some weird thing")
+    fn call_method(&mut self, method: &str) -> Value {
+        let json = json!({
+            "method": method,
+            "params": {},
+            "id": 1
+        });
+
+        eprintln!("data = {:#?}", json.to_string());
+        let message = Message::text(json.to_string());
+
+        if let Err(error) = self.client.send_message(&message) {
+            eprintln!("problem sending message! error: = {:#?}", error);
         }
-        Err(error) => panic!("problem recving message! error: = {:#?}", error)
-    };
-    response
+
+        let response = match self.client.recv_message() {
+            Ok(msg) => match msg {
+                Text(ref msg_text) => serde_json::from_str(msg_text).unwrap(),
+                _ => panic!("received some weird thing")
+            }
+            Err(error) => panic!("problem recving message! error: = {:#?}", error)
+        };
+        response
+    }
+
+    fn version(&mut self) -> Value {
+        self.call_method("Browser.getVersion")
+    }
+
+    fn close(&mut self) -> Value {
+        self.call_method("Browser.close")
+    }
 }
 
 fn main() {
@@ -101,28 +116,11 @@ fn main() {
 
     eprintln!("browser_id = {:#?}", browser_id);
 
-    match connect_to_remote_debugging_port(browser_id) {
-        Ok(mut client) => {
-//            if let Value::String(browser_version) = &v["result"]["product"] {
-//                eprintln!("v = {:#?}", browser_version);
-//            }
+    let mut browser = Browser::connect(&browser_id).unwrap();
 
-            let browser_version = call_method(&mut client, "Browser.getVersion");
-            eprintln!("browser_version = {:#?}", browser_version);
+    eprintln!("browser_version = {:#?}", browser.version()["result"]["product"]);
 
-            let data = r#"{"method": "Browser.close","params": {}, "id":2}"#;
-            let message = Message::text(data);
-
-            if let Err(error) = client.send_message(&message) {
-                eprintln!("problem sending message! error: = {:#?}", error);
-            }
-            match client.recv_message() {
-                Ok(msg) => eprintln!("closed browser"),
-                Err(error) => eprintln!("problem recving message! error: = {:#?}", error)
-            }
-        }
-        Err(error) => { eprintln!("error = {:#?}", error); }
-    };
+    browser.close();
 
     // TODO: make this happen on drop?
     if let Err(error) = chrome_process.kill() {
