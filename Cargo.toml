@@ -6,3 +6,4 @@ authors = ["Alistair Roche <roche.a@gmail.com>"]
 [dependencies]
 websocket = "0.20.2"
 regex = "1"
+serde_json = "1.0"
