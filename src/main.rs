@@ -1,5 +1,6 @@
 extern crate websocket;
 extern crate regex;
+#[macro_use]
 extern crate serde_json;
 
 use std::fmt;
@@ -13,6 +14,7 @@ use websocket::WebSocketError;
 
 use serde_json::{Value, Error};
 use websocket::message::OwnedMessage::Text;
+
 #[derive(Debug)]
 struct BrowserId(String);
 
@@ -64,6 +66,30 @@ fn browser_id_from_output(stderr: &mut ChildStderr) -> Option<BrowserId> {
     }
 }
 
+// TODO: instead of arbitrary value, have a type
+fn call_method(client: &mut Client<TcpStream>, method: &str) -> Value {
+    let json = json!({
+        "method": method,
+        "params": {},
+        "id": 1
+    });
+
+    eprintln!("data = {:#?}", json.to_string());
+    let message = Message::text(json.to_string());
+
+    if let Err(error) = client.send_message(&message) {
+        eprintln!("problem sending message! error: = {:#?}", error);
+    }
+
+    let response = match client.recv_message() {
+        Ok(msg) => match msg {
+            Text(ref msg_text) => serde_json::from_str(msg_text).unwrap(),
+            _ => panic!("received some weird thing")
+        }
+        Err(error) => panic!("problem recving message! error: = {:#?}", error)
+    };
+    response
+}
 
 fn main() {
     let mut chrome_process = chrome();
@@ -77,26 +103,12 @@ fn main() {
 
     match connect_to_remote_debugging_port(browser_id) {
         Ok(mut client) => {
-            let data = r#"{"method": "Browser.getVersion","params": {}, "id":1}"#;
+//            if let Value::String(browser_version) = &v["result"]["product"] {
+//                eprintln!("v = {:#?}", browser_version);
+//            }
 
-            eprintln!("data = {:#?}", data);
-            let message = Message::text(data);
-
-            if let Err(error) = client.send_message(&message) {
-                eprintln!("problem sending message! error: = {:#?}", error);
-            }
-
-            match client.recv_message() {
-                Ok(msg) => {
-                    if let Text(ref msg_text) = msg {
-                        let v: Value = serde_json::from_str(msg_text).unwrap();
-                        if let Value::String(browser_version) = &v["result"]["product"] {
-                            eprintln!("v = {:#?}", browser_version);
-                        }
-                    }
-                }
-                Err(error) => eprintln!("problem recving message! error: = {:#?}", error)
-            }
+            let browser_version = call_method(&mut client, "Browser.getVersion");
+            eprintln!("browser_version = {:#?}", browser_version);
 
             let data = r#"{"method": "Browser.close","params": {}, "id":2}"#;
             let message = Message::text(data);
@@ -118,5 +130,4 @@ fn main() {
     }
     // send a basic message like Browser.getVersion
     // print return message
-
 }
