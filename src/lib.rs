@@ -9,32 +9,28 @@ extern crate log;
 extern crate env_logger;
 
 extern crate websocket;
-#[macro_use]
-extern crate serde_derive;
+//#[macro_use]
+//extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
 extern crate cdp;
 
 //
-use std::borrow::Cow;
+//use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Read;
 use std::io::Write;
 use std::process::{Command, Stdio, Child, ChildStderr};
 use std::thread;
-use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use futures::sync::oneshot;
 use futures::sync::oneshot::{Sender, Receiver};
-use futures::Future;
-use futures::executor;
 
 use regex::Regex;
-use websocket::{ClientBuilder, Message, WebSocketError, OwnedMessage};
+use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 //
@@ -42,8 +38,8 @@ use websocket::stream::sync::TcpStream;
 use serde_json::Value;
 //use websocket::message::OwnedMessage::Text;
 //
-use cdp::SerializeCdpCommand;
-use cdp::target::{CreateTargetCommand, CreateTargetResponse};
+//use cdp::SerializeCdpCommand;
+//use cdp::target::{CreateTargetCommand, CreateTargetResponse};
 //
 
 use self::errors::*;
@@ -83,7 +79,7 @@ impl Chrome {
             .chain_err(|| "Couldn't get browser ID from Chrome process")?;
         let connection = Chrome::websocket_connection(browser_id)?;
 
-        let (mut receiver, mut sender) = connection.split().chain_err(|| "Couldn't split conn")?;
+        let (receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
 
         let waiting_calls = Arc::new(Mutex::new(HashMap::new()));
 
