@@ -39,8 +39,7 @@ use serde_json::Value;
 //use websocket::message::OwnedMessage::Text;
 //
 //use cdp::SerializeCdpCommand;
-//use cdp::target::{CreateTargetCommand, CreateTargetResponse};
-//
+use cdp::browser::{GetVersionResponse};
 
 use self::errors::*;
 pub mod errors;
@@ -55,14 +54,16 @@ impl fmt::Display for BrowserId {
     }
 }
 
+type ResponseChannel = Sender<Value>;
+
 struct Chrome {
     sender: websocket::sender::Writer<TcpStream>,
-    waiting_calls: Arc<Mutex<HashMap<u32, Sender<Value>>>>,
+    waiting_calls: Arc<Mutex<HashMap<u32, ResponseChannel>>>,
 }
 
 impl Chrome {
     // TODO: find out why this complains if named 'new'
-    fn build() -> Result<Self> {
+    fn new() -> Result<Self> {
         info!("Trying to start Chrome");
 
         let process = Command::new("/usr/bin/google-chrome")
@@ -85,6 +86,7 @@ impl Chrome {
 
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
+
         let _ = thread::spawn(move || {
             Chrome::handle_incoming_messages(receiver, other_waiting_calls);
         });
@@ -96,13 +98,13 @@ impl Chrome {
     }
 
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
-                                waiting_calls: Arc<Mutex<HashMap<u32, Sender<Value>>>>) -> ()
+                                waiting_calls: Arc<Mutex<HashMap<u32, ResponseChannel>>>) -> ()
     {
         trace!("Starting to handle messages");
         for message in receiver.incoming_messages() {
-            trace!("Something happened");
+            trace!("Received a message");
             if let OwnedMessage::Text(msg) = message.unwrap() {
-                trace!("Received message: {:?}", msg);
+                trace!("Received text message: {:?}", msg);
                 let mut waiting_calls_mut = waiting_calls.lock().unwrap();
                 let waiting_call_tx = waiting_calls_mut.remove(&1).unwrap();
                 let response: Value = serde_json::from_str(&msg).unwrap();
@@ -187,7 +189,7 @@ impl Chrome {
 
 pub fn it_works() -> Result<()> {
     env_logger::init();
-    let mut chrome = Chrome::build().expect("lol");
+    let mut chrome = Chrome::new().expect("lol");
     chrome.call_method().wait().chain_err(||"oh boy")?;
     Ok(())
 }
