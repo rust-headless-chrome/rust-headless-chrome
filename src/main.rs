@@ -10,9 +10,9 @@
 // We'll put our errors in an `errors` module, and other modules in
 // this crate will `use errors::*;` to get access to everything
 // `error_chain!` creates.
-use lib::errors::*;
+//use lib::errors::*;
 
-use lib::*;
+//use lib::*;
 // This only gives access within this module. Make this `pub use errors::*;`
 // instead if the types must be accessible from other modules (e.g., within
 // a `links` section).
