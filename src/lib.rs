@@ -26,20 +26,19 @@ use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use futures::sync::oneshot::{Sender, Receiver};
+use futures::sync::oneshot::Sender;
 use futures::Future;
 
 use regex::Regex;
 use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
-//
-//use serde::Serializer;
+
+use serde::de::DeserializeOwned;
 use serde_json::Value;
-//use websocket::message::OwnedMessage::Text;
-//
-//use cdp::SerializeCdpCommand;
-use cdp::browser::GetVersionResponse;
+
+use cdp::{HasCdpCommand};
+use cdp::browser::{GetVersionResponse, GetVersionCommand};
 
 use self::errors::*;
 
@@ -55,7 +54,6 @@ impl fmt::Display for BrowserId {
     }
 }
 
-//type Response = GetVersionResponse<'a>;
 type Response = Value;
 type ResponseChannel = Sender<Response>;
 
@@ -83,26 +81,14 @@ impl Chrome {
             .chain_err(|| "Couldn't get browser ID from Chrome process")?;
         let connection = Chrome::websocket_connection(browser_id)?;
 
-        let (mut receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
+        let (receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
 
         let waiting_calls = Arc::new(Mutex::new(HashMap::new()));
 
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
         let _ = thread::spawn(move || {
-//            Chrome::handle_incoming_messages(receiver, other_waiting_calls);
-            for message in receiver.incoming_messages() {
-                trace!("Received a message");
-                if let OwnedMessage::Text(msg) = message.unwrap() {
-                    trace!("Received text message: {:?}", msg);
-                    let mut waiting_calls_mut = other_waiting_calls.lock().unwrap();
-                    let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&1).unwrap();
-                    let response: Response = serde_json::from_str(&msg).unwrap();
-                    let _ = waiting_call_tx.send(response);
-                } else {
-                    error!("Got a non text message?!")
-                }
-            }
+            Chrome::handle_incoming_messages(receiver, other_waiting_calls);
         });
 
         return Ok(Chrome {
@@ -115,9 +101,24 @@ impl Chrome {
                                 waiting_calls: Arc<Mutex<HashMap<u32, ResponseChannel>>>) -> ()
     {
         trace!("Starting to handle messages");
+        for message in receiver.incoming_messages() {
+            trace!("Received a message");
+            if let OwnedMessage::Text(msg) = message.unwrap() {
+                trace!("Received text message: {:?}", msg);
+                let mut waiting_calls_mut = waiting_calls.lock().unwrap();
+                let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&1).unwrap();
+                let response: Response = serde_json::from_str(&msg).unwrap();
+                let _ = waiting_call_tx.send(response);
+            } else {
+                error!("Got a non text message?!")
+            }
+        }
     }
 
-    fn call_method(&mut self) -> Box<Future<Item=GetVersionResponse, Error=futures::Canceled>> {
+    fn call_method<'a, C>(&mut self, command: C::Command) -> Box<Future<Item=C, Error=futures::Canceled>>
+        where C: DeserializeOwned + HasCdpCommand<'a>,
+              <C as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize
+    {
         trace!("Calling method");
         let my_clone = Arc::clone(&self.waiting_calls);
         let mut waiting_calls = my_clone.lock().unwrap();
@@ -125,7 +126,8 @@ impl Chrome {
         let (tx, rx) = futures::sync::oneshot::channel::<Response>();
 
         let method_id = 1;
-        let method = json!({"method": "Browser.getVersion", "id":method_id, "params": {}});
+        let method = json!({"method": "Browser.getVersion", "id":method_id, "params": command});
+
         let message = Message::text(serde_json::to_string(&method).unwrap());
 
         waiting_calls.insert(method_id, tx);
@@ -134,7 +136,7 @@ impl Chrome {
         self.sender.send_message(&message).unwrap();
 
         Box::new(rx.map(|s| {
-            serde_json::from_value::<GetVersionResponse>(s["result"].clone()).unwrap()
+            serde_json::from_value::<C>(s["result"].clone()).unwrap()
         }))
     }
 
@@ -194,8 +196,9 @@ impl Chrome {
 pub fn it_works() -> Result<()> {
     env_logger::init();
     let mut chrome = Chrome::new().expect("lol");
-    chrome.call_method()
-        .map(|version| {
+    let comm = GetVersionCommand {};
+    chrome.call_method(comm)
+        .map(|version: GetVersionResponse| {
             eprintln!("version = {:#?}", version.product);
         })
         .wait().chain_err(|| "oh boy")?;
