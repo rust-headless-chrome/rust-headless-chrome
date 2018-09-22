@@ -21,13 +21,13 @@ extern crate cdp;
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Read;
-use std::io::Write;
-use std::process::{Command, Stdio, Child, ChildStderr};
+use std::process::{Command, Stdio, ChildStderr};
 use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
 
 use futures::sync::oneshot::{Sender, Receiver};
+use futures::Future;
 
 use regex::Regex;
 use websocket::{ClientBuilder, Message, OwnedMessage};
@@ -106,7 +106,7 @@ impl Chrome {
                 let mut waiting_calls_mut = waiting_calls.lock().unwrap();
                 let waiting_call_tx = waiting_calls_mut.remove(&1).unwrap();
                 let response: Value = serde_json::from_str(&msg).unwrap();
-                waiting_call_tx.send(response["result"].clone());
+                let _ = waiting_call_tx.send(response["result"].clone());
             } else {
                 error!("Got a non text message?!")
             }
@@ -185,13 +185,18 @@ impl Chrome {
 }
 
 
+pub fn it_works() -> Result<()> {
+    env_logger::init();
+    let mut chrome = Chrome::build().expect("lol");
+    chrome.call_method().wait().chain_err(||"oh boy")?;
+    Ok(())
+}
+
+
 #[cfg(test)]
 mod tests {
-    use futures::Future;
     #[test]
     fn it_works() {
-        env_logger::init();
-        let mut chrome = super::Chrome::build().expect("lol");
-        chrome.call_method().wait();
+        let _ = super::it_works();
     }
 }
