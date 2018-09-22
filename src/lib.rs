@@ -37,7 +37,7 @@ use websocket::stream::sync::TcpStream;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use cdp::{HasCdpCommand};
+use cdp::{HasCdpCommand, SerializeCdpCommand};
 use cdp::browser::{GetVersionResponse, GetVersionCommand};
 
 use self::errors::*;
@@ -117,7 +117,7 @@ impl Chrome {
 
     fn call_method<'a, C>(&mut self, command: C::Command) -> Box<Future<Item=C, Error=futures::Canceled>>
         where C: DeserializeOwned + HasCdpCommand<'a>,
-              <C as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize
+              <C as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
     {
         trace!("Calling method");
         let my_clone = Arc::clone(&self.waiting_calls);
@@ -126,7 +126,7 @@ impl Chrome {
         let (tx, rx) = futures::sync::oneshot::channel::<Response>();
 
         let method_id = 1;
-        let method = json!({"method": "Browser.getVersion", "id":method_id, "params": command});
+        let method = json!({"method": command.command_name(), "id":method_id, "params": command});
 
         let message = Message::text(serde_json::to_string(&method).unwrap());
 
