@@ -46,8 +46,8 @@ use cdp::SerializeCdpCommand;
 use cdp::target::{CreateTargetCommand, CreateTargetResponse};
 //
 
-use errors::*;
-mod errors;
+use self::errors::*;
+pub mod errors;
 
 
 #[derive(Debug)]
@@ -188,3 +188,14 @@ impl Chrome {
     }
 }
 
+
+#[cfg(test)]
+mod tests {
+    use futures::Future;
+    #[test]
+    fn it_works() {
+        env_logger::init();
+        let mut chrome = super::Chrome::build().expect("lol");
+        chrome.call_method().wait();
+    }
+}
