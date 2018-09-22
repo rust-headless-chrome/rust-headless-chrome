@@ -12,12 +12,13 @@ extern crate error_chain;
 // We'll put our errors in an `errors` module, and other modules in
 // this crate will `use errors::*;` to get access to everything
 // `error_chain!` creates.
+use errors::*;
 mod errors;
 
+use chrome::*;
 // This only gives access within this module. Make this `pub use errors::*;`
 // instead if the types must be accessible from other modules (e.g., within
 // a `links` section).
-use errors::*;
 
 
 #[allow(dead_code)]
@@ -42,11 +43,8 @@ fn main() {
 // `errors` module. It is a typedef of the standard `Result` type
 // for which the error type is always our own `Error`.
 fn run() -> Result<()> {
-    use std::fs::File;
 
-    // This operation will fail
-    File::open("tretrete")
-        .chain_err(|| "unable to open tretrete file")?;
+//    lib::it_works();
 
     Ok(())
 }
