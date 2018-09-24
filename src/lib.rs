@@ -164,8 +164,7 @@ impl Chrome {
             Some(cap.into())
         };
 
-        let mut buf = [0; 200];
-        // TODO: if can't find after a while, return error
+        let mut buf = [0; 512];
 
         let time_before = std::time::SystemTime::now();
         loop {
@@ -195,11 +194,12 @@ impl Chrome {
 
 pub fn it_works() -> Result<()> {
     env_logger::init();
-    let mut chrome = Chrome::new().expect("lol");
+    let mut chrome = Chrome::new()?;
     let comm = GetVersionCommand {};
     chrome.call_method(&comm)
-        .map(|version: GetVersionResponse| {
+        .and_then(|version: GetVersionResponse| {
             eprintln!("version = {:#?}", version.product);
+            Ok(())
         })
         .wait().chain_err(|| "oh boy")?;
     Ok(())
