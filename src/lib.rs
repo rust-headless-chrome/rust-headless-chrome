@@ -34,7 +34,7 @@ use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 
-use serde::de::DeserializeOwned;
+use serde::de::{DeserializeOwned};
 use serde_json::Value;
 
 use cdp::{HasCdpCommand, SerializeCdpCommand};
@@ -88,17 +88,17 @@ impl Chrome {
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
         let _ = thread::spawn(move || {
-            Chrome::handle_incoming_messages(receiver, other_waiting_calls);
+            Chrome::handle_incoming_messages(receiver, &other_waiting_calls);
         });
 
-        return Ok(Chrome {
+        Ok(Chrome {
             waiting_calls,
             sender,
-        });
+        })
     }
 
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
-                                waiting_calls: Arc<Mutex<HashMap<u32, ResponseChannel>>>) -> ()
+                                waiting_calls: &Arc<Mutex<HashMap<u32, ResponseChannel>>>) -> ()
     {
         trace!("Starting to handle messages");
         for message in receiver.incoming_messages() {
@@ -115,7 +115,7 @@ impl Chrome {
         }
     }
 
-    fn call_method<'a, R>(&mut self, command: R::Command) -> Box<Future<Item=R, Error=futures::Canceled>>
+    fn call_method<'a, R>(&mut self, command: &R::Command) -> Box<Future<Item=R, Error=futures::Canceled>>
         where R: DeserializeOwned + HasCdpCommand<'a>,
               <R as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
     {
@@ -197,7 +197,7 @@ pub fn it_works() -> Result<()> {
     env_logger::init();
     let mut chrome = Chrome::new().expect("lol");
     let comm = GetVersionCommand {};
-    chrome.call_method(comm)
+    chrome.call_method(&comm)
         .map(|version: GetVersionResponse| {
             eprintln!("version = {:#?}", version.product);
         })
