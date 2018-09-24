@@ -194,11 +194,16 @@ impl Chrome {
 
 pub fn it_works() -> Result<()> {
     env_logger::init();
-    let mut chrome = Chrome::new()?;
+    let chrome = &mut Chrome::new()?;
     let comm = GetVersionCommand {};
     chrome.call_method(&comm)
         .and_then(|version: GetVersionResponse| {
             eprintln!("version = {:#?}", version.product);
+
+            chrome.call_method(&comm).and_then(|version: GetVersionResponse| {
+                eprintln!("version = {:#?}", version.product);
+                Ok(())
+            }).wait();
             Ok(())
         })
         .wait().chain_err(|| "oh boy")?;
