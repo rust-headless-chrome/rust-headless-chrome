@@ -1,23 +1,10 @@
 #[macro_use]
 extern crate error_chain;
-
-extern crate futures;
-
-extern crate regex;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
-
-extern crate websocket;
-//#[macro_use]
-//extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
-extern crate cdp;
-
-//
-//use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Read;
