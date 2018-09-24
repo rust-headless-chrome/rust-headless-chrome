@@ -115,9 +115,9 @@ impl Chrome {
         }
     }
 
-    fn call_method<'a, C>(&mut self, command: C::Command) -> Box<Future<Item=C, Error=futures::Canceled>>
-        where C: DeserializeOwned + HasCdpCommand<'a>,
-              <C as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
+    fn call_method<'a, R>(&mut self, command: R::Command) -> Box<Future<Item=R, Error=futures::Canceled>>
+        where R: DeserializeOwned + HasCdpCommand<'a>,
+              <R as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
     {
         trace!("Calling method");
         let my_clone = Arc::clone(&self.waiting_calls);
@@ -136,7 +136,7 @@ impl Chrome {
         self.sender.send_message(&message).unwrap();
 
         Box::new(rx.map(|s| {
-            serde_json::from_value::<C>(s["result"].clone()).unwrap()
+            serde_json::from_value::<R>(s["result"].clone()).unwrap()
         }))
     }
 
