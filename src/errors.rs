@@ -1,3 +1,3 @@
-extern crate error_chain;
+use error_chain;
 
 error_chain!{}
