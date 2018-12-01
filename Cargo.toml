@@ -5,7 +5,7 @@ authors = ["Alistair Roche <roche.a@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-websocket = "0.20.2"
+websocket = "0.21.1"
 regex = "1"
 serde_json = "1.0"
 serde = "1.0.78"
@@ -23,3 +23,4 @@ path = "src/lib.rs"
 [[bin]]
 name = "mybin"
 path = "src/main.rs"
+
