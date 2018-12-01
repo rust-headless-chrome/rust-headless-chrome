@@ -5,13 +5,7 @@ extern crate log;
 #[macro_use]
 extern crate serde_json;
 
-extern crate serde;
-extern crate regex;
-extern crate websocket;
-extern crate futures;
-
 use std::collections::HashMap;
-use std::fmt;
 use std::io::Read;
 use std::process::{Command, Stdio, ChildStderr};
 use std::thread;
@@ -29,13 +23,13 @@ use websocket::stream::sync::TcpStream;
 use serde::de::{DeserializeOwned};
 use serde_json::Value;
 
-extern crate cdp;
 use cdp::{HasCdpCommand, SerializeCdpCommand};
 use cdp::browser::{GetVersionResponse, GetVersionCommand};
 use cdp::*;
 
 
 use self::errors::*;
+use core::fmt;
 
 pub mod errors;
 
