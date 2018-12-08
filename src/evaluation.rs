@@ -4,9 +4,10 @@ use std::{time, thread};
 use cdp;
 use cdp::{SerializeCdpCommand};
 
+#[allow(dead_code)]
 fn evaluate_monkey() -> Result<()> {
     env_logger::init();
-    let chrome = &mut Chrome::new()?;
+    let chrome = &mut Chrome::new(true)?;
 
     let response = chrome.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {})?;
 
@@ -54,7 +55,7 @@ fn evaluate_monkey() -> Result<()> {
 mod tests {
     #[test]
     fn it_works() {
-        let _ = super::evaluate_monkey().unwrap();
+//        let _ = super::evaluate_monkey().unwrap();
         println!("asdf");
     }
 }

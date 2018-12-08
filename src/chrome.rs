@@ -17,13 +17,14 @@ use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 
-use serde::de::{DeserializeOwned};
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use cdp::{HasCdpCommand, SerializeCdpCommand};
 //use cdp::*;
 
 use super::errors::*;
+use websocket::WebSocketError;
 
 #[derive(Debug)]
 struct BrowserId(String);
@@ -46,13 +47,19 @@ pub struct Chrome {
 
 impl Chrome {
     // TODO: find out why this complains if named 'new'
-    pub fn new() -> Result<Self> {
+    pub fn new(headless: bool) -> Result<Self> {
         info!("Trying to start Chrome");
 
 //        let process = Command::new("/usr/bin/google-chrome")
+        let mut args = vec![// "--headless",
+                            "--remote-debugging-port=9393", "--verbose"];
+
+        if headless {
+            args.extend(&["--headless"]);
+        }
+
         let mut process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
-            .args(&[// "--headless",
-                "--remote-debugging-port=9393", "--verbose"])
+            .args(&args)
             .stderr(Stdio::piped())
             .spawn()
             .chain_err(|| "Couldn't start chrome")?;
@@ -70,7 +77,7 @@ impl Chrome {
 
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
-        let _ = thread::spawn(move || {
+        let message_handling_thread = thread::spawn(move || {
             Chrome::handle_incoming_messages(receiver, &other_waiting_calls);
             trace!("quit loop msg handling loop");
         });
@@ -89,27 +96,38 @@ impl Chrome {
         trace!("Starting to handle messages");
         for message in receiver.incoming_messages() {
             trace!("Received a message");
-            if let OwnedMessage::Text(msg) = message.unwrap() {
-                trace!("Received text message: {:?}", msg);
-                let response: Response = serde_json::from_str(&msg).unwrap();
 
-                eprintln!("response = {:#?}", response);
+            match message {
+                Err(error) => {
+                    match error {
+                        WebSocketError::NoDataAvailable => { return (); }
+                        _ => { panic!("There was a problem opening the file: {:?}", error) }
+                    }
+                }
+                Ok(OwnedMessage::Text(msg)) => {
+                    trace!("Received text message: {:?}", msg);
+                    let response: Response = serde_json::from_str(&msg).unwrap();
 
-                let response_id: u64 = match &response["id"] {
-                    Value::Number(num) => num.as_u64().unwrap(),
-                    // indicates they sent an event rather than a method response. ignore for now.
-                    Value::Null => { eprintln!("null = "); continue; },
-                    _ => panic!("bad response ID")
-                };
-                eprintln!("response = {:#?}", response["id"]);
-                let mut waiting_calls_mut = waiting_calls.lock().unwrap();
-                trace!("locked waiting_calls");
+                    trace!("response = {:#?}", response);
 
-                let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&response_id).unwrap();
-                let _ = waiting_call_tx.send(response);
-                trace!("Passed response back to waiting method");
-            } else {
-                error!("Got a non text message?!")
+                    let response_id: u64 = match &response["id"] {
+                        Value::Number(num) => num.as_u64().unwrap(),
+                        // indicates they sent an event rather than a method response. ignore for now.
+                        Value::Null => {
+                            eprintln!("null = ");
+                            continue;
+                        }
+                        _ => panic!("bad response ID")
+                    };
+                    trace!("response = {:#?}", response["id"]);
+                    let mut waiting_calls_mut = waiting_calls.lock().unwrap();
+                    trace!("locked waiting_calls");
+
+                    let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&response_id).unwrap();
+                    let _ = waiting_call_tx.send(response);
+                    trace!("Passed response back to waiting method");
+                },
+                _ => { warn!("Got a weird message..."); }
             }
         }
     }
@@ -202,6 +220,28 @@ impl Chrome {
 
 impl Drop for Chrome {
     fn drop(&mut self) {
-        dbg!(self.child_process.kill());
+        dbg!("i will drop");
+        dbg!( self.child_process.kill());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        let mut total = 0;
+        for x in 0..10 {
+            let time_before = std::time::SystemTime::now();
+            dbg!("i will do a thing");
+            let blah = super::Chrome::new(true);
+            dbg!("i did a thing");
+            let elapsed_millis = time_before
+                .elapsed()
+                .unwrap()
+                .as_millis();
+            dbg!(elapsed_millis);
+            total += elapsed_millis;
+        }
+        dbg!(total);
     }
 }
