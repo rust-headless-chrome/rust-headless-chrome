@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::process::{Command, Stdio, ChildStderr};
+use std::process::{Command, Stdio, ChildStderr, Child};
 use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::fmt;
+use std::borrow::BorrowMut;
 
 use error_chain::bail;
 
@@ -20,7 +21,6 @@ use serde::de::{DeserializeOwned};
 use serde_json::Value;
 
 use cdp::{HasCdpCommand, SerializeCdpCommand};
-use cdp::browser::{GetVersionResponse, GetVersionCommand};
 //use cdp::*;
 
 use super::errors::*;
@@ -41,6 +41,7 @@ pub struct Chrome {
     sender: websocket::sender::Writer<TcpStream>,
     waiting_calls: Arc<Mutex<HashMap<u64, ResponseChannel>>>,
     next_call_id: u64,
+    child_process: Child,
 }
 
 impl Chrome {
@@ -49,7 +50,7 @@ impl Chrome {
         info!("Trying to start Chrome");
 
 //        let process = Command::new("/usr/bin/google-chrome")
-        let process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
+        let mut process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
             .args(&[// "--headless",
                 "--remote-debugging-port=9393", "--verbose"])
             .stderr(Stdio::piped())
@@ -58,9 +59,7 @@ impl Chrome {
 
         info!("Started Chrome. PID: {}", process.id());
 
-        let mut stderr = &mut process.stderr.unwrap();
-
-        let browser_id = Chrome::browser_id_from_output(&mut stderr)
+        let browser_id = Chrome::browser_id_from_output(process.borrow_mut())
             .chain_err(|| "Couldn't get browser ID from Chrome process")?;
         let connection = Chrome::websocket_connection(browser_id)?;
 
@@ -80,6 +79,7 @@ impl Chrome {
             waiting_calls,
             sender,
             next_call_id: 0,
+            child_process: process,
         })
     }
 
@@ -127,7 +127,7 @@ impl Chrome {
         Ok(client)
     }
 
-    fn browser_id_from_output(stderr: &mut ChildStderr) -> Result<BrowserId> {
+    fn browser_id_from_output(child_process: &mut Child) -> Result<BrowserId> {
         // TODO: user static or lazy static regex
         let re = Regex::new(r"listening on .*/devtools/browser/(.*)\n").unwrap();
 
@@ -150,7 +150,9 @@ impl Chrome {
                 bail!("Couldn't read WebSocket URL within one second");
             }
 
-            let bytes_read = stderr.read(&mut buf).unwrap();
+            let my_stderr = child_process.stderr.as_mut();
+            let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
+
             if bytes_read > 0 {
                 let chrome_output = String::from_utf8_lossy(&buf);
                 debug!("Chrome output: {}", chrome_output);
@@ -198,3 +200,8 @@ impl Chrome {
     }
 }
 
+impl Drop for Chrome {
+    fn drop(&mut self) {
+        dbg!(self.child_process.kill());
+    }
+}

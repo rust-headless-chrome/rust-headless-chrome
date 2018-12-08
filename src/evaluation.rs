@@ -1,11 +1,11 @@
 use super::errors::*;
 use super::chrome::{Chrome};
+use std::{time, thread};
 use cdp;
 use cdp::{SerializeCdpCommand};
 
-
 fn evaluate_monkey() -> Result<()> {
-//    env_logger::init();
+    env_logger::init();
     let chrome = &mut Chrome::new()?;
 
     let response = chrome.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {})?;
@@ -25,7 +25,7 @@ fn evaluate_monkey() -> Result<()> {
 
     let _response: cdp::target::SendMessageToTargetResponse = chrome.call_method(&cdp::target::SendMessageToTargetCommand {
         message: std::borrow::Cow::Borrowed(&message_str),
-        target_id: Some(default_target.target_id.clone()),
+        target_id: None,
         session_id: Some(session_id.clone()),
     })?;
     eprintln!("{:#?}", _response);
@@ -40,9 +40,11 @@ fn evaluate_monkey() -> Result<()> {
     trace!("sending message: {:#?}", &message_str);
     let _response: cdp::target::SendMessageToTargetResponse = chrome.call_method(&cdp::target::SendMessageToTargetCommand {
         message: std::borrow::Cow::Borrowed(&message_str),
-        target_id: Some(default_target.target_id.clone()),
+        target_id: None,
         session_id: Some(session_id.clone()),
     })?;
+
+    thread::sleep(time::Duration::from_millis(2000));
 
     return Ok(());
 }
@@ -50,8 +52,6 @@ fn evaluate_monkey() -> Result<()> {
 // core loop: while true, get batch, run batch, output results
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn it_works() {
         let _ = super::evaluate_monkey().unwrap();
