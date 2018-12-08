@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::process::{Command, Stdio, ChildStderr, Child};
+use std::process::{Command, Stdio, Child};
 use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -220,8 +220,8 @@ impl Chrome {
 
 impl Drop for Chrome {
     fn drop(&mut self) {
-        dbg!("i will drop");
-        dbg!( self.child_process.kill());
+        trace!("killing chrome");
+        self.child_process.kill().unwrap();
     }
 }
 
@@ -230,11 +230,9 @@ mod tests {
     #[test]
     fn it_works() {
         let mut total = 0;
-        for x in 0..10 {
+        for _ in 0..10 {
             let time_before = std::time::SystemTime::now();
-            dbg!("i will do a thing");
-            let blah = super::Chrome::new(true);
-            dbg!("i did a thing");
+            let _chrome = super::Chrome::new(true);
             let elapsed_millis = time_before
                 .elapsed()
                 .unwrap()

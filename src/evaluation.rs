@@ -4,7 +4,6 @@ use std::{time, thread};
 use cdp;
 use cdp::{SerializeCdpCommand};
 
-#[allow(dead_code)]
 fn evaluate_monkey() -> Result<()> {
     env_logger::init();
     let chrome = &mut Chrome::new(true)?;

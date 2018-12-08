@@ -2,6 +2,7 @@
 #![feature(test)]
 #![feature(dbg_macro)]
 #![feature(duration_as_u128)]
+#![allow(deprecated)]
 
 #[macro_use]
 extern crate log;
