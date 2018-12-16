@@ -147,7 +147,16 @@ impl Connection {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
+    fn you_can_send_methods() {
         env_logger::try_init().unwrap_or(());
+        let chrome = super::chrome::Chrome::new(true).unwrap();
+
+        let mut conn = super::Connection::new(&chrome.browser_id).unwrap();
+
+        let response1 = conn.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
+        let response2 = conn.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
+        let response3 = conn.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
+        let first_target = &response3.target_infos[0];
+        assert_eq!("about:blank", first_target.url);
     }
 }
