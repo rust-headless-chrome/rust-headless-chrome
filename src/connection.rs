@@ -29,7 +29,7 @@ use cdp::{HasCdpCommand, SerializeCdpCommand};
 use super::errors::*;
 use websocket::WebSocketError;
 
-use chrome;
+use super::chrome;
 
 type Response = Value;
 type ResponseChannel = Sender<Response>;
@@ -41,12 +41,8 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(browser_id: chrome::BrowserId) -> Result<Self> {
-
-        let browser_id = Chrome::browser_id_from_output(process.borrow_mut())
-            .chain_err(|| "Couldn't get browser ID from Chrome process")?;
-        let connection = Chrome::websocket_connection(&browser_id)?;
-
+    pub fn new(browser_id: &chrome::BrowserId) -> Result<Self> {
+        let connection = Connection::websocket_connection(&browser_id)?;
 
         let (receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
 
@@ -56,16 +52,14 @@ impl Connection {
 
         let message_handling_thread = thread::spawn(move || {
             info!("starting msg handling loop");
-            Chrome::handle_incoming_messages(receiver, &other_waiting_calls);
+            Connection::handle_incoming_messages(receiver, &other_waiting_calls);
             info!("quit loop msg handling loop");
         });
 
-        Ok(Chrome {
+        Ok(Connection {
             waiting_calls,
             sender,
             next_call_id: 0,
-            child_process: process,
-            browser_id: browser_id
         })
     }
 
@@ -111,7 +105,7 @@ impl Connection {
         }
     }
 
-    pub fn websocket_connection(browser_id: &BrowserId) -> Result<Client<TcpStream>> {
+    pub fn websocket_connection(browser_id: &chrome::BrowserId) -> Result<Client<TcpStream>> {
         let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", browser_id);
         info!("Connecting to WebSocket: {}", ws_url);
         let client = ClientBuilder::new(ws_url)
@@ -124,49 +118,6 @@ impl Connection {
         Ok(client)
     }
 
-    fn browser_id_from_output(child_process: &mut Child) -> Result<BrowserId> {
-        // TODO: user static or lazy static regex
-        let re = Regex::new(r"listening on .*/devtools/browser/(.*)\n").unwrap();
-
-        let extract = |text: &str| -> Option<String> {
-            let caps = re.captures(text);
-            let cap = &caps?[1];
-            Some(cap.into())
-        };
-
-        let mut buf = [0; 512];
-
-        let time_before = std::time::SystemTime::now();
-        loop {
-            let elapsed_seconds = time_before
-                .elapsed()
-                .chain_err(|| "Couldn't get system time")?
-                .as_secs();
-
-            if elapsed_seconds > 1 {
-                bail!("Couldn't read WebSocket URL within one second");
-            }
-
-            let my_stderr = child_process.stderr.as_mut();
-            let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
-
-            if bytes_read > 0 {
-                let chrome_output = String::from_utf8_lossy(&buf);
-                debug!("Chrome output: {}", chrome_output);
-
-                match extract(&chrome_output) {
-                    Some(browser_id) => return Ok(BrowserId(browser_id)),
-                    None => continue
-                };
-            }
-        }
-    }
-//
-//    pub fn call<'a>(&mut self, command: impl cdp::HasCdpResponse<'a>) -> impl HasCdpCommand<'a> {
-//
-//    }
-
-    // TODO: find a way of making this return a thing which doesn't need type annotations
     pub fn call_method<'a, R>(&mut self, command: &R::Command) -> Result<R>
         where R: DeserializeOwned + HasCdpCommand<'a>,
               <R as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
@@ -201,13 +152,6 @@ impl Connection {
     }
 }
 
-impl Drop for Chrome {
-    fn drop(&mut self) {
-        trace!("killing chrome");
-        self.child_process.kill().unwrap();
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::thread;
@@ -219,9 +163,9 @@ mod tests {
         let mut total = 0;
         for _ in 0..1 {
             let time_before = std::time::SystemTime::now();
-            let chrome = &mut super::Chrome::new(true).unwrap();
+            let chrome = &mut super::chrome::Chrome::new(true).unwrap();
 
-            let other_conn = super::Chrome::websocket_connection(&chrome.browser_id);
+            let conn = super::Connection::new(&chrome.browser_id);
 
             let elapsed_millis = time_before
                 .elapsed()

@@ -5,7 +5,6 @@ use cdp;
 use cdp::{SerializeCdpCommand};
 
 fn evaluate_monkey() -> Result<()> {
-    env_logger::init();
     let chrome = &mut Chrome::new(true)?;
 
     let response = chrome.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {})?;

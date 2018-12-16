@@ -7,6 +7,8 @@ use std::sync::Mutex;
 use std::fmt;
 use std::borrow::BorrowMut;
 
+use log::*;
+
 use error_chain::bail;
 
 use futures::sync::oneshot::Sender;
@@ -17,6 +19,7 @@ use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 
+use serde;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
@@ -27,7 +30,7 @@ use super::errors::*;
 use websocket::WebSocketError;
 
 #[derive(Debug)]
-struct BrowserId(String);
+pub struct BrowserId(String);
 
 impl fmt::Display for BrowserId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -43,6 +46,7 @@ pub struct Chrome {
     waiting_calls: Arc<Mutex<HashMap<u64, ResponseChannel>>>,
     next_call_id: u64,
     child_process: Child,
+    pub browser_id: BrowserId
 }
 
 impl Chrome {
@@ -68,7 +72,7 @@ impl Chrome {
 
         let browser_id = Chrome::browser_id_from_output(process.borrow_mut())
             .chain_err(|| "Couldn't get browser ID from Chrome process")?;
-        let connection = Chrome::websocket_connection(browser_id)?;
+        let connection = Chrome::websocket_connection(&browser_id)?;
 
 
         let (receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
@@ -78,8 +82,9 @@ impl Chrome {
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
         let message_handling_thread = thread::spawn(move || {
+            info!("starting msg handling loop");
             Chrome::handle_incoming_messages(receiver, &other_waiting_calls);
-            trace!("quit loop msg handling loop");
+            info!("quit loop msg handling loop");
         });
 
         Ok(Chrome {
@@ -87,6 +92,7 @@ impl Chrome {
             sender,
             next_call_id: 0,
             child_process: process,
+            browser_id: browser_id
         })
     }
 
@@ -126,13 +132,13 @@ impl Chrome {
                     let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&response_id).unwrap();
                     let _ = waiting_call_tx.send(response);
                     trace!("Passed response back to waiting method");
-                },
+                }
                 _ => { warn!("Got a weird message..."); }
             }
         }
     }
 
-    fn websocket_connection(browser_id: BrowserId) -> Result<Client<TcpStream>> {
+    pub fn websocket_connection(browser_id: &BrowserId) -> Result<Client<TcpStream>> {
         let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", browser_id);
         info!("Connecting to WebSocket: {}", ws_url);
         let client = ClientBuilder::new(ws_url)
@@ -182,6 +188,10 @@ impl Chrome {
             }
         }
     }
+//
+//    pub fn call<'a>(&mut self, command: impl cdp::HasCdpResponse<'a>) -> impl HasCdpCommand<'a> {
+//
+//    }
 
     // TODO: find a way of making this return a thing which doesn't need type annotations
     pub fn call_method<'a, R>(&mut self, command: &R::Command) -> Result<R>
@@ -214,7 +224,7 @@ impl Chrome {
             serde_json::from_value::<R>(s["result"].clone()).unwrap()
         }).wait().chain_err(|| "bad command")?;
         trace!("method caller got response");
-        Ok(val)
+        Ok(val as R)
     }
 }
 
@@ -227,18 +237,41 @@ impl Drop for Chrome {
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+    use std::time;
+
     #[test]
-    fn it_works() {
+    fn kills_process_on_drop() {
         let mut total = 0;
-        for _ in 0..10 {
+        for _ in 0..1 {
             let time_before = std::time::SystemTime::now();
-            let _chrome = super::Chrome::new(true);
+            let chrome = &mut super::Chrome::new(true).unwrap();
+
+            let other_conn = super::Chrome::websocket_connection(&chrome.browser_id);
+
             let elapsed_millis = time_before
                 .elapsed()
                 .unwrap()
                 .as_millis();
             dbg!(elapsed_millis);
+
+            for _ in 0..1 {
+                let time_before = std::time::SystemTime::now();
+                let response = chrome.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
+                let elapsed_millis = time_before
+                    .elapsed()
+                    .unwrap()
+                    .as_millis();
+                dbg!(elapsed_millis);
+            }
+
             total += elapsed_millis;
+            let response = chrome.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
+            dbg!(response);
+            thread::sleep(time::Duration::from_millis(1000));
+            let response = chrome.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
+            dbg!(response);
+            thread::sleep(time::Duration::from_millis(1000));
         }
         dbg!(total);
     }

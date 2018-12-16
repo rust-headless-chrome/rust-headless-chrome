@@ -38,6 +38,7 @@ extern crate serde_json;
 pub mod errors;
 pub mod evaluation;
 pub mod chrome;
+pub mod connection;
 //use chrome::{Chrome};
 //use self::errors::{Result};
 
