@@ -1,20 +1,13 @@
 use std::collections::HashMap;
-use std::io::Read;
-use std::process::{Command, Stdio, Child};
 use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::fmt;
-use std::borrow::BorrowMut;
 
 use log::*;
-
-use error_chain::bail;
 
 use futures::sync::oneshot::Sender;
 use futures::Future;
 
-use regex::Regex;
 use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;

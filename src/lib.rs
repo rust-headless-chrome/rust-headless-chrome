@@ -1,6 +1,5 @@
 #![feature(uniform_paths)]
 #![feature(test)]
-#![feature(dbg_macro)]
 #![feature(duration_as_u128)]
 #![allow(deprecated)]
 
