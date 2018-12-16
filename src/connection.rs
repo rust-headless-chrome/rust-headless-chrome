@@ -50,7 +50,7 @@ impl Connection {
 
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
-        let message_handling_thread = thread::spawn(move || {
+        let _message_handling_thread = thread::spawn(move || {
             info!("starting msg handling loop");
             Connection::handle_incoming_messages(receiver, &other_waiting_calls);
             info!("quit loop msg handling loop");
@@ -165,7 +165,7 @@ mod tests {
             let time_before = std::time::SystemTime::now();
             let chrome = &mut super::chrome::Chrome::new(true).unwrap();
 
-            let conn = super::Connection::new(&chrome.browser_id);
+            let _conn = super::Connection::new(&chrome.browser_id);
 
             let elapsed_millis = time_before
                 .elapsed()
@@ -175,7 +175,7 @@ mod tests {
 
             for _ in 0..1 {
                 let time_before = std::time::SystemTime::now();
-                let response = chrome.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
+                let _response = chrome.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
                 let elapsed_millis = time_before
                     .elapsed()
                     .unwrap()
