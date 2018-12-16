@@ -35,6 +35,7 @@ pub mod errors;
 pub mod evaluation;
 pub mod chrome;
 pub mod connection;
+pub mod page_session;
 //use chrome::{Chrome};
 //use self::errors::{Result};
 

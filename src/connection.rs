@@ -110,6 +110,7 @@ impl Connection {
         Ok(client)
     }
 
+    // TODO: shouldn't this really consume command?
     pub fn call_method<'a, R>(&mut self, command: &R::Command) -> Result<R>
         where R: DeserializeOwned + HasCdpCommand<'a>,
               <R as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
