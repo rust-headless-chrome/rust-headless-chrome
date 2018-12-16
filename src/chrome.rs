@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn kills_process_on_drop() {
-        env_logger::init();
+        env_logger::try_init().unwrap_or(());
         let time_before = std::time::SystemTime::now();
         {
             let _chrome = &mut super::Chrome::new(true).unwrap();

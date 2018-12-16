@@ -148,6 +148,6 @@ impl Connection {
 mod tests {
     #[test]
     fn it_works() {
-        env_logger::init();
+        env_logger::try_init().unwrap_or(());
     }
 }
