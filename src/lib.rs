@@ -3,10 +3,7 @@
 #![feature(duration_as_u128)]
 #![allow(deprecated)]
 
-#[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_json;
 
 //use std::collections::HashMap;
 //use std::io::Read;

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -13,11 +12,11 @@ use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 
 use serde;
+use serde_json::json;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use cdp::{HasCdpCommand, SerializeCdpCommand};
-//use cdp::*;
 
 use super::errors::*;
 use websocket::WebSocketError;
@@ -43,7 +42,7 @@ impl Connection {
 
         let other_waiting_calls = Arc::clone(&waiting_calls);
 
-        let _message_handling_thread = thread::spawn(move || {
+        let _message_handling_thread = std::thread::spawn(move || {
             info!("starting msg handling loop");
             Connection::handle_incoming_messages(receiver, &other_waiting_calls);
             info!("quit loop msg handling loop");
@@ -147,43 +146,8 @@ impl Connection {
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
-    use std::time;
-
     #[test]
     fn it_works() {
         env_logger::init();
-        let mut total = 0;
-        for _ in 0..1 {
-            let time_before = std::time::SystemTime::now();
-            let chrome = &mut super::chrome::Chrome::new(true).unwrap();
-
-            let _conn = super::Connection::new(&chrome.browser_id);
-
-            let elapsed_millis = time_before
-                .elapsed()
-                .unwrap()
-                .as_millis();
-            dbg!(elapsed_millis);
-
-            for _ in 0..1 {
-                let time_before = std::time::SystemTime::now();
-                let _response = chrome.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
-                let elapsed_millis = time_before
-                    .elapsed()
-                    .unwrap()
-                    .as_millis();
-                dbg!(elapsed_millis);
-            }
-
-            total += elapsed_millis;
-            let response = chrome.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
-            dbg!(response);
-            thread::sleep(time::Duration::from_millis(1000));
-            let response = chrome.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
-            dbg!(response);
-            thread::sleep(time::Duration::from_millis(1000));
-        }
-        dbg!(total);
     }
 }
