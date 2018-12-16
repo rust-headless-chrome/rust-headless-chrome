@@ -46,7 +46,7 @@ pub struct Chrome {
     waiting_calls: Arc<Mutex<HashMap<u64, ResponseChannel>>>,
     next_call_id: u64,
     child_process: Child,
-    pub browser_id: BrowserId
+    pub browser_id: BrowserId,
 }
 
 impl Chrome {
@@ -92,7 +92,7 @@ impl Chrome {
             sender,
             next_call_id: 0,
             child_process: process,
-            browser_id: browser_id
+            browser_id: browser_id,
         })
     }
 
@@ -230,50 +230,41 @@ impl Chrome {
 
 impl Drop for Chrome {
     fn drop(&mut self) {
-        trace!("killing chrome");
+        debug!("killing chrome PID: {}", self.child_process.id());
         self.child_process.kill().unwrap();
+        self.child_process.wait().unwrap();
     }
 }
 
+
 #[cfg(test)]
 mod tests {
-    use std::thread;
-    use std::time;
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    fn current_child_pids() -> Vec<i32> {
+        let current_pid = std::process::id();
+        let mut current_process_children_file = File::open(format!("/proc/{}/task/{}/children", current_pid, current_pid)).unwrap();
+        let mut child_pids = String::new();
+        current_process_children_file.read_to_string(&mut child_pids).unwrap();
+        return child_pids.split_whitespace().map(|pid_str| pid_str.parse::<i32>().unwrap() ).collect();
+    }
 
     #[test]
     fn kills_process_on_drop() {
-        let mut total = 0;
-        for _ in 0..1 {
-            let time_before = std::time::SystemTime::now();
-            let chrome = &mut super::Chrome::new(true).unwrap();
+        env_logger::init();
+        let time_before = std::time::SystemTime::now();
+        {
+            let _chrome = &mut super::Chrome::new(true).unwrap();
 
-            let _other_conn = super::Chrome::websocket_connection(&chrome.browser_id);
-
-            let elapsed_millis = time_before
+            let chrome_startup_millis = time_before
                 .elapsed()
                 .unwrap()
                 .as_millis();
-            dbg!(elapsed_millis);
-
-            for _ in 0..1 {
-                let time_before = std::time::SystemTime::now();
-                let _response = chrome.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
-                let elapsed_millis = time_before
-                    .elapsed()
-                    .unwrap()
-                    .as_millis();
-                dbg!(elapsed_millis);
-            }
-
-            total += elapsed_millis;
-            let response = chrome.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
-            dbg!(response);
-            thread::sleep(time::Duration::from_millis(1000));
-            let response = chrome.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
-            dbg!(response);
-            thread::sleep(time::Duration::from_millis(1000));
+            dbg!(chrome_startup_millis);
         }
-        // TODO: assert that we have no child processes here
-        dbg!(total);
+
+        let child_pids = current_child_pids();
+        assert!(child_pids.is_empty());
     }
 }
