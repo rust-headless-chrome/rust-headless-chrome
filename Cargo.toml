@@ -15,6 +15,7 @@ error-chain="0.12.0"
 log = "0.4.5"
 env_logger = "0.5.13"
 futures = "0.1.24"
+rand = "0.6"
 
 [lib]
 name = "lib"
