@@ -25,7 +25,7 @@ use websocket::WebSocketError;
 use super::chrome;
 
 // this is duped in page session!!!
-type CallId = u32;
+type CallId = u16;
 
 type Response = Value;
 type ResponseChannel = Sender<Response>;

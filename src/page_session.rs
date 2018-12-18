@@ -20,7 +20,7 @@ use std::collections::HashMap;
 
 type MethodResponseTx = mpsc::Sender<connection::MethodResponse>;
 // boo, seems chrome freaks out with u64
-type CallId = u32;
+type CallId = u16;
 
 pub struct PageSession {
     session_id: String,
