@@ -1,18 +1,17 @@
-use std::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc;
+use std::sync::Mutex;
 
-type CallId = u16;
+pub type CallId = u16;
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
-#[derive(Debug, PartialEq, Clone)]
-struct CallResponse { call_id: CallId, data: bool }
+type CallResponse = super::connection::MethodResponse;
 
-struct WaitingCallRegistry {
+pub struct WaitingCallRegistry {
     calls: Arc<Mutex<HashMap<CallId, mpsc::Sender<CallResponse>>>>
 }
 
@@ -38,16 +37,13 @@ impl WaitingCallRegistry
 
                 let waiting_call_tx: mpsc::Sender<CallResponse>  = waiting_calls.remove(&response.call_id()).unwrap();
 
-                waiting_call_tx.send(response);
+                waiting_call_tx.send(response).expect("failed to send response to waiting call");
             }
         });
 
         WaitingCallRegistry {
             calls
         }
-    }
-
-    fn handle_incoming(&mut self) {
     }
 
     pub fn register_call(&mut self, call_id: CallId) -> mpsc::Receiver<CallResponse> {
@@ -62,6 +58,7 @@ impl WaitingCallRegistry
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn register_and_receive_calls() {
@@ -70,16 +67,14 @@ mod tests {
         let (responses_tx, responses_rx) = mpsc::channel::<CallResponse>();
         let mut waiting_calls = WaitingCallRegistry::new(responses_rx);
 
-        // TODO: two at same time!
-
         let call_rx = waiting_calls.register_call(431);
-        let resp = CallResponse { call_id: 431, data: true };
+        let resp = CallResponse { call_id: 431, result: json!{true} };
 
         let call_rx2 = waiting_calls.register_call(123);
-        let resp2 = CallResponse { call_id: 123, data: true };
+        let resp2 = CallResponse { call_id: 123, result: json!{false} };
 
-        responses_tx.send(resp.clone());
-        responses_tx.send(resp2.clone());
+        responses_tx.send(resp.clone()).unwrap();
+        responses_tx.send(resp2.clone()).unwrap();
 
         // note how they're in reverse order to that in which they were called!
         assert_eq!(resp2, call_rx2.recv().unwrap());

@@ -36,10 +36,10 @@ pub struct Connection {
     next_call_id: CallId,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct MethodResponse {
     // TODO: should alias call IDs everywhere
-    pub id: CallId,
+    pub call_id: CallId,
     pub result: Value,
 }
 
@@ -65,7 +65,7 @@ enum IncomingMessage<T> {
 }
 
 impl Connection {
-    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<IncomingMessageKind>) -> Result<Self> {
+    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<MethodResponse>) -> Result<Self> {
         let connection = Connection::websocket_connection(&browser_id)?;
 
         let (websocket_receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
@@ -91,7 +91,7 @@ impl Connection {
     // TODO: this method is too big
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
                                 waiting_calls: &Arc<Mutex<HashMap<CallId, ResponseChannel>>>,
-                                target_messages_tx: mpsc::Sender<IncomingMessageKind>) -> ()
+                                target_messages_tx: mpsc::Sender<MethodResponse>) -> ()
     {
         trace!("Starting to handle messages");
         // TODO: ooh, use iterator magic to split events and method responses here?!
@@ -112,12 +112,12 @@ impl Connection {
                     trace!("response = {:#?}", response);
 
                     let send_response_to_caller = |response: MethodResponse| {
-                        trace!("response = {:#?}", response.id);
+                        trace!("response = {:#?}", response.call_id);
                         let mut waiting_calls_mut = waiting_calls.lock().unwrap();
                         trace!("locked waiting_calls");
 
-                        let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&response.id).unwrap();
-                        waiting_call_tx.send(response.result);
+                        let waiting_call_tx: ResponseChannel = waiting_calls_mut.remove(&response.call_id).unwrap();
+                        waiting_call_tx.send(response.result).expect("failed to send response");
                     };
 
                     let parse_call_id = |response_id| {
@@ -137,14 +137,11 @@ impl Connection {
 
                     let browser_call_id: Option<CallId> = parse_call_id(response["id"].clone());
 
-                    // will only be populated if it's a response to a target.
-                    let mut target_call_id: Option<CallId> = None;
-
                     let incoming_message: IncomingMessage<IncomingMessageKind> = match browser_call_id {
                         Some(call_id) => {
                             // TODO: gross
                             IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(MethodResponse {
-                                id: call_id,
+                                call_id: call_id,
                                 result: response["result"].clone(),
                             }))
                         }
@@ -154,9 +151,9 @@ impl Connection {
                                 // TODO: DRY
                                 let target_response: Response = serde_json::from_str(&response_string).unwrap();
                                 dbg!(&target_response);
-                                target_call_id = parse_call_id(target_response["id"].clone());
+                                let target_call_id = parse_call_id(target_response["id"].clone());
                                 IncomingMessage::FromTarget(IncomingMessageKind::MethodResponse(MethodResponse {
-                                    id: target_call_id.expect("Response has message but not call id"),
+                                    call_id: target_call_id.expect("Response has message but not call id"),
                                     result: target_response["result"].clone(),
                                 }))
                             } else {
@@ -183,9 +180,18 @@ impl Connection {
                             }
                         }
                         IncomingMessage::FromTarget(msg) => {
-                            target_messages_tx.send(msg);
+                            match msg {
+                                IncomingMessageKind::MethodResponse(response) => {
+                                    // TODO: obviously overlap between response and message. result?
+                                    target_messages_tx.send(response).expect("failed to send to page session");
+                                }
+                                IncomingMessageKind::Event(_ev) => {
+
+                                    // TODO: this
+                                }
+                            }
                         }
-                    };
+                    }
                 }
                 _ => { warn!("Got a weird message..."); }
             }
@@ -249,12 +255,12 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true).unwrap();
 
-        let (messages_tx, _messages_rx) = mpsc::channel::<super::IncomingMessageKind>();
+        let (messages_tx, _messages_rx) = mpsc::channel::<super::MethodResponse>();
 
         let mut conn = super::Connection::new(&chrome.browser_id, messages_tx).unwrap();
 
-        let response1 = conn.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
-        let response2 = conn.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
+        let _response1 = conn.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
+        let _response2 = conn.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
         let response3 = conn.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
         let first_target = &response3.target_infos[0];
 
