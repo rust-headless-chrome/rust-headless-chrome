@@ -211,9 +211,6 @@ impl Connection {
     {
         trace!("Calling method");
 
-        let (tx, rx) = futures::sync::oneshot::channel::<Response>();
-
-        let my_clone = Arc::clone(&self.waiting_calls);
 
         let method_id = self.next_call_id;
         self.next_call_id += 1;
@@ -221,6 +218,10 @@ impl Connection {
         let method = json!({"method": command.command_name(), "id": method_id, "params": command});
         trace!("sending message: {:#?}", &method);
         let message = Message::text(serde_json::to_string(&method).unwrap());
+
+        let (tx, rx) = futures::sync::oneshot::channel::<Response>();
+
+        let my_clone = Arc::clone(&self.waiting_calls);
 
 // putting this in its own scope to make sure the MutexGuard is dropped (and unlocked)
         {
