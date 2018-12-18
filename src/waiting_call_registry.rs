@@ -46,7 +46,7 @@ impl WaitingCallRegistry
         }
     }
 
-    pub fn register_call(&mut self, call_id: CallId) -> mpsc::Receiver<CallResponse> {
+    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<CallResponse> {
         let (tx, rx) = mpsc::channel::<CallResponse>();
         let calls_mutex = Arc::clone(&self.calls);
         let mut calls = calls_mutex.lock().unwrap();
@@ -65,7 +65,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
 
         let (responses_tx, responses_rx) = mpsc::channel::<CallResponse>();
-        let mut waiting_calls = WaitingCallRegistry::new(responses_rx);
+        let waiting_calls = WaitingCallRegistry::new(responses_rx);
 
         let call_rx = waiting_calls.register_call(431);
         let resp = CallResponse { call_id: 431, result: json!{true} };
