@@ -3,20 +3,27 @@ use std::sync::Arc;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
+use serde_json::Value;
+
 pub type CallId = u16;
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
-type CallResponse = super::connection::MethodResponse;
+#[derive(Debug, PartialEq, Clone)]
+pub struct MethodResponse {
+    // TODO: should alias call IDs everywhere
+    pub call_id: CallId,
+    pub result: Value,
+}
 
 pub struct WaitingCallRegistry {
-    calls: Arc<Mutex<HashMap<CallId, mpsc::Sender<CallResponse>>>>
+    calls: Arc<Mutex<HashMap<CallId, mpsc::Sender<MethodResponse>>>>
 }
 
 
-impl IdentifiableResponse for CallResponse {
+impl IdentifiableResponse for MethodResponse {
     fn call_id(&self) -> u16 {
         self.call_id
     }
@@ -25,7 +32,7 @@ impl IdentifiableResponse for CallResponse {
 // TODO: find out how to make this generic!!!
 impl WaitingCallRegistry
 {
-    pub fn new(incoming_responses: mpsc::Receiver<CallResponse>) -> Self
+    pub fn new(incoming_responses: mpsc::Receiver<MethodResponse>) -> Self
     {
         let calls = Arc::new(Mutex::new(HashMap::new()));
 
@@ -35,7 +42,7 @@ impl WaitingCallRegistry
             for response in incoming_responses.iter() {
                 let mut waiting_calls = calls_mutex.lock().unwrap();
 
-                let waiting_call_tx: mpsc::Sender<CallResponse>  = waiting_calls.remove(&response.call_id()).unwrap();
+                let waiting_call_tx: mpsc::Sender<MethodResponse>  = waiting_calls.remove(&response.call_id()).unwrap();
 
                 waiting_call_tx.send(response).expect("failed to send response to waiting call");
             }
@@ -46,8 +53,8 @@ impl WaitingCallRegistry
         }
     }
 
-    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<CallResponse> {
-        let (tx, rx) = mpsc::channel::<CallResponse>();
+    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<MethodResponse> {
+        let (tx, rx) = mpsc::channel::<MethodResponse>();
         let calls_mutex = Arc::clone(&self.calls);
         let mut calls = calls_mutex.lock().unwrap();
         calls.insert(call_id, tx);
@@ -64,14 +71,14 @@ mod tests {
     fn register_and_receive_calls() {
         env_logger::try_init().unwrap_or(());
 
-        let (responses_tx, responses_rx) = mpsc::channel::<CallResponse>();
+        let (responses_tx, responses_rx) = mpsc::channel::<MethodResponse>();
         let waiting_calls = WaitingCallRegistry::new(responses_rx);
 
         let call_rx = waiting_calls.register_call(431);
-        let resp = CallResponse { call_id: 431, result: json!{true} };
+        let resp = MethodResponse { call_id: 431, result: json!{true} };
 
         let call_rx2 = waiting_calls.register_call(123);
-        let resp2 = CallResponse { call_id: 123, result: json!{false} };
+        let resp2 = MethodResponse { call_id: 123, result: json!{false} };
 
         responses_tx.send(resp.clone()).unwrap();
         responses_tx.send(resp2.clone()).unwrap();

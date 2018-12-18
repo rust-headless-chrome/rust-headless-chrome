@@ -18,7 +18,7 @@ use websocket::WebSocketError;
 
 use super::chrome;
 use super::waiting_call_registry;
-use super::waiting_call_registry::CallId;
+use super::waiting_call_registry::{CallId, MethodResponse};
 
 type Response = Value;
 
@@ -27,14 +27,6 @@ pub struct Connection {
     next_call_id: CallId,
     call_registry: waiting_call_registry::WaitingCallRegistry,
 }
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct MethodResponse {
-    // TODO: should alias call IDs everywhere
-    pub call_id: CallId,
-    pub result: Value,
-}
-
 
 // this stuff should be in its own module b/c reused by page_session...
 #[derive(Debug)]
@@ -88,7 +80,6 @@ impl Connection {
     ) -> ()
     {
         trace!("Starting to handle messages");
-
 
         // TODO: ooh, use iterator magic to split events and method responses here?!
         for message in receiver.incoming_messages() {
