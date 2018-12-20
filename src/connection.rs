@@ -6,13 +6,13 @@ use serde;
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use serde_json::Value;
-use websocket::{ClientBuilder, Message, OwnedMessage};
+use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
 use crate::protocol;
-use crate::protocol::{CallId, IncomingMessageKind, Response, IncomingMessage};
+use crate::protocol::{CallId, Response};
 
 use crate::chrome;
 use crate::errors::*;
@@ -24,9 +24,8 @@ pub struct Connection {
     call_registry: waiting_call_registry::WaitingCallRegistry,
 }
 
-
 impl Connection {
-    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<Response>) -> Result<Self> {
+    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<protocol::Message>) -> Result<Self> {
         let connection = Connection::websocket_connection(&browser_id)?;
 
         let (websocket_receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
@@ -51,15 +50,15 @@ impl Connection {
 
     // TODO: this method is too big
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
-                                target_messages_tx: mpsc::Sender<Response>,
+                                target_messages_tx: mpsc::Sender<protocol::Message>,
                                 browser_responses_tx: mpsc::Sender<Response>)
     {
         trace!("Starting to handle messages");
 
         // TODO: ooh, use iterator magic to split events and method responses here?! hmm,
         // I think we'd have to use channels.
-        for message in receiver.incoming_messages() {
-            match message {
+        for ws_message in receiver.incoming_messages() {
+            match ws_message {
                 Err(error) => {
                     match error {
                         WebSocketError::NoDataAvailable => { }
@@ -67,36 +66,27 @@ impl Connection {
                     }
                 }
                 Ok(OwnedMessage::Text(msg)) => {
-                    let incoming_message: IncomingMessage<IncomingMessageKind> = protocol::parse_raw_message(&msg);
+                    let message: protocol::Message = protocol::parse_raw_message(&msg);
                     trace!("Received message: {:?}", msg);
 
-                    match incoming_message {
-                        // TODO: huh, weird, we might not even need to distinguish these!
-                        IncomingMessage::FromBrowser(msg) => {
-                            match msg {
-                                IncomingMessageKind::MethodResponse(response) => {
-                                    // TODO: obviously overlap between response and message. result?
-                                    browser_responses_tx.send(response).expect("failed to send to browser's registry");
+                    match message {
+                        protocol::Message::Event(event) => {
+                            if &event.method == "Target.receivedMessageFromTarget" {
+                                if let Value::String(target_msg) = event.params["message"].clone() {
+
+                                    dbg!(&target_msg);
+                                    let target_message: protocol::Message = serde_json::from_str(&target_msg).unwrap();
+                                    target_messages_tx.send(target_message).expect("failed to send to page session");
+                                } else {
+                                    panic!("Got a weird message (not a string) in receivedMessageFromTarget");
                                 }
-                                IncomingMessageKind::Event(_) => {
-                                    // TODO: this
-                                }
+                            } else {
+                                debug!("Browser received event: {:?}", event);
                             }
                         }
-                        // reason to even keep around this from target vs from browser distinction:
-                        // eventually we'll have multiple targets to forward to, and part of this struct will be
-                        // its session_id so we can route it.
-                        IncomingMessage::FromTarget(msg) => {
-                            match msg {
-                                IncomingMessageKind::MethodResponse(response) => {
-                                    // TODO: obviously overlap between response and message. result?
-                                    target_messages_tx.send(response).expect("failed to send to page session");
-                                }
-                                IncomingMessageKind::Event(_ev) => {
 
-                                    // TODO: this
-                                }
-                            }
+                        protocol::Message::Response(response) => {
+                            browser_responses_tx.send(response).expect("failed to send to message to page session");
                         }
                     }
                 }
@@ -129,7 +119,7 @@ impl Connection {
 
         let method = json!({"method": command.command_name(), "id": call_id, "params": command});
         trace!("sending message: {:#?}", &method);
-        let message = Message::text(serde_json::to_string(&method).unwrap());
+        let message = websocket::Message::text(serde_json::to_string(&method).unwrap());
 
         // what if this fails and the waiting method is left there forever? memory leak...
         self.sender.send_message(&message).unwrap();
@@ -151,7 +141,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true).unwrap();
 
-        let (messages_tx, _messages_rx) = mpsc::channel::<super::Response>();
+        let (messages_tx, _messages_rx) = mpsc::channel::<crate::protocol::Message>();
 
         let mut conn = super::Connection::new(&chrome.browser_id, messages_tx).unwrap();
 

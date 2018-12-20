@@ -3,19 +3,6 @@ use serde_json::Value;
 
 pub type CallId = u16;
 
-#[derive(Debug)]
-pub enum IncomingMessageKind {
-    Event(Event),
-    MethodResponse(Response),
-}
-
-// TODO: custom deserialize?!
-// TODO: Message term overloaded in context of websockets?
-pub enum IncomingMessage<T> {
-    FromBrowser(T),
-    FromTarget(T),
-}
-
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct Response {
     #[serde(rename(deserialize = "id"))]
@@ -26,10 +13,10 @@ pub struct Response {
 #[derive(Deserialize, Debug)]
 pub struct Event {
     // also fail if it's an unknown event name!
-    method: String, // TODO: we'll want to refer to this internally as method name or some such
+    pub method: String, // TODO: we'll want to refer to this internally as method name or some such
     // TODO: should be one of predefined Parameter types ... and also have 'method'
     // NOTE: params is the data attached to an event
-    params: Value,
+    pub params: Value,
 }
 
 #[derive(Deserialize, Debug)]
@@ -65,28 +52,7 @@ mod tests {
     }
 }
 
-pub fn parse_raw_message(raw_message: &str) -> IncomingMessage<IncomingMessageKind> {
+pub fn parse_raw_message(raw_message: &str) -> Message {
     let message: Message = serde_json::from_str(&raw_message).unwrap();
-    match message {
-        Message::Event(event) => {
-            if let Value::String(response_string) = &event.params["message"] {
-                // TODO: DRY
-                let target_response: Response = serde_json::from_str(&response_string).unwrap();
-                dbg!(&target_response);
-                IncomingMessage::FromTarget(IncomingMessageKind::MethodResponse(Response {
-                    call_id: target_response.call_id,
-                    result: target_response.result,
-                }))
-            } else {
-                IncomingMessage::FromTarget(IncomingMessageKind::Event(event))
-                // TODO: it's an event from the target? not sure.
-            }
-        }
-        Message::Response(response) => {
-            IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(Response {
-                call_id: response.call_id,
-                result: response.result,
-            }))
-        }
-    }
+    message
 }

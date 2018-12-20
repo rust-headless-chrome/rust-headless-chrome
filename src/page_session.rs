@@ -12,7 +12,8 @@ use super::chrome;
 use super::connection;
 use super::errors::*;
 use super::waiting_call_registry;
-use super::protocol::CallId;
+use super::protocol::{Message, CallId, Response};
+use std::sync::mpsc::{Sender, Receiver};
 
 pub struct PageSession {
     session_id: String,
@@ -42,9 +43,30 @@ impl PageSession {
         })?;
         let session_id = response.session_id.to_string();
 
-        let call_registry = waiting_call_registry::WaitingCallRegistry::new(messages_rx);
+        let (responses_tx, responses_rx) = mpsc::channel();
+
+        std::thread::spawn(move || {
+            info!("starting msg handling loop");
+            Self::handle_incoming_messages(messages_rx, responses_tx);
+            info!("quit loop msg handling loop");
+        });
+
+        let call_registry = waiting_call_registry::WaitingCallRegistry::new(responses_rx);
 
         Ok(PageSession { session_id, connection: conn, call_registry })
+    }
+
+    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>) {
+        for message in messages_rx {
+            match message {
+                Message::Event(event) => {
+                    trace!("PageSession received event: {:?}", event);
+                },
+                Message::Response(response) => {
+                   responses_tx.send(response).unwrap();
+                },
+            }
+        }
     }
 
     pub fn command_for_session<C>(session_id: String, command: &C, call_id: CallId) -> Result<SendMessageToTargetCommand>
