@@ -53,10 +53,6 @@ impl Connection {
                                 target_messages_tx: mpsc::Sender<protocol::Message>,
                                 browser_responses_tx: mpsc::Sender<Response>)
     {
-        trace!("Starting to handle messages");
-
-        // TODO: ooh, use iterator magic to split events and method responses here?! hmm,
-        // I think we'd have to use channels.
         for ws_message in receiver.incoming_messages() {
             match ws_message {
                 Err(error) => {
@@ -66,27 +62,25 @@ impl Connection {
                     }
                 }
                 Ok(OwnedMessage::Text(msg)) => {
-                    let message: protocol::Message = protocol::parse_raw_message(&msg);
-                    trace!("Received message: {:?}", msg);
+                    let message = protocol::parse_raw_message(&msg);
+                    trace!("Browser received message: {:?}", msg);
 
                     match message {
+                        protocol::Message::Response(response) => {
+                            browser_responses_tx.send(response).expect("failed to send to message to page session");
+                        }
+
                         protocol::Message::Event(event) => {
                             if &event.method == "Target.receivedMessageFromTarget" {
                                 if let Value::String(target_msg) = event.params["message"].clone() {
-
-                                    dbg!(&target_msg);
-                                    let target_message: protocol::Message = serde_json::from_str(&target_msg).unwrap();
+                                    let target_message = protocol::parse_raw_message(&target_msg);
                                     target_messages_tx.send(target_message).expect("failed to send to page session");
                                 } else {
                                     panic!("Got a weird message (not a string) in receivedMessageFromTarget");
                                 }
                             } else {
-                                debug!("Browser received event: {:?}", event);
+                                trace!("Browser received event: {:?}", event);
                             }
-                        }
-
-                        protocol::Message::Response(response) => {
-                            browser_responses_tx.send(response).expect("failed to send to message to page session");
                         }
                     }
                 }
@@ -96,6 +90,7 @@ impl Connection {
     }
 
     pub fn websocket_connection(browser_id: &chrome::BrowserId) -> Result<Client<TcpStream>> {
+        // TODO: can't keep using that proxy forever, will need to deal with chromes on other ports
         let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", browser_id);
         info!("Connecting to WebSocket: {}", ws_url);
         let client = ClientBuilder::new(ws_url)

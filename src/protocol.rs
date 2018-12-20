@@ -53,6 +53,5 @@ mod tests {
 }
 
 pub fn parse_raw_message(raw_message: &str) -> Message {
-    let message: Message = serde_json::from_str(&raw_message).unwrap();
-    message
+    serde_json::from_str(&raw_message).unwrap()
 }
