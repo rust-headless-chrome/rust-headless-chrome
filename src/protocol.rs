@@ -3,14 +3,6 @@ use serde_json::Value;
 
 pub type CallId = u16;
 
-// this stuff should be in its own module b/c reused by page_session...
-#[derive(Debug)]
-pub struct Event {
-    // TODO: could keep static const list of event names for sanity checking...
-    name: String,
-    params: Value,
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct MethodResponse {
     // TODO: should alias call IDs everywhere
@@ -39,7 +31,7 @@ struct Response {
 }
 
 #[derive(Deserialize, Debug)]
-struct MyEvent {
+pub struct Event {
     // also fail if it's an unknown event name!
     method: String, // TODO: we'll want to refer to this internally as method name or some such
     // TODO: should be one of predefined Parameter types ... and also have 'method'
@@ -49,8 +41,8 @@ struct MyEvent {
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
-enum MyMessage {
-    Event(MyEvent),
+enum Message {
+    Event(Event),
     Response(Response),
 }
 
@@ -74,16 +66,16 @@ mod tests {
         ];
 
         for msg_string in &example_message_strings {
-            let message: super::MyMessage = serde_json::from_str(&msg_string).unwrap();
+            let message: super::Message = serde_json::from_str(&msg_string).unwrap();
             dbg!(message);
         }
     }
 }
 
 pub fn parse_raw_message(raw_message: &str) -> IncomingMessage<IncomingMessageKind> {
-    let message: MyMessage = serde_json::from_str(&raw_message).unwrap();
+    let message: Message = serde_json::from_str(&raw_message).unwrap();
     match message {
-        MyMessage::Event(event) => {
+        Message::Event(event) => {
             if let Value::String(response_string) = &event.params["message"] {
                 // TODO: DRY
                 let target_response: Response = serde_json::from_str(&response_string).unwrap();
@@ -93,14 +85,11 @@ pub fn parse_raw_message(raw_message: &str) -> IncomingMessage<IncomingMessageKi
                     result: target_response.result,
                 }))
             } else {
-                IncomingMessage::FromTarget(IncomingMessageKind::Event(Event {
-                    name: event.method,
-                    params: event.params,
-                }))
+                IncomingMessage::FromTarget(IncomingMessageKind::Event(event))
                 // TODO: it's an event from the target? not sure.
             }
         }
-        MyMessage::Response(response) => {
+        Message::Response(response) => {
             IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(MethodResponse {
                 call_id: response.id,
                 result: response.result,

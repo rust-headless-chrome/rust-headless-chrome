@@ -12,7 +12,7 @@ use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
 use crate::protocol;
-use crate::protocol::{CallId, IncomingMessageKind, MethodResponse, Event, IncomingMessage};
+use crate::protocol::{CallId, IncomingMessageKind, MethodResponse, IncomingMessage};
 
 use crate::chrome;
 use crate::errors::*;

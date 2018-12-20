@@ -3,8 +3,6 @@ use std::sync::Arc;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
-use serde_json::Value;
-
 use crate::protocol::{CallId, MethodResponse};
 
 trait IdentifiableResponse {
