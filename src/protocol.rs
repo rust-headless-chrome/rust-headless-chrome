@@ -34,7 +34,7 @@ pub struct Event {
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
-enum Message {
+pub enum Message {
     Event(Event),
     Response(Response),
 }

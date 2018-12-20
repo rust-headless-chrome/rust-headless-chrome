@@ -83,6 +83,9 @@ impl Connection {
                                 }
                             }
                         }
+                        // reason to even keep around this from target vs from browser distinction:
+                        // eventually we'll have multiple targets to forward to, and part of this struct will be
+                        // its session_id so we can route it.
                         IncomingMessage::FromTarget(msg) => {
                             match msg {
                                 IncomingMessageKind::MethodResponse(response) => {
