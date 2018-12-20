@@ -54,12 +54,12 @@ impl Connection {
     // TODO: this method is too big
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
                                 target_messages_tx: mpsc::Sender<MethodResponse>,
-                                browser_responses_tx: mpsc::Sender<MethodResponse>,
-    )
+                                browser_responses_tx: mpsc::Sender<MethodResponse>)
     {
         trace!("Starting to handle messages");
 
-        // TODO: ooh, use iterator magic to split events and method responses here?!
+        // TODO: ooh, use iterator magic to split events and method responses here?! hmm,
+        // I think we'd have to use channels.
         for message in receiver.incoming_messages() {
             match message {
                 Err(error) => {
