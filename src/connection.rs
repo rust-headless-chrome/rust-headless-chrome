@@ -12,13 +12,11 @@ use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
 use crate::protocol;
-use crate::protocol::{CallId, IncomingMessageKind, MethodResponse, IncomingMessage};
+use crate::protocol::{CallId, IncomingMessageKind, Response, IncomingMessage};
 
 use crate::chrome;
 use crate::errors::*;
 use crate::waiting_call_registry;
-
-type Response = Value;
 
 pub struct Connection {
     sender: websocket::sender::Writer<TcpStream>,
@@ -28,7 +26,7 @@ pub struct Connection {
 
 
 impl Connection {
-    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<MethodResponse>) -> Result<Self> {
+    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<Response>) -> Result<Self> {
         let connection = Connection::websocket_connection(&browser_id)?;
 
         let (websocket_receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
@@ -53,8 +51,8 @@ impl Connection {
 
     // TODO: this method is too big
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
-                                target_messages_tx: mpsc::Sender<MethodResponse>,
-                                browser_responses_tx: mpsc::Sender<MethodResponse>)
+                                target_messages_tx: mpsc::Sender<Response>,
+                                browser_responses_tx: mpsc::Sender<Response>)
     {
         trace!("Starting to handle messages");
 
@@ -69,12 +67,8 @@ impl Connection {
                     }
                 }
                 Ok(OwnedMessage::Text(msg)) => {
-                    trace!("Received text message: {:?}", msg);
-                    let response: Response = serde_json::from_str(&msg).unwrap();
-
-                    trace!("response = {:#?}", response);
-
                     let incoming_message: IncomingMessage<IncomingMessageKind> = protocol::parse_raw_message(&msg);
+                    trace!("Received message: {:?}", msg);
 
                     match incoming_message {
                         // TODO: huh, weird, we might not even need to distinguish these!
@@ -154,7 +148,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true).unwrap();
 
-        let (messages_tx, _messages_rx) = mpsc::channel::<super::MethodResponse>();
+        let (messages_tx, _messages_rx) = mpsc::channel::<super::Response>();
 
         let mut conn = super::Connection::new(&chrome.browser_id, messages_tx).unwrap();
 

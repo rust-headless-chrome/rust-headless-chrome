@@ -3,18 +3,10 @@ use serde_json::Value;
 
 pub type CallId = u16;
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct MethodResponse {
-    // TODO: should alias call IDs everywhere
-    pub call_id: CallId,
-    pub result: Value,
-}
-
-
 #[derive(Debug)]
 pub enum IncomingMessageKind {
     Event(Event),
-    MethodResponse(MethodResponse),
+    MethodResponse(Response),
 }
 
 // TODO: custom deserialize?!
@@ -24,10 +16,11 @@ pub enum IncomingMessage<T> {
     FromTarget(T),
 }
 
-#[derive(Deserialize, Debug)]
-struct Response {
-    id: CallId,
-    result: Value,
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct Response {
+    #[serde(rename(deserialize = "id"))]
+    pub call_id: CallId,
+    pub result: Value,
 }
 
 #[derive(Deserialize, Debug)]
@@ -80,8 +73,8 @@ pub fn parse_raw_message(raw_message: &str) -> IncomingMessage<IncomingMessageKi
                 // TODO: DRY
                 let target_response: Response = serde_json::from_str(&response_string).unwrap();
                 dbg!(&target_response);
-                IncomingMessage::FromTarget(IncomingMessageKind::MethodResponse(MethodResponse {
-                    call_id: target_response.id,
+                IncomingMessage::FromTarget(IncomingMessageKind::MethodResponse(Response {
+                    call_id: target_response.call_id,
                     result: target_response.result,
                 }))
             } else {
@@ -90,8 +83,8 @@ pub fn parse_raw_message(raw_message: &str) -> IncomingMessage<IncomingMessageKi
             }
         }
         Message::Response(response) => {
-            IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(MethodResponse {
-                call_id: response.id,
+            IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(Response {
+                call_id: response.call_id,
                 result: response.result,
             }))
         }
