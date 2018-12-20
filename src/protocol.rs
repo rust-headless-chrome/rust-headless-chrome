@@ -11,18 +11,15 @@ pub struct Response {
     pub result: Value,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct MyEvent<P> {
-    // also fail if it's an unknown event name!
-//    pub method: String,
-    // TODO: we'll want to refer to this internally as method name or some such
-    // NOTE: params is the data attached to an event. from user's perspective, we don't need to keep
-    // that name, because it's not even in the public docs for the protocol
-    pub params: P,
-}
 
 mod target {
     use serde::Deserialize;
+    use serde_json::Value;
+
+    #[derive(Deserialize, Debug)]
+    pub struct AttachedToTargetEvent {
+        pub params: AttachedToTargetParams
+    }
 
     #[derive(Deserialize, Debug)]
     pub struct AttachedToTargetParams {
@@ -36,11 +33,27 @@ mod target {
     }
 
     #[derive(Deserialize, Debug)]
+    pub struct ReceivedMessageFromTargetEvent {
+        pub params: ReceivedMessageFromTargetParams
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub struct ReceivedMessageFromTargetParams {
+        #[serde(rename = "sessionId")]
+        #[doc = "Identifier assigned to the session used to send/receive messages."]
+        pub session_id: String,
+        #[serde(rename = "targetId")]
+        pub target_id: String,
+        pub message: String,
+    }
+
+    #[derive(Deserialize, Debug)]
     pub struct TargetInfo {
         #[serde(rename = "targetId")]
         pub target_id: String,
         #[serde(rename = "type")]
-        pub target_type: String, // TODO: enum?
+        pub target_type: String,
+        // TODO: enum?
         #[serde(rename = "title")]
         pub title: String,
         #[serde(rename = "url")]
@@ -62,24 +75,16 @@ mod target {
 #[serde(tag = "method")]
 pub enum EventMessage {
     #[serde(rename = "Target.attachedToTarget")]
-    AttachedToTargetEvent(MyEvent<target::AttachedToTargetParams>),
-    UnknownEvent(MyEvent<Value>)
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Event {
-    // also fail if it's an unknown event name!
-    pub method: String,
-    // TODO: we'll want to refer to this internally as method name or some such
-    // TODO: should be one of predefined Parameter types ... and also have 'method'
-    // NOTE: params is the data attached to an event
-    pub params: Value,
+    AttachedToTarget(target::AttachedToTargetEvent),
+    #[serde(rename = "Target.receivedMessageFromTarget")]
+    ReceivedMessageFromTarget(target::ReceivedMessageFromTargetEvent),
+    UnknownEvent(Value),
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Message {
-    Event(Event),
+    Event(EventMessage),
     Response(Response),
 }
 
@@ -87,6 +92,30 @@ pub enum Message {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn pass_through_channel() {
+        env_logger::try_init().unwrap_or(());
+
+        let attached_to_target_json = json!({
+            "method": "Target.attachedToTarget",
+            "params": {
+                "sessionId": "8BEF122ABAB0C43B5729585A537F424A",
+                "targetInfo": {
+                    "targetId": "26DEBCB2A45BEFC67A84012AC32C8B2A",
+                    "type": "page",
+                    "title": "",
+                    "url": "about:blank",
+                    "attached": true,
+                    "browserContextId": "946423F3D201EFA1A5FCF3462E340C15"
+                },
+                "waitingForDebugger": false
+            }
+        });
+
+        let event: Message = serde_json::from_value(attached_to_target_json).unwrap();
+        dbg!(event);
+    }
 
     #[test]
     fn parse_event_fully() {
@@ -108,18 +137,33 @@ mod tests {
             }
         });
 
+
         dbg!(&attached_to_target_json);
 
         let event: EventMessage = serde_json::from_value(attached_to_target_json).unwrap();
         match event {
-            EventMessage::AttachedToTargetEvent(_) => {
-
-            },
+            EventMessage::AttachedToTarget(_) => {}
             _ => {
                 panic!("bad news");
             }
         }
         dbg!(event);
+
+        let received_target_msg_event = json!({
+            "method": "Target.receivedMessageFromTarget",
+            "params": {
+                "sessionId": "8BEF122ABAB0C43B5729585A537F424A",
+                "message": "{\"id\":43473,\"result\":{\"data\":\"kDEgAABII=\"}}",
+                "targetId": "26DEBCB2A45BEFC67A84012AC32C8B2A"
+            }
+        });
+        let event: EventMessage = serde_json::from_value(received_target_msg_event).unwrap();
+        match event {
+            EventMessage::ReceivedMessageFromTarget(ev) => {
+                dbg!(ev);
+            },
+            _ => { panic!("bad news") }
+        }
     }
 
     #[test]
@@ -138,12 +182,13 @@ mod tests {
         ];
 
         for msg_string in &example_message_strings {
-            let message: super::Message = serde_json::from_str(&msg_string).unwrap();
+            let message: super::Message = parse_raw_message(msg_string.to_string());
             dbg!(message);
         }
     }
 }
 
-pub fn parse_raw_message(raw_message: &str) -> Message {
-    serde_json::from_str(&raw_message).unwrap()
+pub fn parse_raw_message(raw_message: String) -> Message
+{
+    serde_json::from_str(raw_message.as_ref()).unwrap()
 }

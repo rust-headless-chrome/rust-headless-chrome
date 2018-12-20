@@ -12,7 +12,7 @@ use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
 use crate::protocol;
-use crate::protocol::{CallId, Response};
+use crate::protocol::{CallId, Response, EventMessage};
 
 use crate::chrome;
 use crate::errors::*;
@@ -57,13 +57,12 @@ impl Connection {
             match ws_message {
                 Err(error) => {
                     match error {
-                        WebSocketError::NoDataAvailable => { }
+                        WebSocketError::NoDataAvailable => {}
                         _ => { panic!("There was a problem opening the file: {:?}", error) }
                     }
                 }
                 Ok(OwnedMessage::Text(msg)) => {
-                    let message = protocol::parse_raw_message(&msg);
-                    trace!("Browser received message: {:?}", msg);
+                    let message = protocol::parse_raw_message(msg);
 
                     match message {
                         protocol::Message::Response(response) => {
@@ -71,15 +70,14 @@ impl Connection {
                         }
 
                         protocol::Message::Event(event) => {
-                            if &event.method == "Target.receivedMessageFromTarget" {
-                                if let Value::String(target_msg) = event.params["message"].clone() {
-                                    let target_message = protocol::parse_raw_message(&target_msg);
+                            match event {
+                                EventMessage::ReceivedMessageFromTarget(target_message_event) => {
+                                    let target_message = protocol::parse_raw_message(target_message_event.params.message);
                                     target_messages_tx.send(target_message).expect("failed to send to page session");
-                                } else {
-                                    panic!("Got a weird message (not a string) in receivedMessageFromTarget");
                                 }
-                            } else {
-                                trace!("Browser received event: {:?}", event);
+                                _ => {
+                                    trace!("Browser received event: {:?}", event);
+                                }
                             }
                         }
                     }
