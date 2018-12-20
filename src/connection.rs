@@ -1,24 +1,22 @@
 use std::sync::mpsc;
 
+use cdp::{HasCdpCommand, SerializeCdpCommand};
 use log::*;
-
+use serde;
+use serde::de::DeserializeOwned;
+use serde_json::json;
+use serde_json::Value;
 use websocket::{ClientBuilder, Message, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
-
-use serde;
-use serde_json::json;
-use serde::de::DeserializeOwned;
-use serde_json::Value;
-
-use cdp::{HasCdpCommand, SerializeCdpCommand};
-
-use super::errors::*;
 use websocket::WebSocketError;
 
-use super::chrome;
-use super::waiting_call_registry;
-use super::waiting_call_registry::{CallId, MethodResponse};
+use crate::protocol;
+use crate::protocol::{CallId, IncomingMessageKind, MethodResponse, Event, IncomingMessage};
+
+use crate::chrome;
+use crate::errors::*;
+use crate::waiting_call_registry;
 
 type Response = Value;
 
@@ -28,27 +26,6 @@ pub struct Connection {
     call_registry: waiting_call_registry::WaitingCallRegistry,
 }
 
-// this stuff should be in its own module b/c reused by page_session...
-#[derive(Debug)]
-pub struct Event {
-    // TODO: could keep static const list of event names for sanity checking...
-    name: String,
-    params: Value,
-}
-
-
-#[derive(Debug)]
-pub enum IncomingMessageKind {
-    Event(Event),
-    MethodResponse(MethodResponse),
-}
-
-// TODO: custom deserialize?!
-// TODO: Message term overloaded in context of websockets?
-enum IncomingMessage<T> {
-    FromBrowser(T),
-    FromTarget(T),
-}
 
 impl Connection {
     pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<MethodResponse>) -> Result<Self> {
@@ -97,51 +74,7 @@ impl Connection {
 
                     trace!("response = {:#?}", response);
 
-                    let parse_call_id = |response_id| {
-                        match response_id {
-                            Value::Number(num) => {
-                                let error_msg = format!("Call ID is a serde number but can't be made into a CallId: {:?}", num);
-                                Some(num.as_u64().expect(error_msg.as_ref()) as CallId)
-                            }
-                            Value::Null => {
-                                None
-                            }
-                            _ => {
-                                panic!("Weird response ID: not a number or null: {:?}", &response["id"])
-                            }
-                        }
-                    };
-
-                    let browser_call_id: Option<CallId> = parse_call_id(response["id"].clone());
-
-                    let incoming_message: IncomingMessage<IncomingMessageKind> = match browser_call_id {
-                        Some(call_id) => {
-                            // TODO: gross
-                            IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(MethodResponse {
-                                call_id,
-                                result: response["result"].clone(),
-                            }))
-                        }
-                        None => {
-                            let params = &response["params"];
-                            if let Value::String(response_string) = &params["message"] {
-                                // TODO: DRY
-                                let target_response: Response = serde_json::from_str(&response_string).unwrap();
-                                dbg!(&target_response);
-                                let target_call_id = parse_call_id(target_response["id"].clone());
-                                IncomingMessage::FromTarget(IncomingMessageKind::MethodResponse(MethodResponse {
-                                    call_id: target_call_id.expect("Response has message but not call id"),
-                                    result: target_response["result"].clone(),
-                                }))
-                            } else {
-                                IncomingMessage::FromTarget(IncomingMessageKind::Event(Event {
-                                    name: response["method"].to_string(),
-                                    params: response["params"].clone(),
-                                }))
-                                // TODO: it's an event from the target? not sure.
-                            }
-                        }
-                    };
+                    let incoming_message: IncomingMessage<IncomingMessageKind> = protocol::parse_raw_message(&msg);
 
                     match incoming_message {
                         // TODO: huh, weird, we might not even need to distinguish these!

@@ -5,18 +5,12 @@ use std::sync::Mutex;
 
 use serde_json::Value;
 
-pub type CallId = u16;
+use crate::protocol::{CallId, MethodResponse};
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct MethodResponse {
-    // TODO: should alias call IDs everywhere
-    pub call_id: CallId,
-    pub result: Value,
-}
 
 pub struct WaitingCallRegistry {
     calls: Arc<Mutex<HashMap<CallId, mpsc::Sender<MethodResponse>>>>

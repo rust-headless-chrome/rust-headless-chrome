@@ -12,7 +12,7 @@ use super::chrome;
 use super::connection;
 use super::errors::*;
 use super::waiting_call_registry;
-use super::waiting_call_registry::CallId;
+use super::protocol::CallId;
 
 pub struct PageSession {
     session_id: String,

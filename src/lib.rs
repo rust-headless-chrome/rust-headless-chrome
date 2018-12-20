@@ -37,6 +37,7 @@ pub mod chrome;
 pub mod connection;
 pub mod page_session;
 pub mod waiting_call_registry;
+pub mod protocol;
 //pub mod infer_associated;
 //use chrome::{Chrome};
 //use self::errors::{Result};
