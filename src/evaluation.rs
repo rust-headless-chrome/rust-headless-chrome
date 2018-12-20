@@ -42,7 +42,7 @@ fn evaluate_monkey() -> Result<()> {
 //
 //    thread::sleep(time::Duration::from_millis(2000));
 //
-    return Ok(());
+    Ok(())
 }
 
 // core loop: while true, get batch, run batch, output results

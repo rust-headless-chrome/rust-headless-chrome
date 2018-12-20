@@ -51,7 +51,7 @@ impl Chrome {
 
         Ok(Chrome {
             child_process: process,
-            browser_id: browser_id,
+            browser_id,
         })
     }
 

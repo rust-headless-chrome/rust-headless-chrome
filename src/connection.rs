@@ -36,6 +36,7 @@ pub struct Event {
     params: Value,
 }
 
+
 #[derive(Debug)]
 pub enum IncomingMessageKind {
     Event(Event),
@@ -77,18 +78,16 @@ impl Connection {
     fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
                                 target_messages_tx: mpsc::Sender<MethodResponse>,
                                 browser_responses_tx: mpsc::Sender<MethodResponse>,
-    ) -> ()
+    )
     {
         trace!("Starting to handle messages");
 
         // TODO: ooh, use iterator magic to split events and method responses here?!
         for message in receiver.incoming_messages() {
-            trace!("Received a message");
-
             match message {
                 Err(error) => {
                     match error {
-                        WebSocketError::NoDataAvailable => { return (); }
+                        WebSocketError::NoDataAvailable => { }
                         _ => { panic!("There was a problem opening the file: {:?}", error) }
                     }
                 }
@@ -119,7 +118,7 @@ impl Connection {
                         Some(call_id) => {
                             // TODO: gross
                             IncomingMessage::FromBrowser(IncomingMessageKind::MethodResponse(MethodResponse {
-                                call_id: call_id,
+                                call_id,
                                 result: response["result"].clone(),
                             }))
                         }
