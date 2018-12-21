@@ -12,13 +12,10 @@ pub mod events {
     }
 
     #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct AttachedToTargetParams {
-        #[serde(rename = "sessionId")]
-        #[doc = "Identifier assigned to the session used to send/receive messages."]
         pub session_id: String,
-        #[serde(rename = "targetInfo")]
         pub target_info: super::TargetInfo,
-        #[serde(rename = "waitingForDebugger")]
         pub waiting_for_debugger: bool,
     }
 
@@ -28,11 +25,9 @@ pub mod events {
     }
 
     #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct ReceivedMessageFromTargetParams {
-        #[serde(rename = "sessionId")]
-        #[doc = "Identifier assigned to the session used to send/receive messages."]
         pub session_id: String,
-        #[serde(rename = "targetId")]
         pub target_id: String,
         pub message: String,
     }
@@ -44,10 +39,12 @@ pub mod methods {
 
 
     #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshot {
         format: String
     }
     #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshotReturnObject {
         data: String
     }
@@ -60,9 +57,8 @@ pub mod methods {
     #[derive(Serialize)]
     pub struct CreateBrowserContext {}
     #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct CreateBrowserContextReturnObject {
-        #[serde(rename = "browserContextId")]
-        #[doc = "The id of the context created."]
         pub browser_context_id: String,
     }
     impl Method for CreateBrowserContext {
@@ -71,26 +67,23 @@ pub mod methods {
     }
 
     #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
     pub struct CreateTarget {
-        #[serde(rename = "url")]
-        #[doc = "The initial URL the page will be navigated to."]
         pub url: String,
-        #[serde(rename = "width", skip_serializing_if = "Option::is_none")]
+        #[serde(skip_serializing_if = "Option::is_none")]
         #[doc = "Frame width in DIP \\(headless chrome only\\)."]
         pub width: Option<i32>,
-        #[serde(rename = "height", skip_serializing_if = "Option::is_none")]
+        #[serde(skip_serializing_if = "Option::is_none")]
         #[doc = "Frame height in DIP \\(headless chrome only\\)."]
         pub height: Option<i32>,
-        #[serde(rename = "browserContextId", skip_serializing_if = "Option::is_none")]
-        #[doc = "The browser context to create the page in."]
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub browser_context_id: Option<String>,
-        #[serde(rename = "enableBeginFrameControl", skip_serializing_if = "Option::is_none")]
-        #[doc = "<span class=\"stab unstable\">[Experimental]</span> Whether BeginFrames for this target will be controlled via DevTools \\(headless chrome only,\nnot supported on MacOS yet, false by default\\)."]
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub enable_begin_frame_control: Option<bool>,
     }
     #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct CreateTargetReturnObject {
-        #[serde(rename = "targetId")]
         pub target_id: String,
     }
     impl Method for CreateTarget {
@@ -100,15 +93,15 @@ pub mod methods {
 
 
     #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
     pub struct AttachToTarget {
-        #[serde(rename = "targetId")]
         pub target_id: String,
-        #[serde(rename = "flatten", skip_serializing_if = "Option::is_none")]
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub flatten: Option<bool>,
     }
     #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct AttachToTargetReturnObject {
-        #[serde(rename = "sessionId")]
         pub session_id: String,
     }
     impl Method for AttachToTarget {
@@ -119,23 +112,15 @@ pub mod methods {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct TargetInfo {
-    #[serde(rename = "targetId")]
     pub target_id: String,
     #[serde(rename = "type")]
     pub target_type: String,
     // TODO: enum?
-    #[serde(rename = "title")]
     pub title: String,
-    #[serde(rename = "url")]
     pub url: String,
-    #[serde(rename = "attached")]
-    #[doc = "Whether the target has an attached client."]
     pub attached: bool,
-    #[serde(rename = "openerId")]
-    #[doc = "Opener target Id"]
     pub opener_id: Option<String>,
-    #[serde(rename = "browserContextId")]
-    #[doc = "<span class=\"stab unstable\">[Experimental]</span>"]
     pub browser_context_id: Option<String>,
 }
