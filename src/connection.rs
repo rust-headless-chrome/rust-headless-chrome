@@ -30,15 +30,13 @@ impl Connection {
 
         let (websocket_receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
 
-        // TODO: can I clone inside spawn?
-
         let (browser_responses_tx, browser_responses_rx) = mpsc::channel();
         let call_registry = waiting_call_registry::WaitingCallRegistry::new(browser_responses_rx);
 
         let _message_handling_thread = std::thread::spawn(move || {
-            info!("starting msg handling loop");
-            Self::handle_incoming_messages(websocket_receiver, target_messages_tx, browser_responses_tx);
-            info!("quit loop msg handling loop");
+            info!("starting msg dispatching loop");
+            Self::dispatch_incoming_messages(websocket_receiver, target_messages_tx, browser_responses_tx);
+            info!("quit loop msg dispatching loop");
         });
 
         Ok(Connection {
@@ -48,17 +46,16 @@ impl Connection {
         })
     }
 
-    // TODO: this method is too big
-    fn handle_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
-                                target_messages_tx: mpsc::Sender<protocol::Message>,
-                                browser_responses_tx: mpsc::Sender<Response>)
+    fn dispatch_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
+                                  target_messages_tx: mpsc::Sender<protocol::Message>,
+                                  browser_responses_tx: mpsc::Sender<Response>)
     {
         for ws_message in receiver.incoming_messages() {
             match ws_message {
                 Err(error) => {
                     match error {
                         WebSocketError::NoDataAvailable => {}
-                        _ => { panic!("There was a problem opening the file: {:?}", error) }
+                        _ => { panic!("Unhandled WebSocket error: {:?}", error) }
                     }
                 }
                 Ok(OwnedMessage::Text(msg)) => {
@@ -82,7 +79,6 @@ impl Connection {
                         }
                     }
                 }
-                _ => { warn!("Got a weird message..."); }
             }
         }
     }
