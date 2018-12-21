@@ -15,6 +15,8 @@ use super::waiting_call_registry;
 use super::cdtp::{Message, CallId, Response};
 use std::sync::mpsc::{Sender, Receiver};
 
+use super::cdtp::target;
+
 pub struct PageSession {
     session_id: String,
     connection: connection::Connection,
@@ -27,21 +29,16 @@ impl PageSession {
         let (messages_tx, messages_rx) = mpsc::channel();
         let mut conn = super::connection::Connection::new(&browser_id, messages_tx).unwrap();
 
-        let browser_context_id = conn.call_method::<CreateBrowserContextResponse>(&CreateBrowserContextCommand {})?.browser_context_id;
-        let create_target_command = CreateTargetCommand {
-            url: Cow::from("about:blank".to_string()),
+        let browser_context_id = conn.call(target::methods::CreateBrowserContext {})?.browser_context_id;
+        let create_target = target::methods::CreateTarget {
+            url: "about:blank".to_string(),
             width: None,
             height: None,
             browser_context_id: Some(browser_context_id),
             enable_begin_frame_control: None,
         };
-        let target_id = conn.call_method::<CreateTargetResponse>(&create_target_command)?.target_id;
-
-        let response: AttachToTargetResponse = conn.call_method(&cdp::target::AttachToTargetCommand {
-            target_id,
-            flatten: Some(false),
-        })?;
-        let session_id = response.session_id.to_string();
+        let target_id = conn.call(create_target)?.target_id;
+        let session_id = conn.call(target::methods::AttachToTarget { target_id, flatten: None })?.session_id;
 
         let (responses_tx, responses_rx) = mpsc::channel();
 

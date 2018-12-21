@@ -1,25 +1,52 @@
 use serde;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 pub type CallId = u16;
+
+#[derive(Serialize)]
+pub struct MethodCall<T> {
+    #[serde(rename="method")]
+    method_name: String,
+    pub id: CallId,
+    params: T,
+}
+
+// TODO: what about methods with no ReturnObject?
+pub trait Method {
+    const NAME: &'static str;
+
+    type ReturnObject: serde::de::DeserializeOwned; // have this = something?
+
+    fn to_method_call(self) -> MethodCall<Self>
+        where Self: std::marker::Sized
+    {
+        let call_id = rand::random::<CallId>();
+        MethodCall { id: call_id, params: self, method_name: Self::NAME.to_string() }
+    }
+//    fn call(&self, mut session: impl Session) -> Self::ReturnObject;
+}
+
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct Response {
     #[serde(rename(deserialize = "id"))]
     pub call_id: CallId,
+    // TODO: use enum of all possible return objects, like we do for events
     pub result: Value,
 }
 
 pub mod target;
 
+// TODO: could break down module by module with nested enums...
+
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method")]
 pub enum EventMessage {
     #[serde(rename = "Target.attachedToTarget")]
-    AttachedToTarget(target::AttachedToTargetEvent),
+    AttachedToTarget(target::events::AttachedToTargetEvent),
     #[serde(rename = "Target.receivedMessageFromTarget")]
-    ReceivedMessageFromTarget(target::ReceivedMessageFromTargetEvent),
+    ReceivedMessageFromTarget(target::events::ReceivedMessageFromTargetEvent),
     UnknownEvent(Value),
 }
 

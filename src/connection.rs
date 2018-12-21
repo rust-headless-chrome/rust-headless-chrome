@@ -3,6 +3,7 @@ use std::sync::mpsc;
 use cdp::{HasCdpCommand, SerializeCdpCommand};
 use log::*;
 use serde;
+use serde::{Deserialize};
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use websocket::{ClientBuilder, OwnedMessage};
@@ -59,6 +60,7 @@ impl Connection {
                 }
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
+                        trace!("Raw message: {:?}", message_string);
                         let message = cdtp::parse_raw_message(message_string);
 
                         match message {
@@ -100,6 +102,22 @@ impl Connection {
         Ok(client)
     }
 
+    pub fn call<C>(&mut self, method: C) -> Result<C::ReturnObject>
+        where C: cdtp::Method + serde::Serialize {
+        let call = method.to_method_call();
+        let message = websocket::Message::text(serde_json::to_string(&call).unwrap());
+
+        self.sender.send_message(&message).unwrap();
+
+        let response_rx = self.call_registry.register_call(call.id);
+
+        let response = response_rx.recv().unwrap();
+
+        let result: C::ReturnObject = serde_json::from_value(response.result).unwrap();
+
+        Ok(result)
+    }
+
     pub fn call_method<'a, R>(&mut self, command: &R::Command) -> Result<R>
         where R: DeserializeOwned + HasCdpCommand<'a>,
               <R as cdp::HasCdpCommand<'a>>::Command: serde::ser::Serialize + SerializeCdpCommand
@@ -137,11 +155,16 @@ mod tests {
 
         let mut conn = super::Connection::new(&chrome.browser_id, messages_tx).unwrap();
 
-        let _response1 = conn.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
-        let _response2 = conn.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
-        let response3 = conn.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
-        let first_target = &response3.target_infos[0];
+        let call = super::cdtp::target::methods::CreateBrowserContext {};
+        let r1 = conn.call(call);
 
-        assert_eq!("about:blank", first_target.url);
+        dbg!(r1);
+
+//        let _response1 = conn.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
+//        let _response2 = conn.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
+//        let response3 = conn.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
+//        let first_target = &response3.target_infos[0];
+
+//        assert_eq!("about:blank", first_target.url);
     }
 }
