@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
-use crate::protocol::{CallId, Response};
+use crate::cdtp::{CallId, Response};
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;

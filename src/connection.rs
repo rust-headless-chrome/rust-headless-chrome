@@ -5,14 +5,13 @@ use log::*;
 use serde;
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use serde_json::Value;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
-use crate::protocol;
-use crate::protocol::{CallId, Response, EventMessage};
+use crate::cdtp;
+use crate::cdtp::{CallId, Response, EventMessage};
 
 use crate::chrome;
 use crate::errors::*;
@@ -25,7 +24,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<protocol::Message>) -> Result<Self> {
+    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<cdtp::Message>) -> Result<Self> {
         let connection = Connection::websocket_connection(&browser_id)?;
 
         let (websocket_receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
@@ -47,7 +46,7 @@ impl Connection {
     }
 
     fn dispatch_incoming_messages(mut receiver: websocket::receiver::Reader<TcpStream>,
-                                  target_messages_tx: mpsc::Sender<protocol::Message>,
+                                  target_messages_tx: mpsc::Sender<cdtp::Message>,
                                   browser_responses_tx: mpsc::Sender<Response>)
     {
         for ws_message in receiver.incoming_messages() {
@@ -60,17 +59,17 @@ impl Connection {
                 }
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
-                        let message = protocol::parse_raw_message(message_string);
+                        let message = cdtp::parse_raw_message(message_string);
 
                         match message {
-                            protocol::Message::Response(response) => {
+                            cdtp::Message::Response(response) => {
                                 browser_responses_tx.send(response).expect("failed to send to message to page session");
                             }
 
-                            protocol::Message::Event(event) => {
+                            cdtp::Message::Event(event) => {
                                 match event {
                                     EventMessage::ReceivedMessageFromTarget(target_message_event) => {
-                                        let target_message = protocol::parse_raw_message(target_message_event.params.message);
+                                        let target_message = cdtp::parse_raw_message(target_message_event.params.message);
                                         target_messages_tx.send(target_message).expect("failed to send to page session");
                                     }
                                     _ => {
@@ -134,7 +133,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true).unwrap();
 
-        let (messages_tx, _messages_rx) = mpsc::channel::<crate::protocol::Message>();
+        let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
 
         let mut conn = super::Connection::new(&chrome.browser_id, messages_tx).unwrap();
 

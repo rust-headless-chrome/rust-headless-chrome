@@ -12,7 +12,7 @@ use super::chrome;
 use super::connection;
 use super::errors::*;
 use super::waiting_call_registry;
-use super::protocol::{Message, CallId, Response};
+use super::cdtp::{Message, CallId, Response};
 use std::sync::mpsc::{Sender, Receiver};
 
 pub struct PageSession {
