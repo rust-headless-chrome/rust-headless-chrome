@@ -2,7 +2,11 @@ use serde;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
+pub mod target;
+pub mod page;
+
 pub type CallId = u16;
+
 
 #[derive(Serialize)]
 pub struct MethodCall<T> {
@@ -16,7 +20,7 @@ pub struct MethodCall<T> {
 pub trait Method {
     const NAME: &'static str;
 
-    type ReturnObject: serde::de::DeserializeOwned; // have this = something?
+    type ReturnObject: serde::de::DeserializeOwned + std::fmt::Debug; // have this = something?
 
     fn to_method_call(self) -> MethodCall<Self>
         where Self: std::marker::Sized
@@ -35,8 +39,6 @@ pub struct Response {
     // TODO: use enum of all possible return objects, like we do for events
     pub result: Value,
 }
-
-pub mod target;
 
 // TODO: could break down module by module with nested enums...
 

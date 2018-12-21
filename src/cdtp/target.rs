@@ -1,11 +1,10 @@
-use serde::{Serialize, Deserialize};
-
 // TODO: for when this works with IntelliJ
 //pub use events::*;
 //pub use methods::*;
 
 pub mod events {
-    use serde::{Deserialize};
+    use serde::Deserialize;
+
     #[derive(Deserialize, Debug)]
     pub struct AttachedToTargetEvent {
         pub params: AttachedToTargetParams
@@ -13,9 +12,22 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
+    pub struct TargetInfo {
+        pub target_id: String,
+        #[serde(rename = "type")]
+        pub target_type: String,
+        // TODO: enum?
+        pub title: String,
+        pub url: String,
+        pub attached: bool,
+        pub opener_id: Option<String>,
+        pub browser_context_id: Option<String>,
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct AttachedToTargetParams {
         pub session_id: String,
-        pub target_info: super::TargetInfo,
+        pub target_info: TargetInfo,
         pub waiting_for_debugger: bool,
     }
 
@@ -34,9 +46,9 @@ pub mod events {
 }
 
 pub mod methods {
-    use serde::{Serialize, Deserialize};
-    use crate::cdtp::{Method};
+    use serde::{Deserialize, Serialize};
 
+    use crate::cdtp::Method;
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -109,18 +121,22 @@ pub mod methods {
         type ReturnObject = AttachToTargetReturnObject;
     }
 
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SendMessageToTarget {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub target_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub session_id: Option<String>,
+        pub message: String,
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SendMessageToTargetReturnObject {}
+    impl Method for SendMessageToTarget {
+        const NAME: &'static str = "Target.sendMessageToTarget";
+        type ReturnObject = SendMessageToTargetReturnObject;
+    }
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct TargetInfo {
-    pub target_id: String,
-    #[serde(rename = "type")]
-    pub target_type: String,
-    // TODO: enum?
-    pub title: String,
-    pub url: String,
-    pub attached: bool,
-    pub opener_id: Option<String>,
-    pub browser_context_id: Option<String>,
-}
