@@ -11,7 +11,7 @@ pub struct Response {
     pub result: Value,
 }
 
-use target;
+pub mod target;
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method")]
