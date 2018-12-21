@@ -58,25 +58,29 @@ impl Connection {
                         _ => { panic!("Unhandled WebSocket error: {:?}", error) }
                     }
                 }
-                Ok(OwnedMessage::Text(msg)) => {
-                    let message = protocol::parse_raw_message(msg);
+                Ok(message) => {
+                    if let OwnedMessage::Text(message_string) = message {
+                        let message = protocol::parse_raw_message(message_string);
 
-                    match message {
-                        protocol::Message::Response(response) => {
-                            browser_responses_tx.send(response).expect("failed to send to message to page session");
-                        }
+                        match message {
+                            protocol::Message::Response(response) => {
+                                browser_responses_tx.send(response).expect("failed to send to message to page session");
+                            }
 
-                        protocol::Message::Event(event) => {
-                            match event {
-                                EventMessage::ReceivedMessageFromTarget(target_message_event) => {
-                                    let target_message = protocol::parse_raw_message(target_message_event.params.message);
-                                    target_messages_tx.send(target_message).expect("failed to send to page session");
-                                }
-                                _ => {
-                                    trace!("Browser received event: {:?}", event);
+                            protocol::Message::Event(event) => {
+                                match event {
+                                    EventMessage::ReceivedMessageFromTarget(target_message_event) => {
+                                        let target_message = protocol::parse_raw_message(target_message_event.params.message);
+                                        target_messages_tx.send(target_message).expect("failed to send to page session");
+                                    }
+                                    _ => {
+                                        trace!("Browser received event: {:?}", event);
+                                    }
                                 }
                             }
                         }
+                    } else {
+                        panic!("Got a weird message: {:?}", message)
                     }
                 }
             }
