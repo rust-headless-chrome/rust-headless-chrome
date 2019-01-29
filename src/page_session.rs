@@ -69,7 +69,7 @@ impl PageSession {
         };
 
         session.call(Enable {}).unwrap();
-//        session.call(SetLifecycleEventsEnabled { enabled: true }).unwrap();
+        session.call(SetLifecycleEventsEnabled { enabled: true }).unwrap();
 
         Ok(session)
     }
@@ -80,14 +80,18 @@ impl PageSession {
                 Message::Event(event) => {
                     trace!("PageSession received event: {:?}", event);
                     match event {
-                        // TODO: use lifecycle events
-                        Event::FrameStartedLoading(stopped_loading_event) => {
-                            let mut nav = navigating.lock().unwrap();
-                            *nav = true;
-                        }
-                        Event::FrameStoppedLoading(stopped_loading_event) => {
-                            let mut nav = navigating.lock().unwrap();
-                            *nav = false;
+                        Event::LifecycleEvent(lifecycle_event) => {
+                            match lifecycle_event.params.name.as_ref() {
+                                "networkAlmostIdle" => {
+                                    let mut nav = navigating.lock().unwrap();
+                                    *nav = false;
+                                }
+                                "init" => {
+                                    let mut nav = navigating.lock().unwrap();
+                                    *nav = true;
+                                }
+                                _ => {}
+                            }
                         }
                         _ => {}
                     }

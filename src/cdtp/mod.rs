@@ -57,6 +57,8 @@ pub enum Event {
     FrameNavigated(page::events::FrameNavigatedEvent),
     #[serde(rename = "Page.frameStoppedLoading")]
     FrameStoppedLoading(page::events::FrameStoppedLoadingEvent),
+    #[serde(rename = "Page.lifecycleEvent")]
+    LifecycleEvent(page::events::LifecycleEvent),
 }
 
 #[derive(Deserialize, Debug)]

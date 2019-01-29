@@ -15,6 +15,19 @@ pub struct Frame {
 
 pub mod events {
     use serde::{Deserialize};
+    #[derive(Deserialize, Debug)]
+    pub struct LifecycleEvent {
+        pub params: LifecycleParams
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct LifecycleParams {
+        pub frame_id: String,
+        pub loader_id: String,
+        pub name: String,
+        // TODO: numbers should be type aliased! like, the procotol just calls for 'number'
+        pub timestamp: f32,
+    }
 
     #[derive(Deserialize, Debug)]
     pub struct FrameStartedLoadingEvent {
