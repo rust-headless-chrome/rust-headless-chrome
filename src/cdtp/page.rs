@@ -1,21 +1,91 @@
+pub mod events {
+    use serde::{Deserialize};
+
+    #[derive(Deserialize, Debug)]
+    pub struct FrameStartedLoadingEvent {
+        pub params: FrameStartedLoadingParams
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct FrameStartedLoadingParams {
+        pub frame_id: String,
+    }
+
+
+
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Frame {
+        pub id: String,
+        pub parent_id: Option<String>,
+        pub loader_id: String,
+        pub name: Option<String>,
+        pub url: String,
+        pub security_origin: String,
+        pub mime_type: String,
+        pub unreachable_url: Option<String>
+    }
+    #[derive(Deserialize, Debug)]
+    pub struct FrameNavigatedEvent {
+        pub params: FrameNavigatedParams
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct FrameNavigatedParams {
+        pub frame: Frame,
+    }
+
+}
+
 pub mod methods {
     use serde::{Deserialize, Serialize};
     use crate::cdtp::Method;
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshot {
         pub format: String
     }
-
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshotReturnObject {
         pub data: String
     }
-
     impl Method for CaptureScreenshot {
         const NAME: &'static str = "Page.captureScreenshot";
         type ReturnObject = CaptureScreenshotReturnObject;
     }
+
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Navigate {
+        pub url: String
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct NavigateReturnObject {
+        pub frame_id: String,
+        pub loader_id: Option<String>,
+        pub error_text: Option<String>
+    }
+    impl Method for Navigate {
+        const NAME: &'static str = "Page.navigate";
+        type ReturnObject = NavigateReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Enable {}
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct EnableReturnObject {}
+    impl Method for Enable {
+        const NAME: &'static str = "Page.enable";
+        type ReturnObject = EnableReturnObject;
+    }
+
+
+
 }
+

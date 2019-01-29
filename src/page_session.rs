@@ -89,6 +89,7 @@ impl PageSession {
 #[cfg(test)]
 mod tests {
     use crate::cdtp::page;
+    use crate::cdtp::page::methods::*;
 
     #[test]
     fn session_methods() {
@@ -100,18 +101,25 @@ mod tests {
 
         let mut session = super::PageSession::new(&chrome.browser_id).unwrap();
 
-        let capture_screenshot = page::methods::CaptureScreenshot {
-            format: "png".to_string()
-        };
-        let image_data = session.call(capture_screenshot).unwrap().data;
+        let enable = Enable {};
+        let enable_result = session.call(enable).unwrap();
+        dbg!(enable_result);
 
-        dbg!(image_data);
+        let navigate = Navigate { url: "https://wikipedia.org".to_string() };
+        let nav_result = session.call(navigate).unwrap();
+        dbg!(nav_result);
+
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+//        let capture_screenshot = CaptureScreenshot { format: "png".to_string() };
+//        let image_data = session.call(capture_screenshot).unwrap().data;
+//
+//        dbg!(image_data);
 
 //        let comm = cdp::page::EnableCommand {};
 ////        dbg!(super::PageSession::command_for_session(session.session_id, &comm).unwrap());
 //        let resp = session.call_method::<cdp::page::EnableResponse>(&comm);
 //        dbg!(resp);
-//        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(1000));
 
 //        session.goto("https://example.com");
     }

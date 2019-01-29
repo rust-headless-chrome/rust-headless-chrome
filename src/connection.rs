@@ -54,24 +54,29 @@ impl Connection {
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
                         trace!("Raw message: {:?}", message_string);
-                        let message = cdtp::parse_raw_message(message_string);
+                        if let Ok(message) = cdtp::parse_raw_message(message_string) {
+                            match message {
+                                cdtp::Message::Response(response) => {
+                                    browser_responses_tx.send(response).expect("failed to send to message to page session");
+                                }
 
-                        match message {
-                            cdtp::Message::Response(response) => {
-                                browser_responses_tx.send(response).expect("failed to send to message to page session");
-                            }
-
-                            cdtp::Message::Event(event) => {
-                                match event {
-                                    EventMessage::ReceivedMessageFromTarget(target_message_event) => {
-                                        let target_message = cdtp::parse_raw_message(target_message_event.params.message);
-                                        target_messages_tx.send(target_message).expect("failed to send to page session");
-                                    }
-                                    _ => {
-                                        trace!("Browser received event: {:?}", event);
+                                cdtp::Message::Event(event) => {
+                                    match event {
+                                        EventMessage::ReceivedMessageFromTarget(target_message_event) => {
+                                            if let Ok(target_message) = cdtp::parse_raw_message(target_message_event.params.message) {
+                                                target_messages_tx.send(target_message).expect("failed to send to page session");
+                                            } else {
+                                                debug!("Message from target isn't recognised");
+                                            }
+                                        }
+                                        _ => {
+                                            trace!("Browser received event: {:?}", event);
+                                        }
                                     }
                                 }
                             }
+                        } else {
+                            debug!("Incoming message isn't recognised as event or method response");
                         }
                     } else {
                         panic!("Got a weird message: {:?}", message)

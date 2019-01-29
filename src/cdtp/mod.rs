@@ -5,6 +5,8 @@ use serde_json::Value;
 pub mod target;
 pub mod page;
 
+use crate::errors::*;
+
 pub type CallId = u16;
 
 
@@ -49,7 +51,10 @@ pub enum EventMessage {
     AttachedToTarget(target::events::AttachedToTargetEvent),
     #[serde(rename = "Target.receivedMessageFromTarget")]
     ReceivedMessageFromTarget(target::events::ReceivedMessageFromTargetEvent),
-    UnknownEvent(Value),
+    #[serde(rename = "Page.frameStartedLoading")]
+    FrameStartedLoading(page::events::FrameStartedLoadingEvent),
+    #[serde(rename = "Page.frameNavigated")]
+    FrameNavigated(page::events::FrameNavigatedEvent),
 }
 
 #[derive(Deserialize, Debug)]
@@ -153,13 +158,14 @@ mod tests {
         ];
 
         for msg_string in &example_message_strings {
-            let message: super::Message = parse_raw_message(msg_string.to_string());
+            let message: super::Message = parse_raw_message(msg_string.to_string()).unwrap();
             dbg!(message);
         }
     }
 }
 
-pub fn parse_raw_message(raw_message: String) -> Message
+pub fn parse_raw_message(raw_message: String) -> Result<Message>
 {
-    serde_json::from_str(raw_message.as_ref()).unwrap()
+    dbg!(&raw_message);
+    serde_json::from_str::<Message>(raw_message.as_ref()).chain_err(|| raw_message)
 }
