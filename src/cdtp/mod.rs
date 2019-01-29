@@ -46,7 +46,7 @@ pub struct Response {
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method")]
-pub enum EventMessage {
+pub enum Event {
     #[serde(rename = "Target.attachedToTarget")]
     AttachedToTarget(target::events::AttachedToTargetEvent),
     #[serde(rename = "Target.receivedMessageFromTarget")]
@@ -55,12 +55,14 @@ pub enum EventMessage {
     FrameStartedLoading(page::events::FrameStartedLoadingEvent),
     #[serde(rename = "Page.frameNavigated")]
     FrameNavigated(page::events::FrameNavigatedEvent),
+    #[serde(rename = "Page.frameStoppedLoading")]
+    FrameStoppedLoading(page::events::FrameStoppedLoadingEvent),
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Message {
-    Event(EventMessage),
+    Event(Event),
     Response(Response),
 }
 
@@ -116,9 +118,9 @@ mod tests {
 
         dbg!(&attached_to_target_json);
 
-        let event: EventMessage = serde_json::from_value(attached_to_target_json).unwrap();
+        let event: Event = serde_json::from_value(attached_to_target_json).unwrap();
         match event {
-            EventMessage::AttachedToTarget(_) => {}
+            Event::AttachedToTarget(_) => {}
             _ => {
                 panic!("bad news");
             }
@@ -133,9 +135,9 @@ mod tests {
                 "targetId": "26DEBCB2A45BEFC67A84012AC32C8B2A"
             }
         });
-        let event: EventMessage = serde_json::from_value(received_target_msg_event).unwrap();
+        let event: Event = serde_json::from_value(received_target_msg_event).unwrap();
         match event {
-            EventMessage::ReceivedMessageFromTarget(ev) => {
+            Event::ReceivedMessageFromTarget(ev) => {
                 dbg!(ev);
             },
             _ => { panic!("bad news") }

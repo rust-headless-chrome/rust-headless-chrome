@@ -8,7 +8,7 @@ use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
 use crate::cdtp;
-use crate::cdtp::{EventMessage, Response};
+use crate::cdtp::{Event, Response};
 use crate::chrome;
 use crate::errors::*;
 use crate::waiting_call_registry;
@@ -62,7 +62,7 @@ impl Connection {
 
                                 cdtp::Message::Event(event) => {
                                     match event {
-                                        EventMessage::ReceivedMessageFromTarget(target_message_event) => {
+                                        Event::ReceivedMessageFromTarget(target_message_event) => {
                                             let raw_message = target_message_event.params.message;
                                             if let Ok(target_message) = cdtp::parse_raw_message(raw_message.clone()) {
                                                 target_messages_tx.send(target_message).expect("failed to send to page session");

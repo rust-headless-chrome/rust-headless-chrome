@@ -5,8 +5,10 @@ use log::*;
 use serde;
 
 use crate::cdtp;
-use crate::cdtp::{Message, Response};
+use crate::cdtp::{Message, Response, Event};
 use crate::cdtp::target;
+use crate::cdtp::page;
+use crate::cdtp::page::methods::*;
 use crate::chrome;
 use crate::connection;
 use crate::errors::*;
@@ -18,6 +20,8 @@ pub struct PageSession {
     session_id: String,
     connection: connection::Connection,
     call_registry: waiting_call_registry::WaitingCallRegistry,
+    main_frame_id: String,
+    navigating: bool
 }
 
 
@@ -35,26 +39,44 @@ impl PageSession {
             enable_begin_frame_control: None,
         };
         let target_id = conn.call_method(create_target)?.target_id;
-        let session_id = conn.call_method(target::methods::AttachToTarget { target_id, flatten: None })?.session_id;
+        let session_id = conn.call_method(target::methods::AttachToTarget {
+            target_id: target_id.clone(),
+            flatten: None
+        })?.session_id;
 
         let (responses_tx, responses_rx) = mpsc::channel();
 
+        let (events_tx, events_rx) = mpsc::channel();
+
         std::thread::spawn(move || {
             info!("starting msg handling loop");
-            Self::handle_incoming_messages(messages_rx, responses_tx);
+            Self::handle_incoming_messages(messages_rx, responses_tx, events_tx);
             info!("quit loop msg handling loop");
         });
 
         let call_registry = waiting_call_registry::WaitingCallRegistry::new(responses_rx);
 
-        Ok(PageSession { session_id, connection: conn, call_registry })
+        let mut session = PageSession {
+            session_id,
+            connection: conn,
+            call_registry,
+            main_frame_id: target_id,
+            // NOTE: this might have to updated if we allow navigating as part of page creation
+            navigating: false
+        };
+
+        session.call(Enable {}).unwrap();
+        session.call(SetLifecycleEventsEnabled { enabled: true }).unwrap();
+
+        Ok(session)
     }
 
-    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>) {
+    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>, events_tx: Sender<Event>) {
         for message in messages_rx {
             match message {
                 Message::Event(event) => {
                     trace!("PageSession received event: {:?}", event);
+//                    events_tx.send(event).unwrap();
                 },
                 Message::Response(response) => {
                    responses_tx.send(response).unwrap();
@@ -108,17 +130,10 @@ mod tests {
         let frame_tree_result = session.call(get_frame_tree).unwrap();
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
-        let enable = Enable {};
-        let enable_result = session.call(enable).unwrap();
 
         let navigate = Navigate { url: "https://wikipedia.org".to_string() };
         let nav_result = session.call(navigate).unwrap();
         std::thread::sleep(std::time::Duration::from_millis(1000));
-
-        let navigate = Navigate { url: "https://wikipedia.org".to_string() };
-        let nav_result = session.call(navigate).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(1000));
-
 
         // something like:
         // session.on_event(FrameStoppedLoading)

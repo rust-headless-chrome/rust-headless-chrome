@@ -35,6 +35,17 @@ pub mod events {
     pub struct FrameNavigatedParams {
         pub frame: super::Frame,
     }
+
+
+    #[derive(Deserialize, Debug)]
+    pub struct FrameStoppedLoadingEvent {
+        pub params: FrameStoppedLoadingParams
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct FrameStoppedLoadingParams {
+        pub frame_id: String,
+    }
 }
 
 pub mod methods {
@@ -56,6 +67,20 @@ pub mod methods {
         type ReturnObject = CaptureScreenshotReturnObject;
     }
 
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetLifecycleEventsEnabled {
+        pub enabled: bool
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetLifecycleEventsEnabledReturnObject {
+
+    }
+    impl Method for SetLifecycleEventsEnabled {
+        const NAME: &'static str = "Page.setLifecycleEventsEnabled";
+        type ReturnObject = SetLifecycleEventsEnabledReturnObject;
+    }
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
