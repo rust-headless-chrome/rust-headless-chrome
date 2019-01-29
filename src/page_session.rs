@@ -12,6 +12,8 @@ use crate::connection;
 use crate::errors::*;
 use crate::waiting_call_registry;
 
+// TODO: could have a better name like ... tab?
+
 pub struct PageSession {
     session_id: String,
     connection: connection::Connection,
@@ -84,6 +86,10 @@ impl PageSession {
 
         Ok(result)
     }
+
+    pub fn navigate_to(&mut self, url: &str) {
+
+    }
 }
 
 #[cfg(test)]
@@ -96,20 +102,33 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true).unwrap();
 
-        // TODO: test you can make two sessions from one chrome thing!
-        // inspect headfully at first!
-
         let mut session = super::PageSession::new(&chrome.browser_id).unwrap();
+
+        let get_frame_tree = GetFrameTree {};
+        let frame_tree_result = session.call(get_frame_tree).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(1000));
 
         let enable = Enable {};
         let enable_result = session.call(enable).unwrap();
-        dbg!(enable_result);
 
         let navigate = Navigate { url: "https://wikipedia.org".to_string() };
         let nav_result = session.call(navigate).unwrap();
-        dbg!(nav_result);
-
         std::thread::sleep(std::time::Duration::from_millis(1000));
+
+        let navigate = Navigate { url: "https://wikipedia.org".to_string() };
+        let nav_result = session.call(navigate).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+
+
+        // something like:
+        // session.on_event(FrameStoppedLoading)
+        // wait until we see a framestoppedloading event?
+
+        // can we start 'listening' to copies of events just before sending navigate, and then iterate through those?
+
+        // do we want a queue of incoming events, and 'wait for' means popping off one by one until we find the one we want?
+        // but whatever if you want to wait on two different ones? you'd be discarding it.
+
 //        let capture_screenshot = CaptureScreenshot { format: "png".to_string() };
 //        let image_data = session.call(capture_screenshot).unwrap().data;
 //

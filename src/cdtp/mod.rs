@@ -166,6 +166,5 @@ mod tests {
 
 pub fn parse_raw_message(raw_message: String) -> Result<Message>
 {
-    dbg!(&raw_message);
     serde_json::from_str::<Message>(raw_message.as_ref()).chain_err(|| raw_message)
 }

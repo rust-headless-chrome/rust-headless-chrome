@@ -53,7 +53,7 @@ impl Connection {
                 }
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
-                        trace!("Raw message: {:?}", message_string);
+//                        trace!("Raw message: {:?}", message_string);
                         if let Ok(message) = cdtp::parse_raw_message(message_string) {
                             match message {
                                 cdtp::Message::Response(response) => {
@@ -63,10 +63,11 @@ impl Connection {
                                 cdtp::Message::Event(event) => {
                                     match event {
                                         EventMessage::ReceivedMessageFromTarget(target_message_event) => {
-                                            if let Ok(target_message) = cdtp::parse_raw_message(target_message_event.params.message) {
+                                            let raw_message = target_message_event.params.message;
+                                            if let Ok(target_message) = cdtp::parse_raw_message(raw_message.clone()) {
                                                 target_messages_tx.send(target_message).expect("failed to send to page session");
                                             } else {
-                                                debug!("Message from target isn't recognised");
+                                                debug!("Message from target isn't recognised: {:?}", raw_message);
                                             }
                                         }
                                         _ => {
