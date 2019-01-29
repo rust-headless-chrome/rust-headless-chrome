@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::mpsc;
 use std::sync::Mutex;
+use std::sync::mpsc;
 
 use crate::cdtp::{CallId, Response};
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 
@@ -21,7 +23,7 @@ pub struct PageSession {
     connection: connection::Connection,
     call_registry: waiting_call_registry::WaitingCallRegistry,
     main_frame_id: String,
-    navigating: bool
+    navigating: Arc<Mutex<bool>>,
 }
 
 
@@ -41,16 +43,17 @@ impl PageSession {
         let target_id = conn.call_method(create_target)?.target_id;
         let session_id = conn.call_method(target::methods::AttachToTarget {
             target_id: target_id.clone(),
-            flatten: None
+            flatten: None,
         })?.session_id;
 
         let (responses_tx, responses_rx) = mpsc::channel();
 
-        let (events_tx, events_rx) = mpsc::channel();
+        let navigating = Arc::new(Mutex::new(false));
+        let navigating_clone = Arc::clone(&navigating);
 
         std::thread::spawn(move || {
             info!("starting msg handling loop");
-            Self::handle_incoming_messages(messages_rx, responses_tx, events_tx);
+            Self::handle_incoming_messages(messages_rx, responses_tx, navigating_clone);
             info!("quit loop msg handling loop");
         });
 
@@ -62,25 +65,37 @@ impl PageSession {
             call_registry,
             main_frame_id: target_id,
             // NOTE: this might have to updated if we allow navigating as part of page creation
-            navigating: false
+            navigating,
         };
 
         session.call(Enable {}).unwrap();
-        session.call(SetLifecycleEventsEnabled { enabled: true }).unwrap();
+//        session.call(SetLifecycleEventsEnabled { enabled: true }).unwrap();
 
         Ok(session)
     }
 
-    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>, events_tx: Sender<Event>) {
+    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>, navigating: Arc<Mutex<bool>>) {
         for message in messages_rx {
             match message {
                 Message::Event(event) => {
                     trace!("PageSession received event: {:?}", event);
+                    match event {
+                        // TODO: use lifecycle events
+                        Event::FrameStartedLoading(stopped_loading_event) => {
+                            let mut nav = navigating.lock().unwrap();
+                            *nav = true;
+                        }
+                        Event::FrameStoppedLoading(stopped_loading_event) => {
+                            let mut nav = navigating.lock().unwrap();
+                            *nav = false;
+                        }
+                        _ => {}
+                    }
 //                    events_tx.send(event).unwrap();
-                },
+                }
                 Message::Response(response) => {
-                   responses_tx.send(response).unwrap();
-                },
+                    responses_tx.send(response).unwrap();
+                }
             }
         }
     }
@@ -93,7 +108,7 @@ impl PageSession {
         let target_method = target::methods::SendMessageToTarget {
             target_id: None,
             session_id: Some(self.session_id.clone()),
-            message
+            message,
         };
 
         self.connection.call_method(target_method).unwrap();
@@ -109,9 +124,7 @@ impl PageSession {
         Ok(result)
     }
 
-    pub fn navigate_to(&mut self, url: &str) {
-
-    }
+    pub fn navigate_to(&mut self, url: &str) {}
 }
 
 #[cfg(test)]
@@ -128,11 +141,27 @@ mod tests {
 
         let get_frame_tree = GetFrameTree {};
         let frame_tree_result = session.call(get_frame_tree).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(1000));
-
 
         let navigate = Navigate { url: "https://wikipedia.org".to_string() };
         let nav_result = session.call(navigate).unwrap();
+
+        println!("waiting to start navigating");
+        // wait for navigating to go to true
+        loop {
+            if (*session.navigating.lock().unwrap()) {
+                break;
+            }
+        }
+        println!("started navigating");
+
+        // wait for navigating to go to false
+        loop {
+            if (!*session.navigating.lock().unwrap()) {
+                break;
+            }
+        }
+
+        println!("done navigating");
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
         // something like:
@@ -153,7 +182,6 @@ mod tests {
 ////        dbg!(super::PageSession::command_for_session(session.session_id, &comm).unwrap());
 //        let resp = session.call_method::<cdp::page::EnableResponse>(&comm);
 //        dbg!(resp);
-        std::thread::sleep(std::time::Duration::from_millis(1000));
 
 //        session.goto("https://example.com");
     }
