@@ -1,6 +1,6 @@
 [package]
-name = "myws"
-version = "0.1.0"
+name = "headless_chrome"
+version = "0.0.1"
 authors = ["Alistair Roche <roche.a@gmail.com>"]
 edition = "2018"
 
@@ -13,14 +13,8 @@ serde_derive = "1"
 error-chain="0.12.0"
 log = "0.4.5"
 env_logger = "0.5.13"
-futures = "0.1.24"
 rand = "0.6"
 
 [lib]
 name = "lib"
 path = "src/lib.rs"
-
-[[bin]]
-name = "mybin"
-path = "src/main.rs"
-
