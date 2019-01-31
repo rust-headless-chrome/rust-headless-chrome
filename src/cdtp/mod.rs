@@ -4,6 +4,7 @@ use serde_json::Value;
 
 pub mod target;
 pub mod page;
+pub mod dom;
 
 use crate::errors::*;
 

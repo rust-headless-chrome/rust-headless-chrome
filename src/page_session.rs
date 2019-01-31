@@ -128,12 +128,36 @@ impl PageSession {
         Ok(result)
     }
 
-    pub fn navigate_to(&mut self, url: &str) {}
+    // TODO: error handling
+    pub fn navigate_to(&mut self, url: &str) {
+        let nav_result = self.call(Navigate { url: url.to_string() }).unwrap();
+
+        // TODO: at least add a timeout for these loops. it's a disaster waiting to happen!
+
+        trace!("waiting to start navigating");
+        // wait for navigating to go to true
+        loop {
+            if (*self.navigating.lock().unwrap()) {
+                break;
+            }
+        }
+        trace!("started navigating");
+
+        // wait for navigating to go to false
+        loop {
+            if (!*self.navigating.lock().unwrap()) {
+                break;
+            }
+        }
+
+        trace!("done navigating");
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::cdtp::page;
+    use crate::cdtp::dom;
     use crate::cdtp::page::methods::*;
 
     #[test]
@@ -146,26 +170,20 @@ mod tests {
         let get_frame_tree = GetFrameTree {};
         let frame_tree_result = session.call(get_frame_tree).unwrap();
 
-        let navigate = Navigate { url: "https://wikipedia.org".to_string() };
-        let nav_result = session.call(navigate).unwrap();
+        session.navigate_to("http://todomvc.com/examples/vanillajs/");
 
-        println!("waiting to start navigating");
-        // wait for navigating to go to true
-        loop {
-            if (*session.navigating.lock().unwrap()) {
-                break;
-            }
-        }
-        println!("started navigating");
+        let root_node_id = session.call(dom::methods::GetDocument {
+            depth: Some(0),
+            pierce: Some(false)
+        }).unwrap().root.node_id;
 
-        // wait for navigating to go to false
-        loop {
-            if (!*session.navigating.lock().unwrap()) {
-                break;
-            }
-        }
+        let todo_input_id = session.call(dom::methods::QuerySelector {
+            node_id: root_node_id,
+            selector: "input.new-todo".to_string()
+        }).unwrap().node_id;
 
-        println!("done navigating");
+        dbg!(todo_input_id);
+
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
         // something like:
