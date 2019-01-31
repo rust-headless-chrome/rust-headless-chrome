@@ -20,14 +20,14 @@ impl Tab {
     // TODO: error handling
     pub fn navigate_to(&self, url: &str) -> Result<()> {
         let mut session = self.page_session.borrow_mut();
-        let nav_result = session.call(Navigate { url: url.to_string() })?;
+        let _nav_result = session.call(Navigate { url: url.to_string() })?;
 
         // TODO: at least add a timeout for these loops. it's a disaster waiting to happen!
 
         trace!("waiting to start navigating");
         // wait for navigating to go to true
         loop {
-            if (*session.navigating.lock().unwrap()) {
+            if *session.navigating.lock().unwrap() {
                 break;
             }
         }
@@ -35,7 +35,7 @@ impl Tab {
 
         // wait for navigating to go to false
         loop {
-            if (!*session.navigating.lock().unwrap()) {
+            if !*session.navigating.lock().unwrap() {
                 break;
             }
         }
