@@ -10,14 +10,11 @@ use crate::cdtp;
 use crate::cdtp::{Message, Response, Event};
 use crate::cdtp::target;
 use crate::cdtp::input;
-use crate::cdtp::dom;
 use crate::cdtp::page::methods::*;
 use crate::chrome;
 use crate::connection;
 use crate::errors::*;
 use crate::waiting_call_registry;
-use crate::point::Point;
-use crate::element;
 
 // TODO: could have a better name like ... tab?
 

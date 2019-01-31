@@ -87,20 +87,22 @@ impl Tab {
     }
 
     // TODO: have a 'key description' struct
-    pub fn press_key(&self, key: &str, text: &str) {
+    pub fn press_key(&self, key: &str, text: &str) -> Result<()> {
         let mut session = self.page_session.borrow_mut();
 
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyDown".to_string(),
             key: key.to_string(),
             text: text.to_string(),
-        });
+        })?;
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyUp".to_string(),
             key: key.to_string(),
             text: text.to_string(),
-        });
+        })?;
+        Ok(())
     }
+
 
     pub fn click_point(&self, point: Point) -> Result<()> {
         let mut session = self.page_session.borrow_mut();
@@ -109,17 +111,17 @@ impl Tab {
             event_type: "mouseMoved".to_string(),
             x: point.x,
             y: point.y,
-        });
+        })?;
         session.call(input::methods::DispatchMouseEvent {
             event_type: "mousePressed".to_string(),
             x: point.x,
             y: point.y,
-        });
+        })?;
         session.call(input::methods::DispatchMouseEvent {
             event_type: "mouseReleased".to_string(),
             x: point.x,
             y: point.y,
-        });
+        })?;
         Ok(())
     }
 }

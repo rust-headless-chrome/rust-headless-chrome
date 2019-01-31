@@ -1,5 +1,4 @@
 use crate::errors::*;
-use crate::page_session::PageSession;
 use crate::point::Point;
 use crate::cdtp::dom;
 use crate::element;
@@ -25,7 +24,7 @@ impl<'a> Element<'a> {
 
     pub fn click(&self) -> Result<()> {
         let midpoint = self.get_midpoint()?;
-        self.parent.click_point(midpoint);
+        self.parent.click_point(midpoint)?;
         Ok(())
     }
 

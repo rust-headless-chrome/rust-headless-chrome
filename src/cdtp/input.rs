@@ -1,5 +1,3 @@
-use serde::{Deserialize};
-
 pub mod methods {
     use serde::{Deserialize, Serialize};
     use crate::cdtp::Method;
