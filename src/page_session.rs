@@ -158,12 +158,13 @@ impl PageSession {
 mod tests {
     use crate::cdtp::page;
     use crate::cdtp::dom;
+    use crate::cdtp::input;
     use crate::cdtp::page::methods::*;
 
     #[test]
     fn session_methods() {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(true).unwrap();
+        let chrome = super::chrome::Chrome::new(false).unwrap();
 
         let mut session = super::PageSession::new(&chrome.browser_id).unwrap();
 
@@ -182,8 +183,114 @@ mod tests {
             selector: "input.new-todo".to_string()
         }).unwrap().node_id;
 
-        dbg!(todo_input_id);
+        // TODO: scroll into view
 
+
+        let return_object = session.call(dom::methods::GetContentQuads {
+            node_id: Some(todo_input_id),
+        }).unwrap();
+
+        let raw_quad = return_object.quads.first().unwrap();
+
+        #[derive(Debug, Copy, Clone)]
+        struct Point {
+            x: f64,
+            y: f64,
+        }
+
+        impl std::ops::Add<Point> for Point {
+            type Output = Point;
+
+            fn add(self, other: Point) -> Point {
+                Point {
+                    x: self.x + other.x,
+                    y: self.y + other.y,
+                }
+            }
+        }
+        impl std::ops::Sub<Point> for Point {
+            type Output = Point;
+
+            fn sub(self, other: Point) -> Point {
+                Point {
+                    x: self.x - other.x,
+                    y: self.y - other.y,
+                }
+            }
+        }
+
+        impl std::ops::Div<f64> for Point {
+            type Output = Point;
+
+            fn div(self, other: f64) -> Point {
+                Point {
+                    x: self.x / other,
+                    y: self.y / other,
+                }
+            }
+        }
+
+        #[derive(Debug, Copy, Clone)]
+        struct ElementQuad {
+            top_left: Point,
+            top_right: Point,
+            bottom_left: Point,
+            bottom_right: Point,
+        }
+
+        let input_quad = ElementQuad {
+            top_left: Point { x: raw_quad[0], y: raw_quad[1] },
+            top_right: Point { x: raw_quad[2], y: raw_quad[3] },
+            bottom_right: Point { x: raw_quad[4], y: raw_quad[5] },
+            bottom_left: Point { x: raw_quad[6], y: raw_quad[7] },
+        };
+
+        let midpoint = (input_quad.bottom_right + input_quad.top_left) / 2.0;
+
+        dbg!(midpoint);
+
+        // TODO: make sure this does what i think it does -- TODO MVC has weird autofocus settings
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+
+        session.call(input::methods::DispatchMouseEvent {
+            event_type: "mouseMoved".to_string(),
+            x: midpoint.x,
+            y: midpoint.y
+        });
+        session.call(input::methods::DispatchMouseEvent {
+            event_type: "mousePressed".to_string(),
+            x: midpoint.x,
+            y: midpoint.y
+        });
+        session.call(input::methods::DispatchMouseEvent {
+            event_type: "mouseReleased".to_string(),
+            x: midpoint.x,
+            y: midpoint.y
+        });
+//        std::thread::sleep(std::time::Duration::from_millis(3000));
+        println!("hey");
+
+        session.call(input::methods::DispatchKeyEvent {
+            event_type: "keyDown".to_string(),
+            key: "A".to_string(),
+            text: "A".to_string()
+        });
+        session.call(input::methods::DispatchKeyEvent {
+            event_type: "keyUp".to_string(),
+            key: "A".to_string(),
+            text: "A".to_string()
+        });
+
+        session.call(input::methods::DispatchKeyEvent {
+            event_type: "keyDown".to_string(),
+            key: "Enter".to_string(),
+            text: "\r".to_string()
+        });
+        session.call(input::methods::DispatchKeyEvent {
+            event_type: "keyUp".to_string(),
+            key: "Enter".to_string(),
+            text: "\r".to_string()
+        });
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
         // something like:

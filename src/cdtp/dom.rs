@@ -45,5 +45,23 @@ pub mod methods {
         const NAME: &'static str = "DOM.querySelector";
         type ReturnObject = QuerySelectorReturnObject;
     }
+
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetContentQuads {
+        pub node_id: Option<super::NodeId>,
+        // TODO: two more fields here
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetContentQuadsReturnObject {
+        // TODO: use fixed sized array, check whether integers
+        pub quads: Vec<[f64; 8]>,
+    }
+    impl Method for GetContentQuads {
+        const NAME: &'static str = "DOM.getContentQuads";
+        type ReturnObject = GetContentQuadsReturnObject;
+    }
 }
 
