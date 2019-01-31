@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::errors::*;
 use crate::page_session::PageSession;
 use crate::point::Point;
@@ -18,22 +15,32 @@ pub struct ElementQuad {
 }
 
 
-pub struct Element {
+pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
-    pub session: tab::SessionReference
+    pub parent: &'a tab::Tab
 }
 
-impl Element {
+impl<'a> Element<'a> {
 
     pub fn click(&self) -> Result<()> {
         let midpoint = self.get_midpoint()?;
-        self.session.borrow_mut().click_point(midpoint);
+        self.parent.click_point(midpoint);
         Ok(())
     }
 
+    pub fn get_description(&self) -> Result<dom::Node> {
+        let mut session = self.parent.page_session.borrow_mut();
+        let node = session.call(dom::methods::DescribeNode {
+            node_id: None,
+            backend_node_id: Some(self.backend_node_id),
+            depth: Some(100),
+        })?.node;
+        Ok(node)
+    }
+
     pub fn get_midpoint(&self) -> Result<Point> {
-        let mut session = self.session.borrow_mut();
+        let mut session = self.parent.page_session.borrow_mut();
 
         let return_object = session.call(dom::methods::GetContentQuads {
             node_id: None,

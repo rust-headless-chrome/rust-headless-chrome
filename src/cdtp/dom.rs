@@ -38,7 +38,10 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct DescribeNode {
-        pub node_id: super::NodeId,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub backend_node_id: Option<super::NodeId>,
         pub depth: Option<i8>,
     }
     #[derive(Debug, Deserialize)]

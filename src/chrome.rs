@@ -13,7 +13,6 @@ use regex::Regex;
 
 use super::errors::*;
 use crate::page_session::PageSession;
-use std::rc::Rc;
 use std::cell::RefCell;
 
 #[derive(Debug)]
@@ -101,7 +100,7 @@ impl Chrome {
 
     pub fn new_tab(&self) -> Result<Tab> {
         let session = PageSession::new(&self.browser_id)?;
-        Ok(Tab { page_session: Rc::new(RefCell::new(session)) })
+        Ok(Tab { page_session: RefCell::new(session) })
     }
 }
 
