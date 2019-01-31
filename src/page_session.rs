@@ -10,11 +10,15 @@ use crate::cdtp;
 use crate::cdtp::{Message, Response, Event};
 use crate::cdtp::target;
 use crate::cdtp::page;
+use crate::cdtp::input;
+use crate::cdtp::dom;
 use crate::cdtp::page::methods::*;
 use crate::chrome;
 use crate::connection;
 use crate::errors::*;
 use crate::waiting_call_registry;
+use crate::point::{Point};
+use crate::element;
 
 // TODO: could have a better name like ... tab?
 
@@ -129,8 +133,8 @@ impl PageSession {
     }
 
     // TODO: error handling
-    pub fn navigate_to(&mut self, url: &str) {
-        let nav_result = self.call(Navigate { url: url.to_string() }).unwrap();
+    pub fn navigate_to(&mut self, url: &str) -> Result<()> {
+        let nav_result = self.call(Navigate { url: url.to_string() })?;
 
         // TODO: at least add a timeout for these loops. it's a disaster waiting to happen!
 
@@ -151,6 +155,49 @@ impl PageSession {
         }
 
         trace!("done navigating");
+        Ok(())
+    }
+
+    pub fn click_point(&mut self, point: Point) -> Result<()> {
+        self.call(input::methods::DispatchMouseEvent {
+            event_type: "mouseMoved".to_string(),
+            x: point.x,
+            y: point.y
+        });
+        self.call(input::methods::DispatchMouseEvent {
+            event_type: "mousePressed".to_string(),
+            x: point.x,
+            y: point.y
+        });
+        self.call(input::methods::DispatchMouseEvent {
+            event_type: "mouseReleased".to_string(),
+            x: point.x,
+            y: point.y
+        });
+        Ok(())
+    }
+
+    pub fn get_midpoint_of_node(&mut self, node_id: dom::NodeId) -> Result<Point> {
+        let return_object = self.call(dom::methods::GetContentQuads {
+            node_id: Some(node_id),
+        })?;
+
+        let raw_quad = return_object.quads.first().unwrap();
+
+        let input_quad = element::ElementQuad {
+            top_left: Point { x: raw_quad[0], y: raw_quad[1] },
+            top_right: Point { x: raw_quad[2], y: raw_quad[3] },
+            bottom_right: Point { x: raw_quad[4], y: raw_quad[5] },
+            bottom_left: Point { x: raw_quad[6], y: raw_quad[7] },
+        };
+
+        Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
+    }
+
+    pub fn click_node(&mut self, node_id: crate::cdtp::dom::NodeId) -> Result<()> {
+        let midpoint = self.get_midpoint_of_node(node_id)?;
+        self.click_point(midpoint)?;
+        Ok(())
     }
 }
 
@@ -159,6 +206,7 @@ mod tests {
     use crate::cdtp::page;
     use crate::cdtp::dom;
     use crate::cdtp::input;
+    use crate::point::{Point};
     use crate::cdtp::page::methods::*;
 
     #[test]
@@ -185,90 +233,12 @@ mod tests {
 
         // TODO: scroll into view
 
-
-        let return_object = session.call(dom::methods::GetContentQuads {
-            node_id: Some(todo_input_id),
-        }).unwrap();
-
-        let raw_quad = return_object.quads.first().unwrap();
-
-        #[derive(Debug, Copy, Clone)]
-        struct Point {
-            x: f64,
-            y: f64,
-        }
-
-        impl std::ops::Add<Point> for Point {
-            type Output = Point;
-
-            fn add(self, other: Point) -> Point {
-                Point {
-                    x: self.x + other.x,
-                    y: self.y + other.y,
-                }
-            }
-        }
-        impl std::ops::Sub<Point> for Point {
-            type Output = Point;
-
-            fn sub(self, other: Point) -> Point {
-                Point {
-                    x: self.x - other.x,
-                    y: self.y - other.y,
-                }
-            }
-        }
-
-        impl std::ops::Div<f64> for Point {
-            type Output = Point;
-
-            fn div(self, other: f64) -> Point {
-                Point {
-                    x: self.x / other,
-                    y: self.y / other,
-                }
-            }
-        }
-
-        #[derive(Debug, Copy, Clone)]
-        struct ElementQuad {
-            top_left: Point,
-            top_right: Point,
-            bottom_left: Point,
-            bottom_right: Point,
-        }
-
-        let input_quad = ElementQuad {
-            top_left: Point { x: raw_quad[0], y: raw_quad[1] },
-            top_right: Point { x: raw_quad[2], y: raw_quad[3] },
-            bottom_right: Point { x: raw_quad[4], y: raw_quad[5] },
-            bottom_left: Point { x: raw_quad[6], y: raw_quad[7] },
-        };
-
-        let midpoint = (input_quad.bottom_right + input_quad.top_left) / 2.0;
-
-        dbg!(midpoint);
+        session.click_node(todo_input_id);
 
         // TODO: make sure this does what i think it does -- TODO MVC has weird autofocus settings
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
-        session.call(input::methods::DispatchMouseEvent {
-            event_type: "mouseMoved".to_string(),
-            x: midpoint.x,
-            y: midpoint.y
-        });
-        session.call(input::methods::DispatchMouseEvent {
-            event_type: "mousePressed".to_string(),
-            x: midpoint.x,
-            y: midpoint.y
-        });
-        session.call(input::methods::DispatchMouseEvent {
-            event_type: "mouseReleased".to_string(),
-            x: midpoint.x,
-            y: midpoint.y
-        });
 //        std::thread::sleep(std::time::Duration::from_millis(3000));
-        println!("hey");
 
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyDown".to_string(),
@@ -291,6 +261,7 @@ mod tests {
             key: "Enter".to_string(),
             text: "\r".to_string()
         });
+
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
         // something like:

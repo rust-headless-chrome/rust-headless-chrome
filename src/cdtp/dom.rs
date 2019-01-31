@@ -1,6 +1,6 @@
 use serde::{Deserialize};
 
-type NodeId = u16;
+pub type NodeId = u16;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
