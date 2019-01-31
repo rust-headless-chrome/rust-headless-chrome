@@ -27,7 +27,7 @@ pub struct PageSession {
     connection: connection::Connection,
     call_registry: waiting_call_registry::WaitingCallRegistry,
     main_frame_id: String,
-    navigating: Arc<Mutex<bool>>,
+    pub navigating: Arc<Mutex<bool>>,
 }
 
 
@@ -180,6 +180,8 @@ impl PageSession {
     pub fn get_midpoint_of_node(&mut self, node_id: dom::NodeId) -> Result<Point> {
         let return_object = self.call(dom::methods::GetContentQuads {
             node_id: Some(node_id),
+            backend_node_id: None,
+            object_id: None
         })?;
 
         let raw_quad = return_object.quads.first().unwrap();
@@ -232,9 +234,25 @@ mod tests {
     use crate::cdtp::input;
     use crate::point::Point;
     use crate::cdtp::page::methods::*;
+    use crate::errors::*;
+
+    fn do_test() -> Result<()> {
+        env_logger::try_init().unwrap_or(());
+        let chrome = super::chrome::Chrome::new(true)?;
+        let tab = chrome.new_tab()?;
+        tab.navigate_to("http://todomvc.com/examples/vanillajs/");
+        let element = tab.find_element("input")?;
+        element.click();
+        Ok(())
+    }
 
     #[test]
     fn session_methods() {
+        do_test().expect("worked");
+    }
+
+    #[test]
+    fn blah() {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true).unwrap();
 

@@ -15,6 +15,7 @@ pub mod page_session;
 pub mod waiting_call_registry;
 pub mod point;
 pub mod element;
+pub mod tab;
 pub mod cdtp;
 
 

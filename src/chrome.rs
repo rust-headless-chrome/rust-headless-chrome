@@ -3,6 +3,8 @@ use std::process::{Command, Stdio, Child};
 use std::fmt;
 use std::borrow::BorrowMut;
 
+use crate::tab::Tab;
+
 use log::*;
 
 use error_chain::bail;
@@ -10,6 +12,9 @@ use error_chain::bail;
 use regex::Regex;
 
 use super::errors::*;
+use crate::page_session::PageSession;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 pub struct BrowserId(String);
@@ -55,6 +60,7 @@ impl Chrome {
         })
     }
 
+
     fn browser_id_from_output(child_process: &mut Child) -> Result<BrowserId> {
         // TODO: user static or lazy static regex
         let re = Regex::new(r"listening on .*/devtools/browser/(.*)\n").unwrap();
@@ -91,6 +97,11 @@ impl Chrome {
                 };
             }
         }
+    }
+
+    pub fn new_tab(&self) -> Result<Tab> {
+        let session = PageSession::new(&self.browser_id)?;
+        Ok(Tab { page_session: Rc::new(RefCell::new(session)) })
     }
 }
 

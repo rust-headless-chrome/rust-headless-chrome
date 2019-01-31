@@ -67,11 +67,37 @@ pub mod methods {
         type ReturnObject = QuerySelectorReturnObject;
     }
 
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct RemoteObject {
+        pub object_id: Option<String>,
+    }
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ResolveNode {
+        pub backend_node_id: Option<super::NodeId>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ResolveNodeReturnObject {
+        // TODO: use fixed sized array, check whether integers
+        pub object: RemoteObject,
+    }
+    impl Method for ResolveNode {
+        const NAME: &'static str = "DOM.resolveNode";
+        type ReturnObject = ResolveNodeReturnObject;
+    }
+
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct GetContentQuads {
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub backend_node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub object_id: Option<String>,
         // TODO: two more fields here
     }
     #[derive(Debug, Deserialize)]
