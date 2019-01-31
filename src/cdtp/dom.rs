@@ -5,7 +5,12 @@ pub type NodeId = u16;
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
-    pub node_id: NodeId
+    pub node_id: NodeId,
+    pub backend_node_id: NodeId,
+    pub children: Option<Vec<Node>>,
+    pub node_value: String,
+    pub node_name: String,
+    pub node_type: u8,
     // TODO: there's way more here: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-Node
 }
 
@@ -29,6 +34,22 @@ pub mod methods {
         type ReturnObject = GetDocumentReturnObject;
     }
 
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DescribeNode {
+        pub node_id: super::NodeId,
+        pub depth: Option<i8>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DescribeNodeReturnObject {
+        pub node: super::Node,
+    }
+    impl Method for DescribeNode {
+        const NAME: &'static str = "DOM.describeNode";
+        type ReturnObject = DescribeNodeReturnObject;
+    }
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]

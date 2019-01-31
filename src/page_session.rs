@@ -17,7 +17,7 @@ use crate::chrome;
 use crate::connection;
 use crate::errors::*;
 use crate::waiting_call_registry;
-use crate::point::{Point};
+use crate::point::Point;
 use crate::element;
 
 // TODO: could have a better name like ... tab?
@@ -162,17 +162,17 @@ impl PageSession {
         self.call(input::methods::DispatchMouseEvent {
             event_type: "mouseMoved".to_string(),
             x: point.x,
-            y: point.y
+            y: point.y,
         });
         self.call(input::methods::DispatchMouseEvent {
             event_type: "mousePressed".to_string(),
             x: point.x,
-            y: point.y
+            y: point.y,
         });
         self.call(input::methods::DispatchMouseEvent {
             event_type: "mouseReleased".to_string(),
             x: point.x,
-            y: point.y
+            y: point.y,
         });
         Ok(())
     }
@@ -194,11 +194,35 @@ impl PageSession {
         Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
     }
 
-    pub fn click_node(&mut self, node_id: crate::cdtp::dom::NodeId) -> Result<()> {
+    pub fn click_node(&mut self, node_id: dom::NodeId) -> Result<()> {
         let midpoint = self.get_midpoint_of_node(node_id)?;
         self.click_point(midpoint)?;
         Ok(())
     }
+
+    pub fn find_node_id(&mut self, selector: &str) -> Result<dom::NodeId> {
+        // TODO: just do this once.
+        let root_node_id = self.call(dom::methods::GetDocument {
+            depth: Some(0),
+            pierce: Some(false)
+        })?.root.node_id;
+
+        let node_id = self.call(dom::methods::QuerySelector {
+            // TODO: this too risky? use getDocument instead?
+            node_id: root_node_id,
+            selector: selector.to_string(),
+        })?.node_id;
+        Ok(node_id)
+    }
+
+    pub fn describe_node(&mut self, node_id: dom::NodeId) -> Result<dom::Node> {
+        let node = self.call(dom::methods::DescribeNode {
+            node_id,
+            depth: Some(100)
+        })?.node;
+        Ok(node)
+    }
+
 }
 
 #[cfg(test)]
@@ -206,13 +230,13 @@ mod tests {
     use crate::cdtp::page;
     use crate::cdtp::dom;
     use crate::cdtp::input;
-    use crate::point::{Point};
+    use crate::point::Point;
     use crate::cdtp::page::methods::*;
 
     #[test]
     fn session_methods() {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(false).unwrap();
+        let chrome = super::chrome::Chrome::new(true).unwrap();
 
         let mut session = super::PageSession::new(&chrome.browser_id).unwrap();
 
@@ -221,48 +245,49 @@ mod tests {
 
         session.navigate_to("http://todomvc.com/examples/vanillajs/");
 
-        let root_node_id = session.call(dom::methods::GetDocument {
-            depth: Some(0),
-            pierce: Some(false)
-        }).unwrap().root.node_id;
-
-        let todo_input_id = session.call(dom::methods::QuerySelector {
-            node_id: root_node_id,
-            selector: "input.new-todo".to_string()
-        }).unwrap().node_id;
+        let todo_input_id = session.find_node_id("input.new-todo").unwrap();
 
         // TODO: scroll into view
 
         session.click_node(todo_input_id);
 
         // TODO: make sure this does what i think it does -- TODO MVC has weird autofocus settings
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(100));
 
 //        std::thread::sleep(std::time::Duration::from_millis(3000));
 
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyDown".to_string(),
             key: "A".to_string(),
-            text: "A".to_string()
+            text: "A".to_string(),
         });
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyUp".to_string(),
             key: "A".to_string(),
-            text: "A".to_string()
+            text: "A".to_string(),
         });
 
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyDown".to_string(),
             key: "Enter".to_string(),
-            text: "\r".to_string()
+            text: "\r".to_string(),
         });
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyUp".to_string(),
             key: "Enter".to_string(),
-            text: "\r".to_string()
+            text: "\r".to_string(),
         });
 
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        let todo_text_id = session.find_node_id("li label").unwrap();
+        dbg!(todo_text_id);
+        let node = session.describe_node(todo_text_id).unwrap();
+        let children = node.children.unwrap();
+        let text = &children.first().unwrap().node_value;
+        assert_eq!("A", text);
+
+//        std::thread::sleep(std::time::Duration::from_millis(100000));
 
         // something like:
         // session.on_event(FrameStoppedLoading)
