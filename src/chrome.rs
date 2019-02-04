@@ -31,16 +31,24 @@ enum ChromeLaunchError {
     PortOpenTimeout
 }
 
+pub struct LaunchOptions {
+    headless: bool
+}
+
+impl Default for LaunchOptions {
+    fn default() -> Self { LaunchOptions { headless: true }}
+}
+
 impl Chrome {
     // TODO: find out why this complains if named 'new'
-    pub fn new(headless: bool) -> Result<Self, Error> {
+    pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
 //        let process = Command::new("/usr/bin/google-chrome")
         let mut args = vec![// "--headless",
                             "--remote-debugging-port=9393", "--verbose"];
 
-        if headless {
+        if launch_options.headless {
             args.extend(&["--headless"]);
         }
 
@@ -132,7 +140,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let time_before = std::time::SystemTime::now();
         {
-            let _chrome = &mut super::Chrome::new(true).unwrap();
+            let _chrome = &mut super::Chrome::new(Default::default()).unwrap();
 
             let chrome_startup_millis = time_before
                 .elapsed()

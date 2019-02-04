@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn you_can_send_methods() {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(true).unwrap();
+        let chrome = super::chrome::Chrome::new(Default::default()).unwrap();
 
         let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
 
@@ -136,12 +136,5 @@ mod tests {
         let r1 = conn.call_method(call).unwrap();
 
         dbg!(r1);
-
-//        let _response1 = conn.call_method::<cdp::target::CreateBrowserContextResponse>(&cdp::target::CreateBrowserContextCommand {});
-//        let _response2 = conn.call_method::<cdp::target::GetBrowserContextsResponse>(&cdp::target::GetBrowserContextsCommand {}).unwrap();
-//        let response3 = conn.call_method::<cdp::target::GetTargetsResponse>(&cdp::target::GetTargetsCommand {}).unwrap();
-//        let first_target = &response3.target_infos[0];
-
-//        assert_eq!("about:blank", first_target.url);
     }
 }

@@ -146,7 +146,7 @@ mod tests {
 
     fn do_test() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(true)?;
+        let chrome = super::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
 
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
@@ -164,7 +164,7 @@ mod tests {
 
     fn handles_remote_errors() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(true)?;
+        let chrome = super::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
 
