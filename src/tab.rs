@@ -22,7 +22,7 @@ impl Tab {
     // TODO: error handling
     pub fn navigate_to(&self, url: &str) -> Result<()> {
         let mut session = self.page_session.borrow_mut();
-        let _nav_result = session.call(Navigate { url: url.to_string() })?;
+        let _nav_result = session.call(Navigate { url })?;
 
         // TODO: at least add a timeout for these loops. it's a disaster waiting to happen!
 
@@ -58,7 +58,7 @@ impl Tab {
 
             session.call(dom::methods::QuerySelector {
                 node_id: root_node_id,
-                selector: selector.to_string(),
+                selector
             })?.node_id
         };
 
@@ -114,14 +114,14 @@ impl Tab {
 
         // TODO: send code and other parts of the def?
         session.call(input::methods::DispatchKeyEvent {
-            event_type: "keyDown".to_string(),
-            key: definition.key.to_string(),
-            text: definition.text.to_string(),
+            event_type: "keyDown",
+            key: definition.key,
+            text: definition.text,
         })?;
         session.call(input::methods::DispatchKeyEvent {
-            event_type: "keyUp".to_string(),
-            key: definition.key.to_string(),
-            text: definition.text.to_string(),
+            event_type: "keyUp",
+            key: definition.key,
+            text: definition.text,
         })?;
         Ok(())
     }
@@ -131,17 +131,17 @@ impl Tab {
         let mut session = self.page_session.borrow_mut();
 
         session.call(input::methods::DispatchMouseEvent {
-            event_type: "mouseMoved".to_string(),
+            event_type: "mouseMoved",
             x: point.x,
             y: point.y,
         })?;
         session.call(input::methods::DispatchMouseEvent {
-            event_type: "mousePressed".to_string(),
+            event_type: "mousePressed",
             x: point.x,
             y: point.y,
         })?;
         session.call(input::methods::DispatchMouseEvent {
-            event_type: "mouseReleased".to_string(),
+            event_type: "mouseReleased",
             x: point.x,
             y: point.y,
         })?;

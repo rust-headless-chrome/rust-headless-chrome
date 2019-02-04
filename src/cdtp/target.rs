@@ -50,21 +50,6 @@ pub mod methods {
 
     use crate::cdtp::Method;
 
-    #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct CaptureScreenshot {
-        format: String
-    }
-    #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct CaptureScreenshotReturnObject {
-        data: String
-    }
-    impl Method for CaptureScreenshot {
-        const NAME: &'static str = "Page.captureScreenshot";
-        type ReturnObject = CaptureScreenshotReturnObject;
-    }
-
 
     #[derive(Serialize)]
     pub struct CreateBrowserContext {}
@@ -80,8 +65,8 @@ pub mod methods {
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct CreateTarget {
-        pub url: String,
+    pub struct CreateTarget<'a> {
+        pub url: &'a str,
         #[serde(skip_serializing_if = "Option::is_none")]
         #[doc = "Frame width in DIP \\(headless chrome only\\)."]
         pub width: Option<i32>,
@@ -89,7 +74,7 @@ pub mod methods {
         #[doc = "Frame height in DIP \\(headless chrome only\\)."]
         pub height: Option<i32>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub browser_context_id: Option<String>,
+        pub browser_context_id: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub enable_begin_frame_control: Option<bool>,
     }
@@ -98,7 +83,7 @@ pub mod methods {
     pub struct CreateTargetReturnObject {
         pub target_id: String,
     }
-    impl Method for CreateTarget {
+    impl<'a> Method for CreateTarget<'a> {
         const NAME: &'static str = "Target.createTarget";
         type ReturnObject = CreateTargetReturnObject;
     }
@@ -106,8 +91,8 @@ pub mod methods {
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct AttachToTarget {
-        pub target_id: String,
+    pub struct AttachToTarget<'a> {
+        pub target_id: &'a str,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub flatten: Option<bool>,
     }
@@ -116,7 +101,7 @@ pub mod methods {
     pub struct AttachToTargetReturnObject {
         pub session_id: String,
     }
-    impl Method for AttachToTarget {
+    impl<'a> Method for AttachToTarget<'a> {
         const NAME: &'static str = "Target.attachToTarget";
         type ReturnObject = AttachToTargetReturnObject;
     }
@@ -124,17 +109,17 @@ pub mod methods {
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct SendMessageToTarget {
+    pub struct SendMessageToTarget<'a> {
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub target_id: Option<String>,
+        pub target_id: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub session_id: Option<String>,
-        pub message: String,
+        pub session_id: Option<&'a str>,
+        pub message: &'a str,
     }
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SendMessageToTargetReturnObject {}
-    impl Method for SendMessageToTarget {
+    impl<'a> Method for SendMessageToTarget<'a> {
         const NAME: &'static str = "Target.sendMessageToTarget";
         type ReturnObject = SendMessageToTargetReturnObject;
     }

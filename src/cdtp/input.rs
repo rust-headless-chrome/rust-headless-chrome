@@ -4,9 +4,9 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct DispatchMouseEvent {
+    pub struct DispatchMouseEvent<'a> {
         #[serde(rename = "type")]
-        pub event_type: String,
+        pub event_type: &'a str,
         pub x: f64,
         pub y: f64,
     }
@@ -14,24 +14,24 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct DispatchMouseEventReturnObject {
     }
-    impl Method for DispatchMouseEvent {
+    impl<'a> Method for DispatchMouseEvent<'a> {
         const NAME: &'static str = "Input.dispatchMouseEvent";
         type ReturnObject = DispatchMouseEventReturnObject;
     }
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct DispatchKeyEvent {
+    pub struct DispatchKeyEvent<'a> {
         #[serde(rename = "type")]
-        pub event_type: String,
-        pub key: String,
-        pub text: String,
+        pub event_type: &'a str,
+        pub key: &'a str,
+        pub text: &'a str,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct DispatchKeyEventReturnObject {
     }
-    impl Method for DispatchKeyEvent {
+    impl<'a> Method for DispatchKeyEvent<'a> {
         const NAME: &'static str = "Input.dispatchKeyEvent";
         type ReturnObject = DispatchKeyEventReturnObject;
     }

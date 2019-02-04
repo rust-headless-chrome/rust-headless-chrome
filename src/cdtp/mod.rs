@@ -15,7 +15,7 @@ pub type CallId = u16;
 #[derive(Serialize)]
 pub struct MethodCall<T> {
     #[serde(rename="method")]
-    method_name: String,
+    method_name: &'static str,
     pub id: CallId,
     params: T,
 }
@@ -30,7 +30,7 @@ pub trait Method {
         where Self: std::marker::Sized
     {
         let call_id = rand::random::<CallId>();
-        MethodCall { id: call_id, params: self, method_name: Self::NAME.to_string() }
+        MethodCall { id: call_id, params: self, method_name: Self::NAME }
     }
 //    fn call(&self, mut session: impl Session) -> Self::ReturnObject;
 }

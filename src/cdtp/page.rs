@@ -67,15 +67,15 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct CaptureScreenshot {
-        pub format: String
+    pub struct CaptureScreenshot<'a> {
+        pub format: &'a str
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshotReturnObject {
         pub data: String
     }
-    impl Method for CaptureScreenshot {
+    impl<'a> Method for CaptureScreenshot<'a> {
         const NAME: &'static str = "Page.captureScreenshot";
         type ReturnObject = CaptureScreenshotReturnObject;
     }
@@ -117,8 +117,8 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct Navigate {
-        pub url: String
+    pub struct Navigate<'a> {
+        pub url: &'a str
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -127,7 +127,7 @@ pub mod methods {
         pub loader_id: Option<String>,
         pub error_text: Option<String>
     }
-    impl Method for Navigate {
+    impl<'a> Method for Navigate<'a> {
         const NAME: &'static str = "Page.navigate";
         type ReturnObject = NavigateReturnObject;
     }

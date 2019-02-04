@@ -35,15 +35,15 @@ impl PageSession {
 
         let browser_context_id = conn.call_method(target::methods::CreateBrowserContext {})?.browser_context_id;
         let create_target = target::methods::CreateTarget {
-            url: "about:blank".to_string(),
+            url: "about:blank",
             width: None,
             height: None,
-            browser_context_id: Some(browser_context_id),
+            browser_context_id: Some(&browser_context_id),
             enable_begin_frame_control: None,
         };
         let target_id = conn.call_method(create_target)?.target_id;
         let session_id = conn.call_method(target::methods::AttachToTarget {
-            target_id: target_id.clone(),
+            target_id: target_id.as_ref(),
             flatten: None,
         })?.session_id;
 
@@ -64,7 +64,7 @@ impl PageSession {
             session_id,
             connection: conn,
             call_registry,
-            main_frame_id: target_id,
+            main_frame_id: target_id.to_string(),
             // NOTE: this might have to updated if we allow navigating as part of page creation
             navigating,
         };
@@ -109,11 +109,11 @@ impl PageSession {
     pub fn call<C>(&mut self, method: C) -> Result<C::ReturnObject>
         where C: cdtp::Method + serde::Serialize {
         let method_call = method.to_method_call();
-        let message = serde_json::to_string(&method_call).unwrap();
+        let message = &serde_json::to_string(&method_call).unwrap();
 
         let target_method = target::methods::SendMessageToTarget {
             target_id: None,
-            session_id: Some(self.session_id.clone()),
+            session_id: Some(&self.session_id),
             message,
         };
 

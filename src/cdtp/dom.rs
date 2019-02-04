@@ -56,16 +56,16 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct QuerySelector {
+    pub struct QuerySelector<'a> {
         pub node_id: super::NodeId,
-        pub selector: String
+        pub selector: &'a str
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct QuerySelectorReturnObject {
         pub node_id: super::NodeId,
     }
-    impl Method for QuerySelector {
+    impl<'a> Method for QuerySelector<'a> {
         const NAME: &'static str = "DOM.querySelector";
         type ReturnObject = QuerySelectorReturnObject;
     }
@@ -94,13 +94,13 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct GetContentQuads {
+    pub struct GetContentQuads<'a> {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub node_id: Option<super::NodeId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub backend_node_id: Option<super::NodeId>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub object_id: Option<String>,
+        pub object_id: Option<&'a str>,
         // TODO: two more fields here
     }
     #[derive(Debug, Deserialize)]
@@ -109,7 +109,7 @@ pub mod methods {
         // TODO: use fixed sized array, check whether integers
         pub quads: Vec<[f64; 8]>,
     }
-    impl Method for GetContentQuads {
+    impl<'a> Method for GetContentQuads<'a> {
         const NAME: &'static str = "DOM.getContentQuads";
         type ReturnObject = GetContentQuadsReturnObject;
     }
