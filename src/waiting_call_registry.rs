@@ -67,10 +67,10 @@ mod tests {
         let waiting_calls = WaitingCallRegistry::new(responses_rx);
 
         let call_rx = waiting_calls.register_call(431);
-        let resp = Response { call_id: 431, result: json!{true} };
+        let resp = Response { call_id: 431, result: Some(json!{true}), error: None };
 
         let call_rx2 = waiting_calls.register_call(123);
-        let resp2 = Response { call_id: 123, result: json!{false} };
+        let resp2 = Response { call_id: 123, result: Some(json!{false}), error: None };
 
         responses_tx.send(resp.clone()).unwrap();
         responses_tx.send(resp2.clone()).unwrap();

@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
 use log::*;
+use error_chain::bail;
 
 use crate::cdtp::dom;
 use crate::cdtp::input;
@@ -45,6 +46,7 @@ impl Tab {
         Ok(())
     }
 
+    // TODO: have this return a 'can't find element' error when selector returns nothing
     pub fn find_element(&self, selector: &str) -> Result<Element> {
         let node_id = {
             let mut session = self.page_session.borrow_mut();
@@ -59,6 +61,10 @@ impl Tab {
                 selector: selector.to_string(),
             })?.node_id
         };
+
+        if node_id == 0 {
+            bail!("Couldn't find element using selector: {:?}", selector);
+        }
 
         dbg!(node_id);
 

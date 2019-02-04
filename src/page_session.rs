@@ -5,6 +5,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use log::*;
 use serde;
+use error_chain::bail;
 
 use crate::cdtp;
 use crate::cdtp::{Message, Response, Event};
@@ -104,6 +105,7 @@ impl PageSession {
         }
     }
 
+    // TODO: duplication between here and connection.call_method
     pub fn call<C>(&mut self, method: C) -> Result<C::ReturnObject>
         where C: cdtp::Method + serde::Serialize {
         let method_call = method.to_method_call();
@@ -121,13 +123,16 @@ impl PageSession {
 
         let response = response_rx.recv().unwrap();
 
-        let result: C::ReturnObject = serde_json::from_value(response.result).unwrap();
+        if let Some(error) = response.error {
+            bail!(format!("{:?}", error))
+        }
+
+        let result: C::ReturnObject = serde_json::from_value(response.result.unwrap()).unwrap();
 
         dbg!(&result);
 
         Ok(result)
     }
-
 
 }
 
@@ -157,8 +162,24 @@ mod tests {
         Ok(())
     }
 
+    fn handles_remote_errors() -> Result<()> {
+        env_logger::try_init().unwrap_or(());
+        let chrome = super::chrome::Chrome::new(true)?;
+        let tab = chrome.new_tab()?;
+        tab.navigate_to("http://todomvc.com/examples/vanillajs/");
+
+        // 0 is never a good node ID, AFAICT
+        let node_description = tab.describe_node(0);
+        assert_eq!(true, node_description.is_err());
+
+        let element = tab.find_element("a pretty terrible CSS selector");
+        assert_eq!(true, element.is_err());
+        Ok(())
+    }
+
     #[test]
     fn session_methods() {
+        handles_remote_errors().expect("worked");
         do_test().expect("worked");
     }
 }

@@ -35,13 +35,19 @@ pub trait Method {
 //    fn call(&self, mut session: impl Session) -> Self::ReturnObject;
 }
 
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct RemoteError {
+    pub code: i32,
+    pub message: String
+}
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct Response {
     #[serde(rename(deserialize = "id"))]
     pub call_id: CallId,
-    // TODO: use enum of all possible return objects, like we do for events
-    pub result: Value,
+    // TODO: use enum of all possible return objects, like we do for events. maybe?
+    pub result: Option<Value>,
+    pub error: Option<RemoteError>,
 }
 
 // TODO: could break down module by module with nested enums...

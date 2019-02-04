@@ -6,6 +6,7 @@ use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
+use error_chain::bail;
 
 use crate::cdtp;
 use crate::cdtp::{Event, Response};
@@ -112,8 +113,11 @@ impl Connection {
 
         let response = response_rx.recv().unwrap();
 
-        let result: C::ReturnObject = serde_json::from_value(response.result).unwrap();
+        if let Some(error) = response.error {
+            bail!(format!("{:?}", error))
+        }
 
+        let result: C::ReturnObject = serde_json::from_value(response.result.unwrap()).unwrap();
         Ok(result)
     }
 }
