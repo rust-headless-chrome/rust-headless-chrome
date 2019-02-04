@@ -13,7 +13,7 @@ pub type CallId = u16;
 
 #[derive(Serialize)]
 pub struct MethodCall<T> {
-    #[serde(rename="method")]
+    #[serde(rename = "method")]
     method_name: &'static str,
     pub id: CallId,
     params: T,
@@ -31,14 +31,13 @@ pub trait Method {
         let call_id = rand::random::<CallId>();
         MethodCall { id: call_id, params: self, method_name: Self::NAME }
     }
-//    fn call(&self, mut session: impl Session) -> Self::ReturnObject;
 }
 
 #[derive(Deserialize, Debug, PartialEq, Clone, Fail)]
 #[fail(display = "Method call error {}: {}", code, message)]
 pub struct RemoteError {
     pub code: i32,
-    pub message: String
+    pub message: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
@@ -48,6 +47,19 @@ pub struct Response {
     // TODO: use enum of all possible return objects, like we do for events. maybe?
     pub result: Option<Value>,
     pub error: Option<RemoteError>,
+}
+
+pub fn parse_response<T>(response: Response) -> Result<T, Error>
+    where T: serde::de::DeserializeOwned + std::fmt::Debug {
+    if let Some(error) = response.error {
+        return Err(error.into());
+    }
+
+    let result: T = serde_json::from_value(response.result.unwrap()).unwrap();
+
+    dbg!(&result);
+
+    Ok(result)
 }
 
 // TODO: could break down module by module with nested enums...
@@ -150,7 +162,7 @@ mod tests {
         match event {
             Event::ReceivedMessageFromTarget(ev) => {
                 dbg!(ev);
-            },
+            }
             _ => { panic!("bad news") }
         }
     }

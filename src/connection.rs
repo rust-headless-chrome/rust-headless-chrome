@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 
-use failure::{Error, Fail};
+use failure::{Error};
 use log::*;
 use serde;
 use websocket::{ClientBuilder, OwnedMessage};
@@ -108,14 +108,7 @@ impl Connection {
         let response_rx = self.call_registry.register_call(call.id);
 
         let response = response_rx.recv().unwrap();
-
-        if let Some(error) = response.error {
-            unimplemented!();
-//            bail!(format!("{:?}", error))
-        }
-
-        let result: C::ReturnObject = serde_json::from_value(response.result.unwrap()).unwrap();
-        Ok(result)
+        cdtp::parse_response::<C::ReturnObject>(response)
     }
 }
 

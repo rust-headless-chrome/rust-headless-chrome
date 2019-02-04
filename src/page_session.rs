@@ -3,14 +3,13 @@ use std::sync::Mutex;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 
-use failure::{Error, Fail};
+use failure::{Error};
 use log::*;
 use serde;
 
 use crate::cdtp;
 use crate::cdtp::{Message, Response, Event};
 use crate::cdtp::target;
-use crate::cdtp::input;
 use crate::cdtp::page::methods::*;
 use crate::chrome;
 use crate::connection;
@@ -121,16 +120,7 @@ impl PageSession {
         let response_rx = self.call_registry.register_call(method_call.id);
 
         let response = response_rx.recv().unwrap();
-
-        if let Some(error) = response.error {
-            return Err(error.into());
-        }
-
-        let result: C::ReturnObject = serde_json::from_value(response.result.unwrap()).unwrap();
-
-        dbg!(&result);
-
-        Ok(result)
+        cdtp::parse_response::<C::ReturnObject>(response)
     }
 
 }

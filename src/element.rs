@@ -1,4 +1,4 @@
-use failure::{Error, Fail};
+use failure::{Error};
 
 use crate::point::Point;
 use crate::cdtp::dom;
