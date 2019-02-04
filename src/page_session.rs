@@ -147,12 +147,13 @@ mod tests {
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
         let element = tab.find_element("input")?;
         element.click();
-        tab.press_key("A");
+        tab.type_str("buy cereal");
         tab.press_key("Enter");
+        // TODO: raise error if node_id = 0
         let todo_label = tab.find_element("li label")?;
         let children = todo_label.get_description()?.children.unwrap();
         let text = &children.first().unwrap().node_value;
-        assert_eq!("A", text);
+        assert_eq!("buy cereal", text);
         Ok(())
     }
 

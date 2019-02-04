@@ -55,13 +55,16 @@ impl Tab {
             })?.root.node_id;
 
             session.call(dom::methods::QuerySelector {
-                // TODO: this too risky? use getDocument instead?
                 node_id: root_node_id,
                 selector: selector.to_string(),
             })?.node_id
         };
 
+        dbg!(node_id);
+
         let backend_node_id = self.describe_node(node_id)?.backend_node_id;
+
+        dbg!(backend_node_id);
 
         let remote_object_id = {
             let mut session = self.page_session.borrow_mut();
@@ -85,6 +88,17 @@ impl Tab {
             depth: Some(100),
         })?.node;
         Ok(node)
+    }
+
+    pub fn type_str(&self, string_to_type: &str) -> Result<()> {
+        for c in string_to_type.split("") {
+            // split call above will have empty string at start and end which we won't type
+            if c == "" {
+                continue;
+            }
+            self.press_key(c)?;
+        }
+        Ok(())
     }
 
     pub fn press_key(&self, key: &str) -> Result<()> {
