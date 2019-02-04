@@ -148,6 +148,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true)?;
         let tab = chrome.new_tab()?;
+
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
         let element = tab.find_element("input")?;
         element.click();

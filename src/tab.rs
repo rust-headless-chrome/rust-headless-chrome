@@ -17,6 +17,12 @@ pub struct Tab {
     pub page_session: SessionReference,
 }
 
+#[derive(Debug, Fail)]
+#[fail(display = "No element found for selector: {}", selector)]
+pub struct NoElementFound {
+    selector: String
+}
+
 impl Tab {
     // TODO: error handling
     pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
@@ -57,12 +63,12 @@ impl Tab {
 
             session.call(dom::methods::QuerySelector {
                 node_id: root_node_id,
-                selector
+                selector,
             })?.node_id
         };
 
         if node_id == 0 {
-//            bail!("Couldn't find element using selector: {:?}", selector);
+            return Err(NoElementFound { selector: selector.to_string() }.into());
         }
 
         dbg!(node_id);
@@ -81,7 +87,7 @@ impl Tab {
         Ok(Element {
             remote_object_id,
             backend_node_id,
-            parent: &self
+            parent: &self,
         })
     }
 

@@ -110,6 +110,7 @@ impl Connection {
         let response = response_rx.recv().unwrap();
 
         if let Some(error) = response.error {
+            unimplemented!();
 //            bail!(format!("{:?}", error))
         }
 
