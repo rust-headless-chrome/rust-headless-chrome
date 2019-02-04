@@ -2,6 +2,7 @@ use std::cell::RefCell;
 
 use log::*;
 use failure::{Error, Fail};
+use serde;
 
 use crate::cdtp::dom;
 use crate::cdtp::input;
@@ -10,6 +11,7 @@ use crate::page_session::PageSession;
 use crate::element::Element;
 use crate::keys;
 use crate::point::Point;
+use crate::cdtp;
 
 pub type SessionReference = RefCell<PageSession>;
 
@@ -24,13 +26,19 @@ pub struct NoElementFound {
 }
 
 impl Tab {
-    // TODO: error handling
-    pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
+    // TODO: error handling (e.g. error_text: Some("net::ERR_CONNECTION_RESET"))
+    pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
+        where C: cdtp::Method + serde::Serialize
+    {
         let mut session = self.page_session.borrow_mut();
-        let _nav_result = session.call(Navigate { url })?;
+        session.call(method)
+    }
 
-        // TODO: at least add a timeout for these loops. it's a disaster waiting to happen!
+    pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
+        self.call_method(Navigate { url })?;
 
+
+        let mut session = self.page_session.borrow_mut();
         trace!("waiting to start navigating");
         // wait for navigating to go to true
         loop {

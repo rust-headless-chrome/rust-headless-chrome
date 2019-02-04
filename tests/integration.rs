@@ -1,3 +1,8 @@
+use failure::{Error};
+use log::*;
+
+use lib::chrome;
+
 #[test]
 fn it_does_basic_browser_tests() {
 //    let chrome = lib::chrome::Chrome::new(true).unwrap();
@@ -20,4 +25,28 @@ fn it_does_basic_browser_tests() {
 //    tab.find_element("input.toggle").click();
 //
 //    assert_eq!("0 items left", get_item_count_text());
+}
+
+fn log_in_to_ml() -> Result<(), Error> {
+    env_logger::try_init().unwrap_or(());
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false })?;
+    let tab = chrome.new_tab()?;
+
+    tab.navigate_to("https://app-staging.mentorloop.com/")?;
+    std::thread::sleep_ms(3000);
+
+    let element = tab.find_element(r#"input[type="email"]"#)?;
+
+    dbg!(element.get_attributes());
+//    dbg!(element.get_attributes());
+//    tab.type_str("roche.a@gmail.com")?;
+//    tab.press_key("Enter")?;sdf
+    std::thread::sleep_ms(10000);
+
+    Ok(())
+}
+
+#[test]
+fn ml_staging() {
+    log_in_to_ml().expect("passed");
 }

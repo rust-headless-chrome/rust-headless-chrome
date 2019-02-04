@@ -32,7 +32,7 @@ enum ChromeLaunchError {
 }
 
 pub struct LaunchOptions {
-    headless: bool
+    pub headless: bool
 }
 
 impl Default for LaunchOptions {

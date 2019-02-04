@@ -1,4 +1,4 @@
-use failure::{Error};
+use failure::Error;
 
 use crate::point::Point;
 use crate::cdtp::dom;
@@ -18,14 +18,17 @@ pub struct ElementQuad {
 pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
-    pub parent: &'a tab::Tab
+    pub parent: &'a tab::Tab,
 }
 
 impl<'a> Element<'a> {
-
     pub fn click(&self) -> Result<(), Error> {
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
+        Ok(())
+    }
+
+    pub fn focus(&self) -> Result<(), Error> {
         Ok(())
     }
 
@@ -39,13 +42,19 @@ impl<'a> Element<'a> {
         Ok(node)
     }
 
+    pub fn get_attributes(&self) -> Result<(), Error> {
+        let description = self.get_description()?;
+        dbg!(description.attributes);
+        Ok(())
+    }
+
     pub fn get_midpoint(&self) -> Result<Point, Error> {
         let mut session = self.parent.page_session.borrow_mut();
 
         let return_object = session.call(dom::methods::GetContentQuads {
             node_id: None,
             backend_node_id: Some(self.backend_node_id),
-            object_id: None
+            object_id: None,
         })?;
 
         let raw_quad = return_object.quads.first().unwrap();

@@ -11,6 +11,7 @@ pub struct Node {
     pub node_value: String,
     pub node_name: String,
     pub node_type: u8,
+    pub attributes: Option<Vec<String>>
     // TODO: there's way more here: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-Node
 }
 
