@@ -8,6 +8,7 @@ use crate::cdtp::page::methods::Navigate;
 use crate::errors::*;
 use crate::page_session::PageSession;
 use crate::element::Element;
+use crate::keys;
 use crate::point::Point;
 
 pub type SessionReference = RefCell<PageSession>;
@@ -86,19 +87,21 @@ impl Tab {
         Ok(node)
     }
 
-    // TODO: have a 'key description' struct
-    pub fn press_key(&self, key: &str, text: &str) -> Result<()> {
+    pub fn press_key(&self, key: &str) -> Result<()> {
+        // TODO: wtf is with the 0?
+        let definition = keys::get_key_definition(key).ok_or(format!("Can't find key: #{}", key))?;
         let mut session = self.page_session.borrow_mut();
 
+        // TODO: send code and other parts of the def?
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyDown".to_string(),
-            key: key.to_string(),
-            text: text.to_string(),
+            key: definition.key.to_string(),
+            text: definition.text.to_string(),
         })?;
         session.call(input::methods::DispatchKeyEvent {
             event_type: "keyUp".to_string(),
-            key: key.to_string(),
-            text: text.to_string(),
+            key: definition.key.to_string(),
+            text: definition.text.to_string(),
         })?;
         Ok(())
     }

@@ -147,8 +147,8 @@ mod tests {
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
         let element = tab.find_element("input")?;
         element.click();
-        tab.press_key("A", "A");
-        tab.press_key("Enter", "\r");
+        tab.press_key("A");
+        tab.press_key("Enter");
         let todo_label = tab.find_element("li label")?;
         let children = todo_label.get_description()?.children.unwrap();
         let text = &children.first().unwrap().node_value;
