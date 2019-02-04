@@ -3,9 +3,9 @@ use std::sync::Mutex;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 
+use failure::{Error, Fail};
 use log::*;
 use serde;
-use error_chain::bail;
 
 use crate::cdtp;
 use crate::cdtp::{Message, Response, Event};
@@ -14,7 +14,6 @@ use crate::cdtp::input;
 use crate::cdtp::page::methods::*;
 use crate::chrome;
 use crate::connection;
-use crate::errors::*;
 use crate::waiting_call_registry;
 
 // TODO: could have a better name like ... tab?
@@ -29,7 +28,7 @@ pub struct PageSession {
 
 
 impl PageSession {
-    pub fn new(browser_id: &chrome::BrowserId) -> Result<Self> {
+    pub fn new(browser_id: &chrome::BrowserId) -> Result<Self, Error> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let mut conn = super::connection::Connection::new(&browser_id, messages_tx).unwrap();
 
@@ -106,7 +105,7 @@ impl PageSession {
     }
 
     // TODO: duplication between here and connection.call_method
-    pub fn call<C>(&mut self, method: C) -> Result<C::ReturnObject>
+    pub fn call<C>(&mut self, method: C) -> Result<C::ReturnObject, Error>
         where C: cdtp::Method + serde::Serialize {
         let method_call = method.to_method_call();
         let message = &serde_json::to_string(&method_call).unwrap();
@@ -124,7 +123,7 @@ impl PageSession {
         let response = response_rx.recv().unwrap();
 
         if let Some(error) = response.error {
-            bail!(format!("{:?}", error))
+            return Err(error.into());
         }
 
         let result: C::ReturnObject = serde_json::from_value(response.result.unwrap()).unwrap();
@@ -143,9 +142,9 @@ mod tests {
     use crate::cdtp::input;
     use crate::point::Point;
     use crate::cdtp::page::methods::*;
-    use crate::errors::*;
+    use failure::{Error, Fail};
 
-    fn do_test() -> Result<()> {
+    fn do_test() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true)?;
         let tab = chrome.new_tab()?;
@@ -162,7 +161,7 @@ mod tests {
         Ok(())
     }
 
-    fn handles_remote_errors() -> Result<()> {
+    fn handles_remote_errors() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
         let chrome = super::chrome::Chrome::new(true)?;
         let tab = chrome.new_tab()?;

@@ -1,12 +1,11 @@
 use std::cell::RefCell;
 
 use log::*;
-use error_chain::bail;
+use failure::{Error, Fail};
 
 use crate::cdtp::dom;
 use crate::cdtp::input;
 use crate::cdtp::page::methods::Navigate;
-use crate::errors::*;
 use crate::page_session::PageSession;
 use crate::element::Element;
 use crate::keys;
@@ -20,7 +19,7 @@ pub struct Tab {
 
 impl Tab {
     // TODO: error handling
-    pub fn navigate_to(&self, url: &str) -> Result<()> {
+    pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
         let mut session = self.page_session.borrow_mut();
         let _nav_result = session.call(Navigate { url })?;
 
@@ -47,7 +46,7 @@ impl Tab {
     }
 
     // TODO: have this return a 'can't find element' error when selector returns nothing
-    pub fn find_element(&self, selector: &str) -> Result<Element> {
+    pub fn find_element(&self, selector: &str) -> Result<Element, Error> {
         let node_id = {
             let mut session = self.page_session.borrow_mut();
             // TODO: just do this once.
@@ -63,7 +62,7 @@ impl Tab {
         };
 
         if node_id == 0 {
-            bail!("Couldn't find element using selector: {:?}", selector);
+//            bail!("Couldn't find element using selector: {:?}", selector);
         }
 
         dbg!(node_id);
@@ -86,7 +85,7 @@ impl Tab {
         })
     }
 
-    pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node> {
+    pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node, Error> {
         let mut session = self.page_session.borrow_mut();
         let node = session.call(dom::methods::DescribeNode {
             node_id: Some(node_id),
@@ -96,7 +95,7 @@ impl Tab {
         Ok(node)
     }
 
-    pub fn type_str(&self, string_to_type: &str) -> Result<()> {
+    pub fn type_str(&self, string_to_type: &str) -> Result<(), Error> {
         for c in string_to_type.split("") {
             // split call above will have empty string at start and end which we won't type
             if c == "" {
@@ -107,9 +106,8 @@ impl Tab {
         Ok(())
     }
 
-    pub fn press_key(&self, key: &str) -> Result<()> {
-        // TODO: wtf is with the 0?
-        let definition = keys::get_key_definition(key).ok_or(format!("Can't find key: #{}", key))?;
+    pub fn press_key(&self, key: &str) -> Result<(), Error> {
+        let definition = keys::get_key_definition(key)?;
         let mut session = self.page_session.borrow_mut();
 
         // TODO: send code and other parts of the def?
@@ -127,7 +125,7 @@ impl Tab {
     }
 
 
-    pub fn click_point(&self, point: Point) -> Result<()> {
+    pub fn click_point(&self, point: Point) -> Result<(), Error> {
         let mut session = self.page_session.borrow_mut();
 
         session.call(input::methods::DispatchMouseEvent {

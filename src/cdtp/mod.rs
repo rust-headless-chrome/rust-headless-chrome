@@ -1,13 +1,12 @@
+use failure::{Error, Fail};
 use serde;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub mod target;
 pub mod page;
 pub mod dom;
 pub mod input;
-
-use crate::errors::*;
 
 pub type CallId = u16;
 
@@ -35,7 +34,8 @@ pub trait Method {
 //    fn call(&self, mut session: impl Session) -> Self::ReturnObject;
 }
 
-#[derive(Deserialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Debug, PartialEq, Clone, Fail)]
+#[fail(display = "Method call error {}: {}", code, message)]
 pub struct RemoteError {
     pub code: i32,
     pub message: String
@@ -78,8 +78,9 @@ pub enum Message {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn pass_through_channel() {
@@ -176,7 +177,7 @@ mod tests {
     }
 }
 
-pub fn parse_raw_message(raw_message: String) -> Result<Message>
+pub fn parse_raw_message(raw_message: String) -> Result<Message, Error>
 {
-    serde_json::from_str::<Message>(raw_message.as_ref()).chain_err(|| raw_message)
+    Ok(serde_json::from_str::<Message>(raw_message.as_ref())?)
 }

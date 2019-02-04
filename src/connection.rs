@@ -1,17 +1,16 @@
 use std::sync::mpsc;
 
+use failure::{Error, Fail};
 use log::*;
 use serde;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
-use error_chain::bail;
 
 use crate::cdtp;
 use crate::cdtp::{Event, Response};
 use crate::chrome;
-use crate::errors::*;
 use crate::waiting_call_registry;
 
 pub struct Connection {
@@ -20,10 +19,10 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<cdtp::Message>) -> Result<Self> {
+    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<cdtp::Message>) -> Result<Self, Error> {
         let connection = Connection::websocket_connection(&browser_id)?;
 
-        let (websocket_receiver, sender) = connection.split().chain_err(|| "Couldn't split conn")?;
+        let (websocket_receiver, sender) = connection.split()?;
 
         let (browser_responses_tx, browser_responses_rx) = mpsc::channel();
         let call_registry = waiting_call_registry::WaitingCallRegistry::new(browser_responses_rx);
@@ -88,21 +87,18 @@ impl Connection {
         }
     }
 
-    pub fn websocket_connection(browser_id: &chrome::BrowserId) -> Result<Client<TcpStream>> {
+    pub fn websocket_connection(browser_id: &chrome::BrowserId) -> Result<Client<TcpStream>, Error> {
         // TODO: can't keep using that proxy forever, will need to deal with chromes on other ports
         let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", browser_id);
         info!("Connecting to WebSocket: {}", ws_url);
-        let client = ClientBuilder::new(ws_url)
-            .chain_err(|| "Unable to create client builder")?
-            .connect_insecure()
-            .chain_err(|| "Unable to connect to WebSocket")?;
+        let client = ClientBuilder::new(ws_url)?.connect_insecure()?;
 
         info!("Successfully connected to WebSocket: {}", ws_url);
 
         Ok(client)
     }
 
-    pub fn call_method<C>(&mut self, method: C) -> Result<C::ReturnObject>
+    pub fn call_method<C>(&mut self, method: C) -> Result<C::ReturnObject, Error>
         where C: cdtp::Method + serde::Serialize {
         let call = method.to_method_call();
         let message = websocket::Message::text(serde_json::to_string(&call).unwrap());
@@ -114,7 +110,7 @@ impl Connection {
         let response = response_rx.recv().unwrap();
 
         if let Some(error) = response.error {
-            bail!(format!("{:?}", error))
+//            bail!(format!("{:?}", error))
         }
 
         let result: C::ReturnObject = serde_json::from_value(response.result.unwrap()).unwrap();

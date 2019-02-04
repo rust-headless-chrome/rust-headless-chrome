@@ -1,19 +1,15 @@
-use std::io::Read;
-use std::process::{Command, Stdio, Child};
-use std::fmt;
 use std::borrow::BorrowMut;
+use std::cell::RefCell;
+use std::fmt;
+use std::io::Read;
+use std::process::{Child, Command, Stdio};
 
-use crate::tab::Tab;
-
+use failure::{Error, Fail};
 use log::*;
-
-use error_chain::bail;
-
 use regex::Regex;
 
-use super::errors::*;
 use crate::page_session::PageSession;
-use std::cell::RefCell;
+use crate::tab::Tab;
 
 #[derive(Debug)]
 pub struct BrowserId(String);
@@ -29,9 +25,15 @@ pub struct Chrome {
     pub browser_id: BrowserId,
 }
 
+#[derive(Debug, Fail)]
+enum ChromeLaunchError {
+    #[fail(display="Chrome launched, but didn't give us a WebSocket URL before we timed out")]
+    PortOpenTimeout
+}
+
 impl Chrome {
     // TODO: find out why this complains if named 'new'
-    pub fn new(headless: bool) -> Result<Self> {
+    pub fn new(headless: bool) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
 //        let process = Command::new("/usr/bin/google-chrome")
@@ -45,13 +47,11 @@ impl Chrome {
         let mut process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
             .args(&args)
             .stderr(Stdio::piped())
-            .spawn()
-            .chain_err(|| "Couldn't start chrome")?;
+            .spawn()?;
 
         info!("Started Chrome. PID: {}", process.id());
 
-        let browser_id = Chrome::browser_id_from_output(process.borrow_mut())
-            .chain_err(|| "Couldn't get browser ID from Chrome process")?;
+        let browser_id = Chrome::browser_id_from_output(process.borrow_mut())?;
 
         Ok(Chrome {
             child_process: process,
@@ -60,7 +60,7 @@ impl Chrome {
     }
 
 
-    fn browser_id_from_output(child_process: &mut Child) -> Result<BrowserId> {
+    fn browser_id_from_output(child_process: &mut Child) -> Result<BrowserId, Error> {
         // TODO: user static or lazy static regex
         let re = Regex::new(r"listening on .*/devtools/browser/(.*)\n").unwrap();
 
@@ -75,16 +75,17 @@ impl Chrome {
         let time_before = std::time::SystemTime::now();
         loop {
             let elapsed_seconds = time_before
-                .elapsed()
-                .chain_err(|| "Couldn't get system time")?
+                .elapsed()?
                 .as_secs();
 
             if elapsed_seconds > 1 {
-                bail!("Couldn't read WebSocket URL within one second");
+                // TODO: there's gotta be a nicer way to do that.
+                return Err(ChromeLaunchError::PortOpenTimeout{}.into());
             }
 
             let my_stderr = child_process.stderr.as_mut();
-            let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
+            // TODO: actually handle this error
+            let bytes_read = my_stderr.unwrap().read(&mut buf)?;
 
             if bytes_read > 0 {
                 let chrome_output = String::from_utf8_lossy(&buf);
@@ -98,7 +99,7 @@ impl Chrome {
         }
     }
 
-    pub fn new_tab(&self) -> Result<Tab> {
+    pub fn new_tab(&self) -> Result<Tab, Error> {
         let session = PageSession::new(&self.browser_id)?;
         Ok(Tab { page_session: RefCell::new(session) })
     }

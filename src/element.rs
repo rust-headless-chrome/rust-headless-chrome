@@ -1,4 +1,5 @@
-use crate::errors::*;
+use failure::{Error, Fail};
+
 use crate::point::Point;
 use crate::cdtp::dom;
 use crate::element;
@@ -22,13 +23,13 @@ pub struct Element<'a> {
 
 impl<'a> Element<'a> {
 
-    pub fn click(&self) -> Result<()> {
+    pub fn click(&self) -> Result<(), Error> {
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
         Ok(())
     }
 
-    pub fn get_description(&self) -> Result<dom::Node> {
+    pub fn get_description(&self) -> Result<dom::Node, Error> {
         let mut session = self.parent.page_session.borrow_mut();
         let node = session.call(dom::methods::DescribeNode {
             node_id: None,
@@ -38,7 +39,7 @@ impl<'a> Element<'a> {
         Ok(node)
     }
 
-    pub fn get_midpoint(&self) -> Result<Point> {
+    pub fn get_midpoint(&self) -> Result<Point, Error> {
         let mut session = self.parent.page_session.borrow_mut();
 
         let return_object = session.call(dom::methods::GetContentQuads {
