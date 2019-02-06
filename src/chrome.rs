@@ -1,8 +1,6 @@
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
-use std::fmt;
 use std::net;
-use std::env;
 use std::io::Read;
 use std::process::{Child, Command, Stdio};
 use rand::thread_rng;
@@ -110,7 +108,7 @@ impl Chrome {
             args.extend(&["--headless"]);
         }
 
-        let mut process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
+        let process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
             .args(&args)
             .stderr(Stdio::piped())
             .spawn()?;

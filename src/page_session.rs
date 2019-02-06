@@ -11,7 +11,6 @@ use crate::cdtp;
 use crate::cdtp::{Message, Response, Event};
 use crate::cdtp::target;
 use crate::cdtp::page::methods::*;
-use crate::chrome;
 use crate::connection;
 use crate::waiting_call_registry;
 

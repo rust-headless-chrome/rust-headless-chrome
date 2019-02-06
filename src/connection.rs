@@ -10,7 +10,6 @@ use websocket::WebSocketError;
 
 use crate::cdtp;
 use crate::cdtp::{Event, Response};
-use crate::chrome;
 use crate::waiting_call_registry;
 
 pub struct Connection {

@@ -43,7 +43,7 @@ impl Tab {
     }
 
     pub fn wait_until_navigated(&self) -> Result<(), Error> {
-        let mut session = self.page_session.borrow_mut();
+        let session = self.page_session.borrow_mut();
         trace!("waiting to start navigating");
         // wait for navigating to go to true
 
@@ -85,7 +85,7 @@ impl Tab {
             return Err(NavigationFailed { error_text }.into());
         }
 
-        self.wait_until_navigated();
+        self.wait_until_navigated()?;
 
         Ok(())
     }
