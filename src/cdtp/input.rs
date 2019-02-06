@@ -6,9 +6,25 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct DispatchMouseEvent<'a> {
         #[serde(rename = "type")]
+        // TODO: this can be enum
         pub event_type: &'a str,
         pub x: f64,
         pub y: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub button: Option<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub click_count: Option<u8>
+    }
+    impl<'a> Default for DispatchMouseEvent<'a> {
+        fn default() -> Self {
+            DispatchMouseEvent {
+                event_type: "mouseMoved",
+                x: 0.0,
+                y: 0.0,
+                button: None,
+                click_count: None
+            }
+        }
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]

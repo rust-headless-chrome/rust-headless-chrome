@@ -179,17 +179,25 @@ impl Tab {
             event_type: "mouseMoved",
             x: point.x,
             y: point.y,
+            ..Default::default()
         })?;
+        std::thread::sleep_ms(100);
         session.call(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,
             y: point.y,
+            button: Some("left"),
+            click_count: Some(1)
         })?;
+        std::thread::sleep_ms(100);
         session.call(input::methods::DispatchMouseEvent {
             event_type: "mouseReleased",
             x: point.x,
             y: point.y,
+            button: Some("left"),
+            click_count: Some(1)
         })?;
+        std::thread::sleep_ms(100);
         Ok(())
     }
 }

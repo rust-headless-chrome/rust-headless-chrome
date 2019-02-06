@@ -57,8 +57,10 @@ fn log_in_to_fastmail() -> Result<(), Error> {
         warn!("Fastmail seems to be down.");
         return Ok(());
     }
-    std::thread::sleep_ms(3000);
-    let log_in_link = tab.find_element(r#"#header-nav a"#)?;
+
+    std::thread::sleep_ms(5000);
+
+    let log_in_link = tab.find_element(r#".main-content a"#)?;
     dbg!(log_in_link.get_description());
 
     log_in_link.click()?;
@@ -80,8 +82,37 @@ fn log_in_to_fastmail() -> Result<(), Error> {
     Ok(())
 }
 
+fn browse_wikipedia() -> Result<(), Error> {
+    env_logger::try_init().unwrap_or(());
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false })?;
+    let tab = chrome.new_tab()?;
+
+    if let Err(nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
+        warn!("Site seems to be down.");
+        return Ok(());
+    }
+
+    let log_in_link = tab.find_element(r#"#js-link-box-en"#)?;
+    dbg!(log_in_link.get_description());
+
+    log_in_link.click()?;
+
+    tab.wait_until_navigated()?;
+    // TODO: now make it wait for navigation?!
+
+//    dbg!(element.get_attributes());
+//    tab.type_str("roche.a@gmail.com")?;
+//    tab.press_key("Enter")?;
+
+    std::thread::sleep_ms(5000);
+
+    Ok(())
+}
+
+
 #[test]
 fn ml_staging() {
+    browse_wikipedia().expect("passed");
     log_in_to_fastmail().expect("passed");
     log_in_to_ml().expect("passed");
 }
