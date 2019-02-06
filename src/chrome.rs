@@ -5,6 +5,8 @@ use std::net;
 use std::env;
 use std::io::Read;
 use std::process::{Child, Command, Stdio};
+use rand::thread_rng;
+use rand::seq::SliceRandom;
 
 use failure::{Error, Fail};
 use log::*;
@@ -179,8 +181,9 @@ impl Drop for Chrome {
 }
 
 fn get_available_port() -> Option<u16> {
-    (8000..9000)
-        .find(|port| port_is_available(*port))
+    let mut ports: Vec<u16> = (8000..9000).collect();
+    ports.shuffle(&mut thread_rng());
+    ports.iter().find(|port| port_is_available(**port)).map(|p| p.clone())
 }
 
 fn port_is_available(port: u16) -> bool {
