@@ -11,6 +11,7 @@ use rand::seq::SliceRandom;
 use failure::{Error, Fail};
 use log::*;
 use regex::Regex;
+use tempdir::TempDir;
 
 use crate::page_session::PageSession;
 use crate::tab::Tab;
@@ -39,6 +40,7 @@ impl Default for LaunchOptions {
     fn default() -> Self {
         LaunchOptions {
             headless: true,
+            // TODO: extra option for if you want it to keep scanning up from the port you passed?
             port: None,
         }
     }
@@ -58,7 +60,7 @@ impl Chrome {
         loop {
             dbg!(attempts);
             if attempts > 50 {
-                return Err(ChromeLaunchError::NoAvailablePorts{}.into());
+                return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
 
             match Chrome::ws_url_from_output(process.borrow_mut()) {
@@ -66,7 +68,7 @@ impl Chrome {
                     url = debug_ws_url;
                     println!("got url");
                     break;
-                },
+                }
                 Err(error) => {
                     if launch_options.port.is_none() {
                         process = Chrome::start_process(&launch_options)?;
@@ -83,7 +85,6 @@ impl Chrome {
             child_process: process,
             debug_ws_url: url,
         })
-
     }
 
     fn start_process(launch_options: &LaunchOptions) -> Result<Child, Error> {
@@ -96,8 +97,9 @@ impl Chrome {
 
         // NOTE: picking random data dir so that each a new browser instance is launched
         // (see man google-chrome)
-        let user_data_dir = env::temp_dir();
-        let data_dir_option = format!("--user-data-dir={}", user_data_dir.to_str().unwrap());
+        let user_data_dir = TempDir::new("rust-headless-chrome-profile")?;
+        let data_dir_option = format!("--user-data-dir={}", user_data_dir.path().to_str().unwrap());
+        dbg!(&data_dir_option);
         let mut args = vec![
             port_option.as_str(),
             "--verbose",
@@ -247,5 +249,21 @@ mod tests {
         for handle in handles {
             dbg!(handle.join());
         }
+    }
+
+
+    #[test]
+    fn no_instance_sharing() {
+        env_logger::try_init().unwrap_or(());
+
+        let mut handles = Vec::new();
+
+        for _ in 0..10 {
+            let chrome = super::Chrome::new(super::LaunchOptions {
+                headless: false,
+                ..Default::default()
+            }).unwrap();
+            handles.push(chrome);
+        };
     }
 }

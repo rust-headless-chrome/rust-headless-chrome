@@ -25,7 +25,7 @@ fn log_in_to_ml() -> Result<(), Error> {
 
 fn log_in_to_fastmail() -> Result<(), Error> {
     env_logger::try_init().unwrap_or(());
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
     if let Err(nav_failed) = tab.navigate_to("https://www.fastmail.com/") {
@@ -50,7 +50,7 @@ fn log_in_to_fastmail() -> Result<(), Error> {
 
 fn browse_wikipedia() -> Result<(), Error> {
     env_logger::try_init().unwrap_or(());
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
     if let Err(nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
