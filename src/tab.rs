@@ -54,7 +54,7 @@ impl Tab {
                 .elapsed()
                 .expect("serious problems with your clock bro")
                 .as_secs();
-            elapsed_seconds > 5
+            elapsed_seconds > 10
         };
 
         loop {

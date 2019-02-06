@@ -6,6 +6,8 @@ use log::*;
 use toml;
 
 use lib::chrome;
+use rand::{self, Rng};
+use rand::distributions::Alphanumeric;
 
 fn parse_secrets() -> Result<toml::Value, Error> {
     let mut secrets_toml = File::open("./secrets.toml")?;
@@ -35,24 +37,24 @@ fn log_in_to_ml() -> Result<(), Error> {
     Ok(())
 }
 
+fn rand_ascii() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(30)
+        .collect()
+}
+
 fn log_in_to_fastmail() -> Result<(), Error> {
     env_logger::try_init().unwrap_or(());
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
+    let time_before = std::time::SystemTime::now();
+
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
-    if let Err(nav_failed) = tab.navigate_to("https://www.fastmail.com/") {
+    if let Err(nav_failed) = tab.navigate_to("https://www.fastmail.com/login") {
         warn!("Fastmail seems to be down.");
         return Ok(());
     }
-
-    let log_in_link = tab.find_element(r#"#header-login a"#)?;
-    dbg!(log_in_link.get_description());
-
-    log_in_link.click()?;
-
-    tab.wait_until_navigated()?;
-
-    std::thread::sleep_ms(2000);
 
     let secrets = &parse_secrets()?["fastmail"];
 
@@ -67,14 +69,31 @@ fn log_in_to_fastmail() -> Result<(), Error> {
 
     tab.find_element(".s-compose-to ")?.click()?;
 
+    let subject = rand_ascii();
+    let body = rand_ascii();
+
     tab.type_str(secrets["email"].as_str().unwrap())?;
     tab.press_key("Enter")?; // for the autocomplete
     tab.press_key("Tab")?;
-    tab.type_str("A test subject line!")?;
+
+    tab.type_str(&subject)?;
     tab.press_key("Tab")?;
-    tab.type_str("Test body")?;
+
+    tab.type_str(&body)?;
 
     tab.find_element("button.s-send")?.click()?;
+
+    let elapsed_seconds = time_before
+        .elapsed()?
+        .as_secs();
+
+    dbg!(elapsed_seconds);
+
+
+    std::thread::sleep_ms(100);
+
+    // refresh inbox:
+    tab.find_element("li.v-MailboxSource--inbox")?.click();
 
     std::thread::sleep_ms(5000);
 
