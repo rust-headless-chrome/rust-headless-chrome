@@ -27,9 +27,9 @@ pub struct PageSession {
 
 
 impl PageSession {
-    pub fn new(browser_id: &chrome::BrowserId) -> Result<Self, Error> {
+    pub fn new(ws_url: &str) -> Result<Self, Error> {
         let (messages_tx, messages_rx) = mpsc::channel();
-        let mut conn = super::connection::Connection::new(&browser_id, messages_tx).unwrap();
+        let mut conn = super::connection::Connection::new(&ws_url, messages_tx).unwrap();
 
         let browser_context_id = conn.call_method(target::methods::CreateBrowserContext {})?.browser_context_id;
         let create_target = target::methods::CreateTarget {

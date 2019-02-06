@@ -19,8 +19,8 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(browser_id: &chrome::BrowserId, target_messages_tx: mpsc::Sender<cdtp::Message>) -> Result<Self, Error> {
-        let connection = Connection::websocket_connection(&browser_id)?;
+    pub fn new(ws_url: &str, target_messages_tx: mpsc::Sender<cdtp::Message>) -> Result<Self, Error> {
+        let connection = Connection::websocket_connection(&ws_url)?;
 
         let (websocket_receiver, sender) = connection.split()?;
 
@@ -87,9 +87,8 @@ impl Connection {
         }
     }
 
-    pub fn websocket_connection(browser_id: &chrome::BrowserId) -> Result<Client<TcpStream>, Error> {
+    pub fn websocket_connection(ws_url: &str) -> Result<Client<TcpStream>, Error> {
         // TODO: can't keep using that proxy forever, will need to deal with chromes on other ports
-        let ws_url = &format!("ws://127.0.0.1:9223/devtools/browser/{}", browser_id);
         info!("Connecting to WebSocket: {}", ws_url);
         let client = ClientBuilder::new(ws_url)?.connect_insecure()?;
 
@@ -123,7 +122,7 @@ mod tests {
 
         let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
 
-        let mut conn = super::Connection::new(&chrome.browser_id, messages_tx).unwrap();
+        let mut conn = super::Connection::new(&chrome.debug_ws_url, messages_tx).unwrap();
 
         let call = super::cdtp::target::methods::CreateBrowserContext {};
         let r1 = conn.call_method(call).unwrap();

@@ -29,6 +29,10 @@ impl<'a> Element<'a> {
     }
 
     pub fn focus(&self) -> Result<(), Error> {
+        self.parent.call_method(dom::methods::Focus {
+            backend_node_id: Some(self.backend_node_id),
+            ..Default::default()
+        })?;
         Ok(())
     }
 

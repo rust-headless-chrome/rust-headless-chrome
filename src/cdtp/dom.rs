@@ -55,6 +55,24 @@ pub mod methods {
         type ReturnObject = DescribeNodeReturnObject;
     }
 
+
+    #[derive(Serialize, Debug, Default)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Focus {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub backend_node_id: Option<super::NodeId>,
+        pub object_id: Option<String>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct FocusReturnObject {}
+    impl Method for Focus {
+        const NAME: &'static str = "DOM.focus";
+        type ReturnObject = FocusReturnObject;
+    }
+
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct QuerySelector<'a> {
