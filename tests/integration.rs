@@ -1,10 +1,23 @@
-use failure::{Error};
+use std::fs::File;
+use std::io::prelude::*;
+
+use failure::Error;
 use log::*;
+use toml;
 
 use lib::chrome;
 
+fn parse_secrets() -> Result<toml::Value, Error> {
+    let mut secrets_toml = File::open("./secrets.toml")?;
+    let mut secrets = String::new();
+    secrets_toml.read_to_string(&mut secrets).unwrap();
+
+    Ok(secrets.parse::<toml::Value>()?)
+}
+
 fn log_in_to_ml() -> Result<(), Error> {
     env_logger::try_init().unwrap_or(());
+
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
@@ -12,7 +25,6 @@ fn log_in_to_ml() -> Result<(), Error> {
         warn!("Mentorloop seems to be down.");
         return Ok(());
     }
-//    std::thread::sleep_ms(3000);
 
     let element = tab.find_element(r#"input[type="email"]"#)?;
 
@@ -40,10 +52,31 @@ fn log_in_to_fastmail() -> Result<(), Error> {
 
     tab.wait_until_navigated()?;
 
-    tab.type_str("alistair@fastmail.com");
-    tab.press_key("Tab");
-    tab.type_str("password");
-    tab.press_key("Enter");
+    std::thread::sleep_ms(2000);
+
+    let secrets = &parse_secrets()?["fastmail"];
+
+    tab.type_str(secrets["email"].as_str().unwrap())?;
+    tab.press_key("Tab")?;
+    tab.type_str(secrets["password"].as_str().unwrap())?;
+    tab.press_key("Enter")?;
+
+    tab.wait_until_navigated()?;
+
+    tab.find_element(".icon-compose")?.click()?;
+
+    tab.find_element(".s-compose-to ")?.click()?;
+
+    tab.type_str(secrets["email"].as_str().unwrap())?;
+    tab.press_key("Enter")?; // for the autocomplete
+    tab.press_key("Tab")?;
+    tab.type_str("A test subject line!")?;
+    tab.press_key("Tab")?;
+    tab.type_str("Test body")?;
+
+    tab.find_element("button.s-send")?.click()?;
+
+    std::thread::sleep_ms(5000);
 
     Ok(())
 }

@@ -63,6 +63,7 @@ pub mod methods {
         pub node_id: Option<super::NodeId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub backend_node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub object_id: Option<String>,
     }
     #[derive(Debug, Deserialize)]

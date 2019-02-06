@@ -15,6 +15,7 @@ log = "0.4.5"
 env_logger = "0.5.13"
 rand = "0.6"
 tempdir = "0.3"
+toml = "0.4"
 
 [lib]
 name = "lib"
