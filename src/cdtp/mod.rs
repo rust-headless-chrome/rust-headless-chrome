@@ -57,8 +57,6 @@ pub fn parse_response<T>(response: Response) -> Result<T, Error>
 
     let result: T = serde_json::from_value(response.result.unwrap()).unwrap();
 
-    dbg!(&result);
-
     Ok(result)
 }
 

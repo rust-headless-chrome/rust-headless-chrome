@@ -24,6 +24,14 @@ pub struct Tab {
 pub struct NoElementFound {
     selector: String
 }
+#[derive(Debug, Fail)]
+#[fail(display = "Navigate failed: {}", error_text)]
+pub struct NavigationFailed {
+    error_text: String
+}
+#[derive(Debug, Fail)]
+#[fail(display = "Navigate timed out")]
+pub struct NavigationTimedOut {}
 
 impl Tab {
     // TODO: error handling (e.g. error_text: Some("net::ERR_CONNECTION_RESET"))
@@ -34,14 +42,25 @@ impl Tab {
         session.call(method)
     }
 
-    pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
-        self.call_method(Navigate { url })?;
-
-
+    pub fn wait_until_navigated(&self) -> Result<(), Error> {
         let mut session = self.page_session.borrow_mut();
         trace!("waiting to start navigating");
         // wait for navigating to go to true
+
+        let time_before = std::time::SystemTime::now();
+
+        let timed_out = || {
+            let elapsed_seconds = time_before
+                .elapsed()
+                .expect("serious problems with your clock bro")
+                .as_secs();
+            elapsed_seconds > 5
+        };
+
         loop {
+            if timed_out() {
+                return Err(NavigationTimedOut {}.into());
+            }
             if *session.navigating.lock().unwrap() {
                 break;
             }
@@ -50,12 +69,24 @@ impl Tab {
 
         // wait for navigating to go to false
         loop {
+            if timed_out() {
+                return Err(NavigationTimedOut {}.into());
+            }
             if !*session.navigating.lock().unwrap() {
                 break;
             }
         }
+        Ok(())
+    }
 
-        trace!("done navigating");
+    pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
+        let return_object = self.call_method(Navigate { url })?;
+        if let Some(error_text) = return_object.error_text {
+            return Err(NavigationFailed { error_text }.into());
+        }
+
+        self.wait_until_navigated();
+
         Ok(())
     }
 
@@ -140,6 +171,8 @@ impl Tab {
 
 
     pub fn click_point(&self, point: Point) -> Result<(), Error> {
+        trace!("clicking point: {:?}", point);
+
         let mut session = self.page_session.borrow_mut();
 
         session.call(input::methods::DispatchMouseEvent {

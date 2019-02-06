@@ -120,7 +120,9 @@ impl PageSession {
         let response_rx = self.call_registry.register_call(method_call.id);
 
         let response = response_rx.recv().unwrap();
-        cdtp::parse_response::<C::ReturnObject>(response)
+        let return_object = cdtp::parse_response::<C::ReturnObject>(response)?;
+        dbg!(&return_object);
+        Ok(return_object)
     }
 
 }
