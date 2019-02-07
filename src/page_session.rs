@@ -131,10 +131,14 @@ impl PageSession {
 #[cfg(test)]
 mod tests {
     use failure::{Error};
+    use crate::logging;
 
     fn do_test() -> Result<(), Error> {
-        env_logger::try_init().unwrap_or(());
-        let chrome = crate::chrome::Chrome::new(Default::default())?;
+        logging::enable_logging();
+        let chrome = crate::chrome::Chrome::new(crate::chrome::LaunchOptions{
+            headless: true,
+            ..Default::default()
+        })?;
         let tab = chrome.new_tab()?;
 
         tab.navigate_to("http://todomvc.com/examples/vanillajs/")?;
@@ -142,8 +146,7 @@ mod tests {
         element.click()?;
         tab.type_str("buy cereal")?;
         tab.press_key("Enter")?;
-        // TODO: raise error if node_id = 0
-        let todo_label = tab.find_element("li label")?;
+        let todo_label = tab.wait_for_element("li label")?;
         let children = todo_label.get_description()?.children.unwrap();
         let text = &children.first().unwrap().node_value;
         assert_eq!("buy cereal", text);
@@ -151,7 +154,7 @@ mod tests {
     }
 
     fn handles_remote_errors() -> Result<(), Error> {
-        env_logger::try_init().unwrap_or(());
+        logging::enable_logging();
         let chrome = crate::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
         tab.navigate_to("http://todomvc.com/examples/vanillajs/")?;

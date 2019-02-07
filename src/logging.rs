@@ -9,7 +9,7 @@ pub fn enable_logging() {
     let mut builder = env_logger::Builder::from_default_env();
 
     // NOTE: can infer types here, but I find them a useful reminder.
-    builder.format(move |buf: &mut fmt::Formatter, record: &log::Record| {
+    let _result = builder.format(move |buf: &mut fmt::Formatter, record: &log::Record| {
         // TODO: this is fucked! can't import it.
 //        dbg!(buf.default_styled_level(record.level()));
         let date = chrono::Local::now();
@@ -24,8 +24,7 @@ pub fn enable_logging() {
 
         writeln!(buf, "{:<2} [{}:{}] - {:<12} - {}", level_str, hours_minutes, fmt_seconds, truncated_module_path, record.args())
     })
-        .filter(None, LevelFilter::Info)
-        .try_init().unwrap();
+        .try_init();
 }
 
 // damn, looks like it's harder than I thought it would be to change the datetime format!
