@@ -3,7 +3,6 @@ use chrono;
 
 use env_logger;
 use env_logger::fmt;
-use termcolor;
 use log::*;
 
 pub fn enable_logging() {
@@ -21,10 +20,12 @@ pub fn enable_logging() {
         let seconds_millis = date.format("%S%.3f").to_string();
         let fmt_seconds = style.set_bold(true).value(seconds_millis);
 
-        writeln!(buf, "{:<2} [{}:{}] - {}", level_str, hours_minutes, fmt_seconds, record.args())
+        let truncated_module_path = &record.module_path().unwrap()[5..];
+
+        writeln!(buf, "{:<2} [{}:{}] - {:<12} - {}", level_str, hours_minutes, fmt_seconds, truncated_module_path, record.args())
     })
         .filter(None, LevelFilter::Info)
-        .try_init();
+        .try_init().unwrap();
 }
 
 // damn, looks like it's harder than I thought it would be to change the datetime format!

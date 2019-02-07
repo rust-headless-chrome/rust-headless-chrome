@@ -124,7 +124,5 @@ mod tests {
 
         let call = crate::cdtp::target::methods::CreateBrowserContext {};
         let r1 = conn.call_method(call).unwrap();
-
-        dbg!(r1);
     }
 }

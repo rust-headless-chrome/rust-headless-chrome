@@ -50,9 +50,9 @@ impl PageSession {
         let navigating_clone = Arc::clone(&navigating);
 
         std::thread::spawn(move || {
-            info!("starting msg handling loop");
+            trace!("Starting msg handling loop");
             Self::handle_incoming_messages(messages_rx, responses_tx, navigating_clone);
-            info!("quit loop msg handling loop");
+            trace!("Quit loop msg handling loop");
         });
 
         let call_registry = waiting_call_registry::WaitingCallRegistry::new(responses_rx);
@@ -65,6 +65,8 @@ impl PageSession {
             // NOTE: this might have to updated if we allow navigating as part of page creation
             navigating,
         };
+
+        info!("Created new tab");
 
         session.call(Enable {}).unwrap();
         session.call(SetLifecycleEventsEnabled { enabled: true }).unwrap();
@@ -128,23 +130,18 @@ impl PageSession {
 
 #[cfg(test)]
 mod tests {
-    use crate::cdtp::page;
-    use crate::cdtp::dom;
-    use crate::cdtp::input;
-    use crate::point::Point;
-    use crate::cdtp::page::methods::*;
-    use failure::{Error, Fail};
+    use failure::{Error};
 
     fn do_test() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
         let chrome = crate::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
 
-        tab.navigate_to("http://todomvc.com/examples/vanillajs/");
+        tab.navigate_to("http://todomvc.com/examples/vanillajs/")?;
         let element = tab.find_element("input")?;
-        element.click();
-        tab.type_str("buy cereal");
-        tab.press_key("Enter");
+        element.click()?;
+        tab.type_str("buy cereal")?;
+        tab.press_key("Enter")?;
         // TODO: raise error if node_id = 0
         let todo_label = tab.find_element("li label")?;
         let children = todo_label.get_description()?.children.unwrap();
@@ -157,7 +154,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let chrome = crate::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
-        tab.navigate_to("http://todomvc.com/examples/vanillajs/");
+        tab.navigate_to("http://todomvc.com/examples/vanillajs/")?;
 
         // 0 is never a good node ID, AFAICT
         let node_description = tab.describe_node(0);

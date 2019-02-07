@@ -1,3 +1,4 @@
+use log::*;
 use failure::{Error, Fail};
 use serde;
 use serde::{Deserialize, Serialize};
@@ -113,7 +114,6 @@ mod tests {
         });
 
         let event: Message = serde_json::from_value(attached_to_target_json).unwrap();
-        dbg!(event);
     }
 
     #[test]
@@ -137,8 +137,6 @@ mod tests {
         });
 
 
-        dbg!(&attached_to_target_json);
-
         let event: Event = serde_json::from_value(attached_to_target_json).unwrap();
         match event {
             Event::AttachedToTarget(_) => {}
@@ -146,7 +144,6 @@ mod tests {
                 panic!("bad news");
             }
         }
-        dbg!(event);
 
         let received_target_msg_event = json!({
             "method": "Target.receivedMessageFromTarget",
@@ -159,7 +156,7 @@ mod tests {
         let event: Event = serde_json::from_value(received_target_msg_event).unwrap();
         match event {
             Event::ReceivedMessageFromTarget(ev) => {
-                dbg!(ev);
+                trace!("{:?}", ev);
             }
             _ => { panic!("bad news") }
         }
@@ -182,7 +179,6 @@ mod tests {
 
         for msg_string in &example_message_strings {
             let message: super::Message = parse_raw_message(msg_string.to_string()).unwrap();
-            dbg!(message);
         }
     }
 }

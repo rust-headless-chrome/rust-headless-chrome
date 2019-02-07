@@ -41,7 +41,7 @@ pub struct NavigationFailed {
 #[fail(display = "Navigate timed out")]
 pub struct NavigationTimedOut {}
 
-impl Tab {
+impl<'a> Tab {
     // TODO: error handling (e.g. error_text: Some("net::ERR_CONNECTION_RESET"))
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
         where C: cdtp::Method + serde::Serialize
@@ -73,7 +73,7 @@ impl Tab {
                 break;
             }
         }
-        trace!("started navigating");
+        debug!("A tab started navigating");
 
         // wait for navigating to go to false
         loop {
@@ -84,6 +84,8 @@ impl Tab {
                 break;
             }
         }
+
+        debug!("A tab finished navigating");
         Ok(())
     }
 
@@ -95,10 +97,12 @@ impl Tab {
 
         self.wait_until_navigated()?;
 
+        info!("Navigated a tab to {}", url);
+
         Ok(())
     }
 
-    pub fn wait_for_element(&self, selector: &str) -> Result<Element, Error> {
+    pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
         let time_before = std::time::SystemTime::now();
         loop {
             if let Ok(element)= self.find_element(selector) {
@@ -119,7 +123,9 @@ impl Tab {
     }
 
     // TODO: have this return a 'can't find element' error when selector returns nothing
-    pub fn find_element(&self, selector: &str) -> Result<Element, Error> {
+    pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+        debug!("Looking up element via selector: {}", selector);
+
         let node_id = {
             let mut session = self.page_session.borrow_mut();
             // TODO: just do this once.
@@ -138,11 +144,7 @@ impl Tab {
             return Err(NoElementFound { selector: selector.to_string() }.into());
         }
 
-        dbg!(node_id);
-
         let backend_node_id = self.describe_node(node_id)?.backend_node_id;
-
-        dbg!(backend_node_id);
 
         let remote_object_id = {
             let mut session = self.page_session.borrow_mut();
@@ -155,6 +157,7 @@ impl Tab {
             remote_object_id,
             backend_node_id,
             parent: &self,
+            found_via_selector: selector
         })
     }
 
@@ -209,7 +212,7 @@ impl Tab {
             y: point.y,
             ..Default::default()
         })?;
-        std::thread::sleep_ms(100);
+        std::thread::sleep(std::time::Duration::from_millis(100));
         session.call(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,
@@ -217,7 +220,7 @@ impl Tab {
             button: Some("left"),
             click_count: Some(1)
         })?;
-        std::thread::sleep_ms(100);
+        std::thread::sleep(std::time::Duration::from_millis(100));
         session.call(input::methods::DispatchMouseEvent {
             event_type: "mouseReleased",
             x: point.x,
@@ -225,7 +228,7 @@ impl Tab {
             button: Some("left"),
             click_count: Some(1)
         })?;
-        std::thread::sleep_ms(100);
+        std::thread::sleep(std::time::Duration::from_millis(100));
         Ok(())
     }
 }

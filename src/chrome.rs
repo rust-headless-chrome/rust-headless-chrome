@@ -153,7 +153,7 @@ impl Chrome {
 
             if bytes_read > 0 {
                 let chrome_output = String::from_utf8_lossy(&buf);
-                debug!("Chrome output: {}", chrome_output);
+                trace!("Chrome output: {}", chrome_output);
 
                 if port_taken_re.is_match(&chrome_output) {
                     return Err(ChromeLaunchError::DebugPortInUse {}.into());
@@ -218,7 +218,6 @@ mod tests {
                 .elapsed()
                 .unwrap()
                 .as_millis();
-            dbg!(chrome_startup_millis);
         }
 
         let child_pids = current_child_pids();
@@ -234,19 +233,19 @@ mod tests {
         for _ in 0..10 {
             let handle = thread::spawn(|| {
                 // these sleeps are to make it more likely the chrome startups will overlap
-                std::thread::sleep_ms(10);
+                std::thread::sleep(std::time::Duration::from_millis(10));
                 let chrome = super::Chrome::new(super::LaunchOptions {
                     port: None,
                     ..Default::default()
                 }).unwrap();
-                std::thread::sleep_ms(100);
+                std::thread::sleep(std::time::Duration::from_millis(100));
                 chrome.debug_ws_url.clone()
             });
             handles.push(handle);
         }
 
         for handle in handles {
-            dbg!(handle.join());
+            handle.join().unwrap();
         }
     }
 

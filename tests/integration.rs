@@ -18,20 +18,39 @@ fn parse_secrets() -> Result<toml::Value, Error> {
     Ok(secrets.parse::<toml::Value>()?)
 }
 
+fn browse_wikipedia() -> Result<(), Error> {
+    logging::enable_logging();
+
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+    let tab = chrome.new_tab()?;
+
+    if let Err(_nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
+        warn!("Site seems to be down.");
+        return Ok(());
+    }
+
+    let log_in_link = tab.find_element(r#"#js-link-box-en"#)?;
+
+    log_in_link.click()?;
+
+    tab.wait_until_navigated()?;
+
+    Ok(())
+}
+
 fn log_in_to_ml() -> Result<(), Error> {
     logging::enable_logging();
 
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
-    if let Err(nav_failed) = tab.navigate_to("https://app-staging.mentorloop.com/") {
+    if let Err(_nav_failed) = tab.navigate_to("https://app-staging.mentorloop.com/") {
         warn!("Mentorloop seems to be down.");
         return Ok(());
     }
 
-    let element = tab.find_element(r#"input[type="email"]"#)?;
+    let _element = tab.find_element(r#"input[type="email"]"#)?;
 
-    dbg!(element.get_attributes());
     tab.type_str("roche.a@gmail.com")?;
     tab.press_key("Enter")?;
 
@@ -49,19 +68,16 @@ fn rand_ascii() -> String {
 
 fn log_in_to_digital_pigeon() -> Result<(), Error> {
     logging::enable_logging();
-    let time_before = std::time::SystemTime::now();
 
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
-    if let Err(nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
+    if let Err(_nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
         warn!("Digital Pigeon seems to be down.");
         return Ok(());
     }
 
     let secrets = &parse_secrets()?["digital_pigeon"];
-
-    dbg!(secrets);
 
     let element = tab.find_element(r#"input[type="email"]"#)?;
     element.click()?;
@@ -79,7 +95,7 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
 
     tab.wait_for_element(".create-new-item-btn")?.click()?;
 
-//    std::thread::sleep_ms(10000);
+//    std::thread::sleep(std::time::Duration::from_millis(10000));
     // TODO: if you can't compute quads via protocol, try via JS runtime and getBoundingClientRect
     tab.wait_for_element("div")?.click()?;
 //
@@ -89,7 +105,7 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     let element = tab.wait_for_element(r#"input[directory=""]"#)?;
     element.set_input_files(&vec!["/tmp/blah"])?;
 
-    std::thread::sleep_ms(1000000);
+    std::thread::sleep(std::time::Duration::from_millis(1000000));
 
     Ok(())
 }
@@ -101,7 +117,7 @@ fn log_in_to_fastmail() -> Result<(), Error> {
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
-    if let Err(nav_failed) = tab.navigate_to("https://www.fastmail.com/login") {
+    if let Err(_nav_failed) = tab.navigate_to("https://www.fastmail.com/login") {
         warn!("Fastmail seems to be down.");
         return Ok(());
     }
@@ -137,35 +153,11 @@ fn log_in_to_fastmail() -> Result<(), Error> {
         .elapsed()?
         .as_secs();
 
-    dbg!(elapsed_seconds);
 
-
-    std::thread::sleep_ms(100);
+    std::thread::sleep(std::time::Duration::from_millis(100));
 
     // refresh inbox:
-    tab.find_element("li.v-MailboxSource--inbox")?.click();
-
-    std::thread::sleep_ms(5000);
-
-    Ok(())
-}
-
-fn browse_wikipedia() -> Result<(), Error> {
-    logging::enable_logging();
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
-    let tab = chrome.new_tab()?;
-
-    if let Err(nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
-        warn!("Site seems to be down.");
-        return Ok(());
-    }
-
-    let log_in_link = tab.find_element(r#"#js-link-box-en"#)?;
-    dbg!(log_in_link.get_description());
-
-    log_in_link.click()?;
-
-    tab.wait_until_navigated()?;
+    tab.find_element("li.v-MailboxSource--inbox")?.click()?;
 
     Ok(())
 }

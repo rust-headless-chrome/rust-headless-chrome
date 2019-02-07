@@ -1,3 +1,4 @@
+use log::*;
 use failure::Error;
 
 use crate::point::Point;
@@ -19,10 +20,13 @@ pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
     pub parent: &'a tab::Tab,
+    pub found_via_selector: &'a str
 }
 
 impl<'a> Element<'a> {
     pub fn click(&self) -> Result<(), Error> {
+        debug!("Clicking element found via {}", self.found_via_selector);
+
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
         Ok(())
@@ -57,12 +61,10 @@ impl<'a> Element<'a> {
 
     pub fn get_attributes(&self) -> Result<(), Error> {
         let description = self.get_description()?;
-        dbg!(description.attributes);
         Ok(())
     }
 
     pub fn get_midpoint(&self) -> Result<Point, Error> {
-        dbg!(self.backend_node_id);
         let return_object = self.parent.call_method(dom::methods::GetContentQuads {
             node_id: None,
             backend_node_id: Some(self.backend_node_id),
