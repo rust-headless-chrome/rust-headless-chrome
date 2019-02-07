@@ -52,7 +52,7 @@ impl Connection {
                 }
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
-//                        trace!("Raw message: {:?}", message_string);
+                        trace!("{:?}", message_string);
                         if let Ok(message) = cdtp::parse_raw_message(message_string) {
                             match message {
                                 cdtp::Message::Response(response) => {

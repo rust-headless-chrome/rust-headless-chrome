@@ -62,7 +62,7 @@ impl<'a> Tab {
                 .elapsed()
                 .expect("serious problems with your clock bro")
                 .as_secs();
-            elapsed_seconds > 10
+            elapsed_seconds > 20
         };
 
         loop {
@@ -103,6 +103,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+        debug!("Waiting for element with selector: {}", selector);
         let time_before = std::time::SystemTime::now();
         loop {
             if let Ok(element)= self.find_element(selector) {
@@ -113,7 +114,7 @@ impl<'a> Tab {
                 .elapsed()?
                 .as_secs();
 
-            if elapsed_seconds > 1 {
+            if elapsed_seconds > 10 {
                 // TODO: there's gotta be a nicer way to do that.
                 return Err(TimeOut{}.into());
             }
@@ -124,7 +125,7 @@ impl<'a> Tab {
 
     // TODO: have this return a 'can't find element' error when selector returns nothing
     pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
-        debug!("Looking up element via selector: {}", selector);
+        trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
             let mut session = self.page_session.borrow_mut();

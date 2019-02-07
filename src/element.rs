@@ -3,8 +3,10 @@ use failure::Error;
 
 use crate::point::Point;
 use crate::cdtp::dom;
+use crate::cdtp::runtime;
 use crate::element;
 use crate::tab;
+use std::collections::HashMap;
 
 
 #[derive(Debug, Copy, Clone)]
@@ -30,6 +32,28 @@ impl<'a> Element<'a> {
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
         Ok(())
+    }
+
+    pub fn type_into(&self, text: &str) -> Result<(), Error> {
+        self.click()?;
+
+        debug!("Typing into element ( {} ): {}", self.found_via_selector, text);
+
+        self.parent.type_str(text)?;
+
+        Ok(())
+    }
+
+    pub fn call_js_fn(&self, function_declaration: &str) -> Result<runtime::methods::RemoteObject, Error> {
+        let result = self.parent.call_method(runtime::methods::CallFunctionOn {
+            object_id: &self.remote_object_id,
+            function_declaration,
+            return_by_value: false,
+            generate_preview: true,
+            silent: false,
+        })?.result;
+
+        Ok(result)
     }
 
     pub fn focus(&self) -> Result<(), Error> {
@@ -81,5 +105,24 @@ impl<'a> Element<'a> {
         };
 
         Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
+    }
+
+    pub fn get_js_midpoint(&self) -> Result<Point, Error> {
+        let result = self.call_js_fn("function(){ return this.getBoundingClientRect(); }")?;
+
+        let properties = result.preview.expect("JS couldn't give us quad for element").properties;
+
+        let mut prop_map = HashMap::new();
+
+        for prop in properties {
+            prop_map.insert(prop.name, prop.value.unwrap().parse::<f64>().unwrap());
+        }
+
+        let midpoint = Point {
+            x: prop_map["x"] + (prop_map["width"] / 2.0),
+            y: prop_map["y"] + (prop_map["height"] / 2.0),
+        };
+
+        Ok(midpoint)
     }
 }

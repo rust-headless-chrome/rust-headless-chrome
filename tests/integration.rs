@@ -10,6 +10,10 @@ use lib::logging;
 use rand::{self, Rng};
 use rand::distributions::Alphanumeric;
 
+fn sleep(ms: u64) {
+    std::thread::sleep(std::time::Duration::from_millis(ms));
+}
+
 fn parse_secrets() -> Result<toml::Value, Error> {
     let mut secrets_toml = File::open("./secrets.toml")?;
     let mut secrets = String::new();
@@ -69,8 +73,11 @@ fn rand_ascii() -> String {
 fn log_in_to_digital_pigeon() -> Result<(), Error> {
     logging::enable_logging();
 
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
     let tab = chrome.new_tab()?;
+
+    // so we can use it to upload files
+//    log_in_to_dropbox(&tab);
 
     if let Err(_nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
         warn!("Digital Pigeon seems to be down.");
@@ -79,7 +86,13 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
 
     let secrets = &parse_secrets()?["digital_pigeon"];
 
-    let element = tab.find_element(r#"input[type="email"]"#)?;
+
+    let element = tab.wait_for_element(r#"input[type="email"]"#)?;
+    let classic_mp = element.get_midpoint()?;
+    let js_mp = element.get_js_midpoint()?;
+
+    assert_eq!(classic_mp, js_mp);
+
     element.click()?;
 
     tab.type_str(secrets["email"].as_str().unwrap())?;
@@ -91,21 +104,34 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     tab.press_key("Enter")?;
     tab.wait_until_navigated()?;
 
-    tab.wait_for_element("button.close")?.click()?;
 
-    tab.wait_for_element(".create-new-item-btn")?.click()?;
-
-//    std::thread::sleep(std::time::Duration::from_millis(10000));
     // TODO: if you can't compute quads via protocol, try via JS runtime and getBoundingClientRect
-    tab.wait_for_element("div")?.click()?;
+
+    // doing this rather than closing the guided tour popup directly, b/c chrome couldn't give me
+    // quad for popover elements.
+
+    tab.wait_for_element(".popover")?.call_js_fn("function(){ return this.getBoundingClientRect() }")?;
+
+    while let Ok(_) = tab.find_element(".popover") {
+        // this point just happens to not overlap with guided popup
+        tab.click_point(lib::point::Point { x: 10.0, y: 10.0 })?;
+        sleep(100);
+    }
+
+
+    tab.find_element(".create-new-item-btn")?.click()?;
+
+    tab.wait_for_element("li.add-dropbox")?.call_js_fn("function(){ return this.getBoundingClientRect() }")?;
+//    tab.wait_for_element("div.popover")?.click()?;
+
+
+    sleep(100_000);
 //
-    let element = tab.wait_for_element(r#"input[type="file"]"#)?;
-    element.set_input_files(&vec!["/tmp/blah"])?;
-
-    let element = tab.wait_for_element(r#"input[directory=""]"#)?;
-    element.set_input_files(&vec!["/tmp/blah"])?;
-
-    std::thread::sleep(std::time::Duration::from_millis(1000000));
+//    let element = tab.wait_for_element(r#"input[type="file"]"#)?;
+//    element.set_input_files(&vec!["/tmp/blah"])?;
+//
+//    let element = tab.wait_for_element(r#"input[directory=""]"#)?;
+//    element.set_input_files(&vec!["/tmp/blah"])?;
 
     Ok(())
 }
@@ -153,11 +179,33 @@ fn log_in_to_fastmail() -> Result<(), Error> {
         .elapsed()?
         .as_secs();
 
-
-    std::thread::sleep(std::time::Duration::from_millis(100));
-
     // refresh inbox:
-    tab.find_element("li.v-MailboxSource--inbox")?.click()?;
+    tab.wait_for_element("li.v-MailboxSource--inbox")?.click()?;
+
+    Ok(())
+}
+
+fn log_in_to_dropbox(tab: &lib::tab::Tab) -> Result<(), Error> {
+    if let Err(_nav_failed) = tab.navigate_to("https://www.dropbox.com/login") {
+        warn!("Dropbox seems to be down.");
+        return Ok(());
+    }
+
+    let secrets = &parse_secrets()?["dropbox"];
+
+    let email_field = tab.find_element(r#"input[type="email"]"#)?;
+    email_field.type_into(&secrets["email"].as_str().unwrap())?;
+
+    tab.press_key("Tab")?;
+    tab.type_str(secrets["password"].as_str().unwrap())?;
+
+    tab.press_key("Enter")?;
+
+    tab.wait_until_navigated()?;
+
+//    tab.wait_for_element("a#files")?.click()?;
+//
+//    tab.wait_until_navigated()?;
 
     Ok(())
 }
@@ -177,4 +225,12 @@ fn ml_staging() {
 #[test]
 fn digital_pigeon() {
     log_in_to_digital_pigeon().expect("passed");
+}
+#[test]
+fn dropbox() {
+    logging::enable_logging();
+
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() }).expect("can't open browser");
+    let tab = chrome.new_tab().expect("couldn't open new tab");
+    log_in_to_dropbox(&tab).expect("passed");
 }

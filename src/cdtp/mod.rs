@@ -8,6 +8,7 @@ pub mod target;
 pub mod page;
 pub mod dom;
 pub mod input;
+pub mod runtime;
 
 pub type CallId = u16;
 

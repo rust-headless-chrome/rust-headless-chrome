@@ -49,9 +49,10 @@ impl PageSession {
         let navigating = Arc::new(Mutex::new(false));
         let navigating_clone = Arc::clone(&navigating);
 
+        let main_frame_id_clone = target_id.clone();
         std::thread::spawn(move || {
             trace!("Starting msg handling loop");
-            Self::handle_incoming_messages(messages_rx, responses_tx, navigating_clone);
+            Self::handle_incoming_messages(messages_rx, responses_tx, navigating_clone, main_frame_id_clone);
             trace!("Quit loop msg handling loop");
         });
 
@@ -61,7 +62,7 @@ impl PageSession {
             session_id,
             connection: conn,
             call_registry,
-            main_frame_id: target_id.to_string(),
+            main_frame_id: target_id,
             // NOTE: this might have to updated if we allow navigating as part of page creation
             navigating,
         };
@@ -74,23 +75,27 @@ impl PageSession {
         Ok(session)
     }
 
-    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>, navigating: Arc<Mutex<bool>>) {
+    // TODO: something really weird about passing through main frame ID. what will I do when it
+    // comes time to do more interesting things with these? like with multiple targets?
+    fn handle_incoming_messages(messages_rx: Receiver<Message>, responses_tx: Sender<Response>, navigating: Arc<Mutex<bool>>, main_frame_id: String) {
         for message in messages_rx {
             match message {
                 Message::Event(event) => {
                     trace!("{:?}", event);
                     match event {
                         Event::LifecycleEvent(lifecycle_event) => {
-                            match lifecycle_event.params.name.as_ref() {
-                                "networkAlmostIdle" => {
-                                    let mut nav = navigating.lock().unwrap();
-                                    *nav = false;
+                            if lifecycle_event.params.frame_id == main_frame_id {
+                                match lifecycle_event.params.name.as_ref() {
+                                    "load" => {
+                                        let mut nav = navigating.lock().unwrap();
+                                        *nav = false;
+                                    }
+                                    "init" => {
+                                        let mut nav = navigating.lock().unwrap();
+                                        *nav = true;
+                                    }
+                                    _ => {}
                                 }
-                                "init" => {
-                                    let mut nav = navigating.lock().unwrap();
-                                    *nav = true;
-                                }
-                                _ => {}
                             }
                         }
                         _ => {}
