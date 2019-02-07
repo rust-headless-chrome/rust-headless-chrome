@@ -37,13 +37,22 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_description(&self) -> Result<dom::Node, Error> {
-        let mut session = self.parent.page_session.borrow_mut();
-        let node = session.call(dom::methods::DescribeNode {
+        let node = self.parent.call_method(dom::methods::DescribeNode {
             node_id: None,
             backend_node_id: Some(self.backend_node_id),
             depth: Some(100),
         })?.node;
         Ok(node)
+    }
+
+    pub fn set_input_files(&self, file_paths: &Vec<&str>) -> Result<(), Error> {
+        self.parent.call_method(dom::methods::SetFileInputFiles {
+            files: file_paths,
+            backend_node_id: Some(self.backend_node_id),
+            node_id: None,
+            object_id: None
+        })?;
+        Ok(())
     }
 
     pub fn get_attributes(&self) -> Result<(), Error> {
@@ -53,9 +62,8 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_midpoint(&self) -> Result<Point, Error> {
-        let mut session = self.parent.page_session.borrow_mut();
-
-        let return_object = session.call(dom::methods::GetContentQuads {
+        dbg!(self.backend_node_id);
+        let return_object = self.parent.call_method(dom::methods::GetContentQuads {
             node_id: None,
             backend_node_id: Some(self.backend_node_id),
             object_id: None,

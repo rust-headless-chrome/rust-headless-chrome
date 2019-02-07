@@ -76,6 +76,25 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
+    pub struct SetFileInputFiles<'a> {
+        pub files: &'a Vec<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub backend_node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub object_id: Option<String>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetFileInputFilesReturnObject {}
+    impl<'a> Method for SetFileInputFiles<'a> {
+        const NAME: &'static str = "DOM.setFileInputFiles";
+        type ReturnObject = SetFileInputFilesReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct QuerySelector<'a> {
         pub node_id: super::NodeId,
         pub selector: &'a str

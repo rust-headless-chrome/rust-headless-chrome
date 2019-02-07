@@ -16,6 +16,8 @@ env_logger = "0.5.13"
 rand = "0.6"
 tempdir = "0.3"
 toml = "0.4"
+chrono = "0.4"
+termcolor = "1"
 
 [lib]
 name = "lib"

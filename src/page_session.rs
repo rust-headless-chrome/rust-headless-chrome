@@ -76,7 +76,7 @@ impl PageSession {
         for message in messages_rx {
             match message {
                 Message::Event(event) => {
-                    trace!("PageSession received event: {:?}", event);
+                    trace!("{:?}", event);
                     match event {
                         Event::LifecycleEvent(lifecycle_event) => {
                             match lifecycle_event.params.name.as_ref() {
@@ -120,7 +120,7 @@ impl PageSession {
 
         let response = response_rx.recv().unwrap();
         let return_object = cdtp::parse_response::<C::ReturnObject>(response)?;
-        dbg!(&return_object);
+        trace!("Returned from call #{}: #{:?}", &method_call.id, &return_object);
         Ok(return_object)
     }
 
@@ -137,7 +137,7 @@ mod tests {
 
     fn do_test() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(Default::default())?;
+        let chrome = crate::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
 
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
@@ -155,7 +155,7 @@ mod tests {
 
     fn handles_remote_errors() -> Result<(), Error> {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(Default::default())?;
+        let chrome = crate::chrome::Chrome::new(Default::default())?;
         let tab = chrome.new_tab()?;
         tab.navigate_to("http://todomvc.com/examples/vanillajs/");
 

@@ -6,6 +6,7 @@ use log::*;
 use toml;
 
 use lib::chrome;
+use lib::logging;
 use rand::{self, Rng};
 use rand::distributions::Alphanumeric;
 
@@ -18,7 +19,7 @@ fn parse_secrets() -> Result<toml::Value, Error> {
 }
 
 fn log_in_to_ml() -> Result<(), Error> {
-    env_logger::try_init().unwrap_or(());
+    logging::enable_logging();
 
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
     let tab = chrome.new_tab()?;
@@ -44,8 +45,57 @@ fn rand_ascii() -> String {
         .collect()
 }
 
+
+
+fn log_in_to_digital_pigeon() -> Result<(), Error> {
+    logging::enable_logging();
+    let time_before = std::time::SystemTime::now();
+
+    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
+    let tab = chrome.new_tab()?;
+
+    if let Err(nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
+        warn!("Digital Pigeon seems to be down.");
+        return Ok(());
+    }
+
+    let secrets = &parse_secrets()?["digital_pigeon"];
+
+    dbg!(secrets);
+
+    let element = tab.find_element(r#"input[type="email"]"#)?;
+    element.click()?;
+
+    tab.type_str(secrets["email"].as_str().unwrap())?;
+    tab.press_key("Enter")?;
+
+    tab.wait_for_element("input#password")?.click()?;
+
+    tab.type_str(secrets["password"].as_str().unwrap())?;
+    tab.press_key("Enter")?;
+    tab.wait_until_navigated()?;
+
+    tab.wait_for_element("button.close")?.click()?;
+
+    tab.wait_for_element(".create-new-item-btn")?.click()?;
+
+//    std::thread::sleep_ms(10000);
+    // TODO: if you can't compute quads via protocol, try via JS runtime and getBoundingClientRect
+    tab.wait_for_element("div")?.click()?;
+//
+    let element = tab.wait_for_element(r#"input[type="file"]"#)?;
+    element.set_input_files(&vec!["/tmp/blah"])?;
+
+    let element = tab.wait_for_element(r#"input[directory=""]"#)?;
+    element.set_input_files(&vec!["/tmp/blah"])?;
+
+    std::thread::sleep_ms(1000000);
+
+    Ok(())
+}
+
 fn log_in_to_fastmail() -> Result<(), Error> {
-    env_logger::try_init().unwrap_or(());
+    logging::enable_logging();
     let time_before = std::time::SystemTime::now();
 
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
@@ -101,7 +151,7 @@ fn log_in_to_fastmail() -> Result<(), Error> {
 }
 
 fn browse_wikipedia() -> Result<(), Error> {
-    env_logger::try_init().unwrap_or(());
+    logging::enable_logging();
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() })?;
     let tab = chrome.new_tab()?;
 
@@ -131,4 +181,8 @@ fn fastmail() {
 #[test]
 fn ml_staging() {
     log_in_to_ml().expect("passed");
+}
+#[test]
+fn digital_pigeon() {
+    log_in_to_digital_pigeon().expect("passed");
 }

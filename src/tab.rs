@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::time;
+use std::thread;
 
 use log::*;
 use failure::{Error, Fail};
@@ -24,11 +26,17 @@ pub struct Tab {
 pub struct NoElementFound {
     selector: String
 }
+
+#[derive(Debug, Fail)]
+#[fail(display = "Timed out waiting for something")]
+pub struct TimeOut {}
+
 #[derive(Debug, Fail)]
 #[fail(display = "Navigate failed: {}", error_text)]
 pub struct NavigationFailed {
     error_text: String
 }
+
 #[derive(Debug, Fail)]
 #[fail(display = "Navigate timed out")]
 pub struct NavigationTimedOut {}
@@ -88,6 +96,26 @@ impl Tab {
         self.wait_until_navigated()?;
 
         Ok(())
+    }
+
+    pub fn wait_for_element(&self, selector: &str) -> Result<Element, Error> {
+        let time_before = std::time::SystemTime::now();
+        loop {
+            if let Ok(element)= self.find_element(selector) {
+                return Ok(element);
+            }
+
+            let elapsed_seconds = time_before
+                .elapsed()?
+                .as_secs();
+
+            if elapsed_seconds > 1 {
+                // TODO: there's gotta be a nicer way to do that.
+                return Err(TimeOut{}.into());
+            }
+
+            thread::sleep(time::Duration::from_millis(10));
+        }
     }
 
     // TODO: have this return a 'can't find element' error when selector returns nothing

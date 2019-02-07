@@ -27,9 +27,9 @@ impl Connection {
         let call_registry = waiting_call_registry::WaitingCallRegistry::new(browser_responses_rx);
 
         let _message_handling_thread = std::thread::spawn(move || {
-            info!("starting msg dispatching loop");
+            trace!("Starting msg dispatching loop");
             Self::dispatch_incoming_messages(websocket_receiver, target_messages_tx, browser_responses_tx);
-            info!("quit loop msg dispatching loop");
+            trace!("Quit loop msg dispatching loop");
         });
 
         Ok(Connection {
@@ -66,7 +66,7 @@ impl Connection {
                                             if let Ok(target_message) = cdtp::parse_raw_message(raw_message.clone()) {
                                                 target_messages_tx.send(target_message).expect("failed to send to page session");
                                             } else {
-                                                debug!("Message from target isn't recognised: {:?}", raw_message);
+                                                trace!("Message from target isn't recognised: {:?}", &raw_message[..30]);
                                             }
                                         }
                                         _ => {
@@ -88,10 +88,9 @@ impl Connection {
 
     pub fn websocket_connection(ws_url: &str) -> Result<Client<TcpStream>, Error> {
         // TODO: can't keep using that proxy forever, will need to deal with chromes on other ports
-        info!("Connecting to WebSocket: {}", ws_url);
         let client = ClientBuilder::new(ws_url)?.connect_insecure()?;
 
-        info!("Successfully connected to WebSocket: {}", ws_url);
+        debug!("Successfully connected to WebSocket: {}", ws_url);
 
         Ok(client)
     }
@@ -117,13 +116,13 @@ mod tests {
     #[test]
     fn you_can_send_methods() {
         env_logger::try_init().unwrap_or(());
-        let chrome = super::chrome::Chrome::new(Default::default()).unwrap();
+        let chrome = crate::chrome::Chrome::new(Default::default()).unwrap();
 
         let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
 
-        let mut conn = super::Connection::new(&chrome.debug_ws_url, messages_tx).unwrap();
+        let mut conn = crate::connection::Connection::new(&chrome.debug_ws_url, messages_tx).unwrap();
 
-        let call = super::cdtp::target::methods::CreateBrowserContext {};
+        let call = crate::cdtp::target::methods::CreateBrowserContext {};
         let r1 = conn.call_method(call).unwrap();
 
         dbg!(r1);

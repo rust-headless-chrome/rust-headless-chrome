@@ -5,6 +5,7 @@
 #![allow(deprecated)]
 
 extern crate log;
+extern crate termcolor;
 
 pub mod chrome;
 pub mod connection;
@@ -14,5 +15,6 @@ pub mod point;
 pub mod element;
 pub mod tab;
 pub mod keys;
+pub mod logging;
 pub mod cdtp;
 

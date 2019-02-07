@@ -56,7 +56,6 @@ impl Chrome {
         let url;
         let mut attempts = 0;
         loop {
-            dbg!(attempts);
             if attempts > 50 {
                 return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
@@ -64,7 +63,6 @@ impl Chrome {
             match Chrome::ws_url_from_output(process.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
-                    println!("got url");
                     break;
                 }
                 Err(error) => {
@@ -76,9 +74,10 @@ impl Chrome {
                 }
             }
 
+            trace!("Trying again to find available debugging port. Attempts: {}", attempts);
             attempts = attempts + 1;
         }
-        dbg!(&url);
+
         Ok(Chrome {
             child_process: process,
             debug_ws_url: url,
@@ -97,7 +96,9 @@ impl Chrome {
         // (see man google-chrome)
         let user_data_dir = TempDir::new("rust-headless-chrome-profile")?;
         let data_dir_option = format!("--user-data-dir={}", user_data_dir.path().to_str().unwrap());
-        dbg!(&data_dir_option);
+
+        trace!("Chrome will have profile: {}", data_dir_option);
+
         let mut args = vec![
             port_option.as_str(),
             "--verbose",
@@ -174,7 +175,7 @@ impl Chrome {
 
 impl Drop for Chrome {
     fn drop(&mut self) {
-        debug!("killing chrome PID: {}", self.child_process.id());
+        info!("Killing Chrome. PID: {}", self.child_process.id());
         self.child_process.kill().unwrap();
         self.child_process.wait().unwrap();
     }
