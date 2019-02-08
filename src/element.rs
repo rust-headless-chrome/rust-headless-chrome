@@ -22,7 +22,7 @@ pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
     pub parent: &'a tab::Tab,
-    pub found_via_selector: &'a str
+    pub found_via_selector: &'a str,
 }
 
 impl<'a> Element<'a> {
@@ -78,7 +78,7 @@ impl<'a> Element<'a> {
             files: file_paths,
             backend_node_id: Some(self.backend_node_id),
             node_id: None,
-            object_id: None
+            object_id: None,
         })?;
         Ok(())
     }
@@ -94,7 +94,6 @@ impl<'a> Element<'a> {
             backend_node_id: Some(self.backend_node_id),
             object_id: None,
         })?;
-
         let raw_quad = return_object.quads.first().unwrap();
 
         let input_quad = element::ElementQuad {

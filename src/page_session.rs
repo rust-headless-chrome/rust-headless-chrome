@@ -86,7 +86,7 @@ impl PageSession {
                         Event::LifecycleEvent(lifecycle_event) => {
                             if lifecycle_event.params.frame_id == main_frame_id {
                                 match lifecycle_event.params.name.as_ref() {
-                                    "load" => {
+                                    "networkAlmostIdle" => {
                                         let mut nav = navigating.lock().unwrap();
                                         *nav = false;
                                     }

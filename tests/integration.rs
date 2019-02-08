@@ -69,11 +69,11 @@ fn rand_ascii() -> String {
 }
 
 
-
 fn log_in_to_digital_pigeon() -> Result<(), Error> {
     logging::enable_logging();
 
     let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+
     let tab = chrome.new_tab()?;
 
     // so we can use it to upload files
@@ -110,18 +110,31 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     // doing this rather than closing the guided tour popup directly, b/c chrome couldn't give me
     // quad for popover elements.
 
-    tab.wait_for_element(".popover")?.call_js_fn("function(){ return this.getBoundingClientRect() }")?;
+    sleep(1000);
+    // seems like something's changed on the account and I don't need this anymore
+//    let point = tab.wait_for_element("button.close")?.click()?;
 
-    while let Ok(_) = tab.find_element(".popover") {
-        // this point just happens to not overlap with guided popup
-        tab.click_point(lib::point::Point { x: 10.0, y: 10.0 })?;
-        sleep(100);
-    }
+//    while let Ok(_) = tab.find_element(".popover") {
+//        // this point just happens to not overlap with guided popup
+//        tab.click_point(lib::point::Point { x: 10.0, y: 10.0 })?;
+//        sleep(100);
+//    }
 
 
     tab.find_element(".create-new-item-btn")?.click()?;
 
-    tab.wait_for_element("li.add-dropbox")?.call_js_fn("function(){ return this.getBoundingClientRect() }")?;
+    sleep(3000);
+
+    // TODO: be able to wait for elements to become visible
+
+    // warning: there are two li.add-dropbox elements on the page
+    dbg!(tab.wait_for_element(".popover li.add-dropbox")?.click()?);
+
+    // TODO: handle this:
+    // 🏹  [16:58:52.342] - connection   - Message from target isn't recognised: "{\"method\":\"Page.windowOpen\",\"p"
+
+//    tab.wait_for_element("li.add-dropbox .needsclick")?.click()?;
+//    tab.wait_for_element(".icon-dropbox")?.click()?;
 //    tab.wait_for_element("div.popover")?.click()?;
 
 
@@ -214,18 +227,22 @@ fn log_in_to_dropbox(tab: &lib::tab::Tab) -> Result<(), Error> {
 fn wikipedia() {
     browse_wikipedia().expect("passed");
 }
+
 #[test]
 fn fastmail() {
     log_in_to_fastmail().expect("passed");
 }
+
 #[test]
 fn ml_staging() {
     log_in_to_ml().expect("passed");
 }
+
 #[test]
 fn digital_pigeon() {
     log_in_to_digital_pigeon().expect("passed");
 }
+
 #[test]
 fn dropbox() {
     logging::enable_logging();

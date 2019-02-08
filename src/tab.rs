@@ -106,7 +106,7 @@ impl<'a> Tab {
         debug!("Waiting for element with selector: {}", selector);
         let time_before = std::time::SystemTime::now();
         loop {
-            if let Ok(element)= self.find_element(selector) {
+            if let Ok(element) = self.find_element(selector) {
                 return Ok(element);
             }
 
@@ -116,7 +116,7 @@ impl<'a> Tab {
 
             if elapsed_seconds > 10 {
                 // TODO: there's gotta be a nicer way to do that.
-                return Err(TimeOut{}.into());
+                return Err(TimeOut {}.into());
             }
 
             thread::sleep(time::Duration::from_millis(10));
@@ -158,7 +158,7 @@ impl<'a> Tab {
             remote_object_id,
             backend_node_id,
             parent: &self,
-            found_via_selector: selector
+            found_via_selector: selector,
         })
     }
 
@@ -203,7 +203,10 @@ impl<'a> Tab {
 
 
     pub fn click_point(&self, point: Point) -> Result<(), Error> {
-        trace!("clicking point: {:?}", point);
+        trace!("Clicking point: {:?}", point);
+        if point.x == 0.0 && point.y == 0.0 {
+           warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
+        }
 
         let mut session = self.page_session.borrow_mut();
 
@@ -219,7 +222,7 @@ impl<'a> Tab {
             x: point.x,
             y: point.y,
             button: Some("left"),
-            click_count: Some(1)
+            click_count: Some(1),
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
         session.call(input::methods::DispatchMouseEvent {
@@ -227,7 +230,7 @@ impl<'a> Tab {
             x: point.x,
             y: point.y,
             button: Some("left"),
-            click_count: Some(1)
+            click_count: Some(1),
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
         Ok(())
