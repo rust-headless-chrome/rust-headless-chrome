@@ -1,24 +1,32 @@
 use std::cell::RefCell;
-use std::time;
+use std::sync::Arc;
+use std::sync::mpsc;
 use std::thread;
+use std::time;
 
-use log::*;
 use failure::{Error, Fail};
+use log::*;
+use log::*;
 use serde;
 
+use crate::cdtp;
 use crate::cdtp::dom;
 use crate::cdtp::input;
+use crate::cdtp::page;
 use crate::cdtp::page::methods::Navigate;
-use crate::page_session::PageSession;
+use crate::cdtp::target;
+use crate::cdtp::target::TargetId;
 use crate::element::Element;
+use crate::helpers::{wait_for, WaitOptions};
 use crate::keys;
 use crate::point::Point;
-use crate::cdtp;
-
-pub type SessionReference = RefCell<PageSession>;
+use crate::transport;
+use crate::transport::Transport;
 
 pub struct Tab {
-    pub page_session: SessionReference,
+    target_id: TargetId,
+    transport: Arc<Transport>,
+    session_id: transport::SessionId,
 }
 
 #[derive(Debug, Fail)]
@@ -42,52 +50,93 @@ pub struct NavigationFailed {
 pub struct NavigationTimedOut {}
 
 impl<'a> Tab {
-    // TODO: error handling (e.g. error_text: Some("net::ERR_CONNECTION_RESET"))
+    pub fn new(target_id: TargetId, transport: Arc<Transport>) -> Result<Self, Error> {
+        // TODO: attach to target!!!
+        let session_id = transport.call_method(target::methods::AttachToTarget {
+            target_id: target_id.as_ref(),
+            flatten: None,
+        })?.session_id;
+
+        debug!("New tab attached with session ID: {}", session_id);
+
+        let incoming_events_rx = transport.listen_to_target_events(session_id.clone());
+
+        let tab = Tab { target_id, transport, session_id };
+        tab.call_method(page::methods::Enable {})?;
+
+        std::thread::spawn(move || {
+            for event in incoming_events_rx {
+                trace!("{:?}", &event);
+            }
+        });
+
+
+        Ok(tab)
+    }
+
+
+//    match event {
+//    Event::LifecycleEvent(lifecycle_event) => {
+//    if lifecycle_event.params.frame_id == main_frame_id {
+//    match lifecycle_event.params.name.as_ref() {
+//    "networkAlmostIdle" => {
+//    let mut nav = navigating.lock().unwrap();
+//    *nav = false;
+//    }
+//    "init" => {
+//    let mut nav = navigating.lock().unwrap();
+//    *nav = true;
+//    }
+//    _ => {}
+//    }
+//    }
+//    }
+//    _ => {}
+//    }
+
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
-        where C: cdtp::Method + serde::Serialize
-    {
-        let mut session = self.page_session.borrow_mut();
-        session.call(method)
+        where C: cdtp::Method + serde::Serialize + std::fmt::Debug {
+        trace!("Calling method: {:?}", method);
+        self.transport.call_method_on_target(&self.session_id, method)
     }
 
-    pub fn wait_until_navigated(&self) -> Result<(), Error> {
-        let session = self.page_session.borrow_mut();
-        trace!("waiting to start navigating");
-        // wait for navigating to go to true
-
-        let time_before = std::time::SystemTime::now();
-
-        let timed_out = || {
-            let elapsed_seconds = time_before
-                .elapsed()
-                .expect("serious problems with your clock bro")
-                .as_secs();
-            elapsed_seconds > 20
-        };
-
-        loop {
-            if timed_out() {
-                return Err(NavigationTimedOut {}.into());
-            }
-            if *session.navigating.lock().unwrap() {
-                break;
-            }
-        }
-        debug!("A tab started navigating");
-
-        // wait for navigating to go to false
-        loop {
-            if timed_out() {
-                return Err(NavigationTimedOut {}.into());
-            }
-            if !*session.navigating.lock().unwrap() {
-                break;
-            }
-        }
-
-        debug!("A tab finished navigating");
-        Ok(())
-    }
+//    pub fn wait_until_navigated(&self) -> Result<(), Error> {
+//        trace!("waiting to start navigating");
+//        // wait for navigating to go to true
+//
+//        let time_before = std::time::SystemTime::now();
+//
+//        let timed_out = || {
+//            let elapsed_seconds = time_before
+//                .elapsed()
+//                .expect("serious problems with your clock bro")
+//                .as_secs();
+//            elapsed_seconds > 20
+//        };
+//
+//        loop {
+//            if timed_out() {
+//                return Err(NavigationTimedOut {}.into());
+//            }
+//            if *session.navigating.lock().unwrap() {
+//                break;
+//            }
+//        }
+//        debug!("A tab started navigating");
+//
+//        // wait for navigating to go to false
+//        loop {
+//            if timed_out() {
+//                return Err(NavigationTimedOut {}.into());
+//            }
+//            if !*session.navigating.lock().unwrap() {
+//                break;
+//            }
+//        }
+//
+//        debug!("A tab finished navigating");
+//        Ok(())
+//    }
 
     pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
         let return_object = self.call_method(Navigate { url })?;
@@ -95,7 +144,8 @@ impl<'a> Tab {
             return Err(NavigationFailed { error_text }.into());
         }
 
-        self.wait_until_navigated()?;
+        // TODO: implement
+//        self.wait_until_navigated()?;
 
         info!("Navigated a tab to {}", url);
 
@@ -104,23 +154,9 @@ impl<'a> Tab {
 
     pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        let time_before = std::time::SystemTime::now();
-        loop {
-            if let Ok(element) = self.find_element(selector) {
-                return Ok(element);
-            }
-
-            let elapsed_seconds = time_before
-                .elapsed()?
-                .as_secs();
-
-            if elapsed_seconds > 10 {
-                // TODO: there's gotta be a nicer way to do that.
-                return Err(TimeOut {}.into());
-            }
-
-            thread::sleep(time::Duration::from_millis(10));
-        }
+        wait_for(|| {
+            self.find_element(selector).ok()
+        }, WaitOptions { timeout_ms: 10_000, sleep_ms: 1000 })
     }
 
     // TODO: have this return a 'can't find element' error when selector returns nothing
@@ -128,14 +164,13 @@ impl<'a> Tab {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
-            let mut session = self.page_session.borrow_mut();
             // TODO: just do this once.
-            let root_node_id = session.call(dom::methods::GetDocument {
+            let root_node_id = self.call_method(dom::methods::GetDocument {
                 depth: Some(0),
                 pierce: Some(false),
             })?.root.node_id;
 
-            session.call(dom::methods::QuerySelector {
+            self.call_method(dom::methods::QuerySelector {
                 node_id: root_node_id,
                 selector,
             })?.node_id
@@ -148,8 +183,7 @@ impl<'a> Tab {
         let backend_node_id = self.describe_node(node_id)?.backend_node_id;
 
         let remote_object_id = {
-            let mut session = self.page_session.borrow_mut();
-            let object = session.call(dom::methods::ResolveNode {
+            let object = self.call_method(dom::methods::ResolveNode {
                 backend_node_id: Some(backend_node_id)
             })?.object;
             object.object_id.expect("couldn't find object ID")
@@ -163,8 +197,7 @@ impl<'a> Tab {
     }
 
     pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node, Error> {
-        let mut session = self.page_session.borrow_mut();
-        let node = session.call(dom::methods::DescribeNode {
+        let node = self.call_method(dom::methods::DescribeNode {
             node_id: Some(node_id),
             backend_node_id: None,
             depth: Some(100),
@@ -185,15 +218,14 @@ impl<'a> Tab {
 
     pub fn press_key(&self, key: &str) -> Result<(), Error> {
         let definition = keys::get_key_definition(key)?;
-        let mut session = self.page_session.borrow_mut();
 
         // TODO: send code and other parts of the def?
-        session.call(input::methods::DispatchKeyEvent {
+        self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyDown",
             key: definition.key,
             text: definition.text,
         })?;
-        session.call(input::methods::DispatchKeyEvent {
+        self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyUp",
             key: definition.key,
             text: definition.text,
@@ -205,19 +237,18 @@ impl<'a> Tab {
     pub fn click_point(&self, point: Point) -> Result<(), Error> {
         trace!("Clicking point: {:?}", point);
         if point.x == 0.0 && point.y == 0.0 {
-           warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
+            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
         }
 
-        let mut session = self.page_session.borrow_mut();
 
-        session.call(input::methods::DispatchMouseEvent {
+        self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mouseMoved",
             x: point.x,
             y: point.y,
             ..Default::default()
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
-        session.call(input::methods::DispatchMouseEvent {
+        self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,
             y: point.y,
@@ -225,7 +256,7 @@ impl<'a> Tab {
             click_count: Some(1),
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
-        session.call(input::methods::DispatchMouseEvent {
+        self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mouseReleased",
             x: point.x,
             y: point.y,

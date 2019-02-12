@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::mpsc;
 
-use crate::cdtp::{CallId, Response};
+use crate::cdtp::{Response, CallId};
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
@@ -11,7 +10,7 @@ trait IdentifiableResponse {
 
 
 pub struct WaitingCallRegistry {
-    calls: Arc<Mutex<HashMap<CallId, mpsc::Sender<Response>>>>
+    calls: Mutex<HashMap<CallId, mpsc::Sender<Response>>>
 }
 
 
@@ -21,34 +20,29 @@ impl IdentifiableResponse for Response {
     }
 }
 
-// TODO: find out how to make this generic!!!
 impl WaitingCallRegistry
 {
-    pub fn new(incoming_responses: mpsc::Receiver<Response>) -> Self
+    pub fn new() -> Self
     {
-        let calls = Arc::new(Mutex::new(HashMap::new()));
-
-        let calls_mutex = Arc::clone(&calls);
-
-        std::thread::spawn(move || {
-            for response in incoming_responses.iter() {
-                let mut waiting_calls = calls_mutex.lock().unwrap();
-
-                let waiting_call_tx: mpsc::Sender<Response>  = waiting_calls.remove(&response.call_id()).unwrap();
-
-                waiting_call_tx.send(response).expect("failed to send response to waiting call");
-            }
-        });
+        let calls = Mutex::new(HashMap::new());
 
         WaitingCallRegistry {
             calls
         }
     }
 
+    pub fn resolve_call(&self, response: Response) {
+        let waiting_call_tx: mpsc::Sender<Response> = {
+            let mut waiting_calls = self.calls.lock().unwrap();
+            waiting_calls.remove(&response.call_id()).unwrap()
+        };
+
+        waiting_call_tx.send(response).expect("failed to send response to waiting call");
+    }
+
     pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Response> {
         let (tx, rx) = mpsc::channel::<Response>();
-        let calls_mutex = Arc::clone(&self.calls);
-        let mut calls = calls_mutex.lock().unwrap();
+        let mut calls = self.calls.lock().unwrap();
         calls.insert(call_id, tx);
         rx
     }
@@ -63,20 +57,21 @@ mod tests {
     fn register_and_receive_calls() {
         env_logger::try_init().unwrap_or(());
 
-        let (responses_tx, responses_rx) = mpsc::channel::<Response>();
-        let waiting_calls = WaitingCallRegistry::new(responses_rx);
+        let waiting_calls = WaitingCallRegistry::new();
 
         let call_rx = waiting_calls.register_call(431);
         let resp = Response { call_id: 431, result: Some(json!{true}), error: None };
+        let resp_clone = resp.clone();
 
         let call_rx2 = waiting_calls.register_call(123);
         let resp2 = Response { call_id: 123, result: Some(json!{false}), error: None };
+        let resp2_clone = resp2.clone();
 
-        responses_tx.send(resp.clone()).unwrap();
-        responses_tx.send(resp2.clone()).unwrap();
+        waiting_calls.resolve_call(resp);
+        waiting_calls.resolve_call(resp2);
 
         // note how they're in reverse order to that in which they were called!
-        assert_eq!(resp2, call_rx2.recv().unwrap());
-        assert_eq!(resp, call_rx.recv().unwrap());
+        assert_eq!(resp2_clone, call_rx2.recv().unwrap());
+        assert_eq!(resp_clone, call_rx.recv().unwrap());
     }
 }

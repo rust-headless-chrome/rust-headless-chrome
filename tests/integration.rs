@@ -5,8 +5,9 @@ use failure::Error;
 use log::*;
 use toml;
 
-use lib::chrome;
+use lib;
 use lib::logging;
+use lib::browser;
 use rand::{self, Rng};
 use rand::distributions::Alphanumeric;
 
@@ -22,45 +23,6 @@ fn parse_secrets() -> Result<toml::Value, Error> {
     Ok(secrets.parse::<toml::Value>()?)
 }
 
-fn browse_wikipedia() -> Result<(), Error> {
-    logging::enable_logging();
-
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
-    let tab = chrome.new_tab()?;
-
-    if let Err(_nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
-        warn!("Site seems to be down.");
-        return Ok(());
-    }
-
-    let log_in_link = tab.find_element(r#"#js-link-box-en"#)?;
-
-    log_in_link.click()?;
-
-    tab.wait_until_navigated()?;
-
-    Ok(())
-}
-
-fn log_in_to_ml() -> Result<(), Error> {
-    logging::enable_logging();
-
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
-    let tab = chrome.new_tab()?;
-
-    if let Err(_nav_failed) = tab.navigate_to("https://app-staging.mentorloop.com/") {
-        warn!("Mentorloop seems to be down.");
-        return Ok(());
-    }
-
-    let _element = tab.find_element(r#"input[type="email"]"#)?;
-
-    tab.type_str("roche.a@gmail.com")?;
-    tab.press_key("Enter")?;
-
-    Ok(())
-}
-
 fn rand_ascii() -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
@@ -68,93 +30,122 @@ fn rand_ascii() -> String {
         .collect()
 }
 
-
-fn log_in_to_digital_pigeon() -> Result<(), Error> {
+fn browse_wikipedia() -> Result<(), Error> {
     logging::enable_logging();
 
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+    let browser = browser::Browser::new(browser::LaunchOptions {
+        headless: true,
+        ..Default::default()
+    })?;
+    let tab = browser.wait_for_initial_tab()?;
 
-    let tab = chrome.new_tab()?;
-
-    // so we can use it to upload files
-//    log_in_to_dropbox(&tab);
-
-    if let Err(_nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
-        warn!("Digital Pigeon seems to be down.");
+    if let Err(_nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
+        warn!("Site seems to be down.");
         return Ok(());
     }
 
-    let secrets = &parse_secrets()?["digital_pigeon"];
 
+    let log_in_link = tab.wait_for_element(r#"#js-link-box-en"#)?;
 
-    let element = tab.wait_for_element(r#"input[type="email"]"#)?;
-    let classic_mp = element.get_midpoint()?;
-    let js_mp = element.get_js_midpoint()?;
+    log_in_link.click()?;
 
-    assert_eq!(classic_mp, js_mp);
-
-    element.click()?;
-
-    tab.type_str(secrets["email"].as_str().unwrap())?;
-    tab.press_key("Enter")?;
-
-    tab.wait_for_element("input#password")?.click()?;
-
-    tab.type_str(secrets["password"].as_str().unwrap())?;
-    tab.press_key("Enter")?;
-    tab.wait_until_navigated()?;
-
-
-    // TODO: if you can't compute quads via protocol, try via JS runtime and getBoundingClientRect
-
-    // doing this rather than closing the guided tour popup directly, b/c chrome couldn't give me
-    // quad for popover elements.
-
-    sleep(1000);
-    // seems like something's changed on the account and I don't need this anymore
-//    let point = tab.wait_for_element("button.close")?.click()?;
-
-//    while let Ok(_) = tab.find_element(".popover") {
-//        // this point just happens to not overlap with guided popup
-//        tab.click_point(lib::point::Point { x: 10.0, y: 10.0 })?;
-//        sleep(100);
-//    }
-
-
-    tab.find_element(".create-new-item-btn")?.click()?;
-
-    sleep(3000);
-
-    // TODO: be able to wait for elements to become visible
-
-    // warning: there are two li.add-dropbox elements on the page
-    dbg!(tab.wait_for_element(".popover li.add-dropbox")?.click()?);
-
-    // TODO: handle this:
-    // 🏹  [16:58:52.342] - connection   - Message from target isn't recognised: "{\"method\":\"Page.windowOpen\",\"p"
-
-//    tab.wait_for_element("li.add-dropbox .needsclick")?.click()?;
-//    tab.wait_for_element(".icon-dropbox")?.click()?;
-//    tab.wait_for_element("div.popover")?.click()?;
-
-
-    sleep(100_000);
-//
-//    let element = tab.wait_for_element(r#"input[type="file"]"#)?;
-//    element.set_input_files(&vec!["/tmp/blah"])?;
-//
-//    let element = tab.wait_for_element(r#"input[directory=""]"#)?;
-//    element.set_input_files(&vec!["/tmp/blah"])?;
+//    tab.wait_until_navigated()?;
+//    sleep(1000);
 
     Ok(())
 }
 
+//
+//fn log_in_to_ml() -> Result<(), Error> {
+//    logging::enable_logging();
+//
+//    let chrome = chrome::Process::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+//    let tab = chrome.new_tab()?;
+//
+//    if let Err(_nav_failed) = tab.navigate_to("https://app-staging.mentorloop.com/") {
+//        warn!("Mentorloop seems to be down.");
+//        return Ok(());
+//    }
+//
+//    let _element = tab.find_element(r#"input[type="email"]"#)?;
+//
+//    tab.type_str("roche.a@gmail.com")?;
+//    tab.press_key("Enter")?;
+//
+//    Ok(())
+//}
+//
+//
+//
+//fn log_in_to_digital_pigeon() -> Result<(), Error> {
+//    logging::enable_logging();
+//
+//    let chrome = chrome::Process::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
+
+//
+//    let tab = chrome.new_tab()?;
+//
+//    // so we can use it to upload files
+////    log_in_to_dropbox(&tab);
+//
+//    if let Err(_nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
+//        warn!("Digital Pigeon seems to be down.");
+//        return Ok(());
+//    }
+//
+//    let secrets = &parse_secrets()?["digital_pigeon"];
+//
+//
+//    let element = tab.wait_for_element(r#"input[type="email"]"#)?;
+//    let classic_mp = element.get_midpoint()?;
+//    let js_mp = element.get_js_midpoint()?;
+//
+//    assert_eq!(classic_mp, js_mp);
+//
+//    element.click()?;
+//
+//    tab.type_str(secrets["email"].as_str().unwrap())?;
+//    tab.press_key("Enter")?;
+//
+//    tab.wait_for_element("input#password")?.click()?;
+//
+//    tab.type_str(secrets["password"].as_str().unwrap())?;
+//    tab.press_key("Enter")?;
+//    tab.wait_until_navigated()?;
+//
+//    // TODO: be able to wait for elements to become visible
+//    tab.wait_for_element(".create-new-item-btn")?.click()?;
+//
+//    // warning: there are two li.add-dropbox elements on the page
+//    tab.wait_for_element(".popover li.add-dropbox")?.click()?;
+//
+//    // TODO: handle this:
+//    // 🏹  [16:58:52.342] - connection   - Message from target isn't recognised: "{\"method\":\"Page.windowOpen\",\"p"
+//
+////    tab.wait_for_element("li.add-dropbox .needsclick")?.click()?;
+////    tab.wait_for_element(".icon-dropbox")?.click()?;
+////    tab.wait_for_element("div.popover")?.click()?;
+//
+//
+//    sleep(100_000);
+////
+////    let element = tab.wait_for_element(r#"input[type="file"]"#)?;
+////    element.set_input_files(&vec!["/tmp/blah"])?;
+////
+////    let element = tab.wait_for_element(r#"input[directory=""]"#)?;
+////    element.set_input_files(&vec!["/tmp/blah"])?;
+//
+//    Ok(())
+//}
+//
 fn log_in_to_fastmail() -> Result<(), Error> {
     logging::enable_logging();
-    let time_before = std::time::SystemTime::now();
 
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
-    let tab = chrome.new_tab()?;
+    let browser = browser::Browser::new(browser::LaunchOptions {
+        headless: false,
+        ..Default::default()
+    })?;
+    let tab = browser.wait_for_initial_tab()?;
 
     if let Err(_nav_failed) = tab.navigate_to("https://www.fastmail.com/login") {
         warn!("Fastmail seems to be down.");
@@ -163,16 +154,16 @@ fn log_in_to_fastmail() -> Result<(), Error> {
 
     let secrets = &parse_secrets()?["fastmail"];
 
+    let _email_field = tab.wait_for_element(r"input.v-Text-input")?;
+
     tab.type_str(secrets["email"].as_str().unwrap())?;
     tab.press_key("Tab")?;
     tab.type_str(secrets["password"].as_str().unwrap())?;
     tab.press_key("Enter")?;
 
-    tab.wait_until_navigated()?;
+    tab.wait_for_element(".icon-compose")?.click()?;
 
-    tab.find_element(".icon-compose")?.click()?;
-
-    tab.find_element(".s-compose-to ")?.click()?;
+    tab.wait_for_element(".s-compose-to ")?.click()?;
 
     let subject = rand_ascii();
     let body = rand_ascii();
@@ -186,11 +177,7 @@ fn log_in_to_fastmail() -> Result<(), Error> {
 
     tab.type_str(&body)?;
 
-    tab.find_element("button.s-send")?.click()?;
-
-    let elapsed_seconds = time_before
-        .elapsed()?
-        .as_secs();
+    tab.wait_for_element("button.s-send")?.click()?;
 
     // refresh inbox:
     tab.wait_for_element("li.v-MailboxSource--inbox")?.click()?;
@@ -206,7 +193,7 @@ fn log_in_to_dropbox(tab: &lib::tab::Tab) -> Result<(), Error> {
 
     let secrets = &parse_secrets()?["dropbox"];
 
-    let email_field = tab.find_element(r#"input[type="email"]"#)?;
+    let email_field = tab.wait_for_element(r#"input[type="email"]"#)?;
     email_field.type_into(&secrets["email"].as_str().unwrap())?;
 
     tab.press_key("Tab")?;
@@ -214,7 +201,7 @@ fn log_in_to_dropbox(tab: &lib::tab::Tab) -> Result<(), Error> {
 
     tab.press_key("Enter")?;
 
-    tab.wait_until_navigated()?;
+//    tab.wait_until_navigated()?;
 
 //    tab.wait_for_element("a#files")?.click()?;
 //
@@ -222,32 +209,36 @@ fn log_in_to_dropbox(tab: &lib::tab::Tab) -> Result<(), Error> {
 
     Ok(())
 }
-
+//
 #[test]
 fn wikipedia() {
     browse_wikipedia().expect("passed");
 }
-
+//
 #[test]
 fn fastmail() {
     log_in_to_fastmail().expect("passed");
 }
-
-#[test]
-fn ml_staging() {
-    log_in_to_ml().expect("passed");
-}
-
-#[test]
-fn digital_pigeon() {
-    log_in_to_digital_pigeon().expect("passed");
-}
-
+//
+//#[test]
+//fn ml_staging() {
+//    log_in_to_ml().expect("passed");
+//}
+//
+//#[test]
+//fn digital_pigeon() {
+//    log_in_to_digital_pigeon().expect("passed");
+//}
+//
 #[test]
 fn dropbox() {
     logging::enable_logging();
 
-    let chrome = chrome::Chrome::new(chrome::LaunchOptions { headless: false, ..Default::default() }).expect("can't open browser");
-    let tab = chrome.new_tab().expect("couldn't open new tab");
+    let browser = browser::Browser::new(browser::LaunchOptions {
+        headless: true,
+        ..Default::default()
+    }).unwrap();
+    let tab = browser.wait_for_initial_tab().unwrap();
+
     log_in_to_dropbox(&tab).expect("passed");
 }

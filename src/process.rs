@@ -1,20 +1,22 @@
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
-use std::net;
 use std::io::Read;
+use std::net;
 use std::process::{Child, Command, Stdio};
-use rand::thread_rng;
-use rand::seq::SliceRandom;
 
 use failure::{Error, Fail};
 use log::*;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use regex::Regex;
 use tempdir::TempDir;
 
-use crate::page_session::PageSession;
-use crate::tab::Tab;
+use crate::helpers::{wait_for_mut, WaitOptions};
 
-pub struct Chrome {
+//use crate::page_session::PageSession;
+//use crate::tab::Tab;
+
+pub struct Process {
     child_process: Child,
     pub debug_ws_url: String,
 }
@@ -44,12 +46,12 @@ impl Default for LaunchOptions {
     }
 }
 
-impl Chrome {
+impl Process {
     // TODO: find out why this complains if named 'new'
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
-        let mut process = Chrome::start_process(&launch_options)?;
+        let mut process = Process::start_process(&launch_options)?;
 
         info!("Started Chrome. PID: {}", process.id());
 
@@ -60,14 +62,14 @@ impl Chrome {
                 return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
 
-            match Chrome::ws_url_from_output(process.borrow_mut()) {
+            match Process::ws_url_from_output(process.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
                     break;
                 }
                 Err(error) => {
                     if launch_options.port.is_none() {
-                        process = Chrome::start_process(&launch_options)?;
+                        process = Process::start_process(&launch_options)?;
                     } else {
                         return Err(error);
                     }
@@ -78,7 +80,7 @@ impl Chrome {
             attempts = attempts + 1;
         }
 
-        Ok(Chrome {
+        Ok(Process {
             child_process: process,
             debug_ws_url: url,
         })
@@ -134,46 +136,37 @@ impl Chrome {
             Some(cap.into())
         };
 
-        let mut buf = [0; 512];
 
-        let time_before = std::time::SystemTime::now();
-        loop {
-            let elapsed_seconds = time_before
-                .elapsed()?
-                .as_secs();
-
-            if elapsed_seconds > 1 {
-                // TODO: there's gotta be a nicer way to do that.
-                return Err(ChromeLaunchError::PortOpenTimeout {}.into());
-            }
-
+        let chrome_output = wait_for_mut(|| {
+            let mut buf = [0; 512];
             let my_stderr = child_process.stderr.as_mut();
             // TODO: actually handle this error
-            let bytes_read = my_stderr.unwrap().read(&mut buf)?;
-
+            let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
             if bytes_read > 0 {
                 let chrome_output = String::from_utf8_lossy(&buf);
                 trace!("Chrome output: {}", chrome_output);
 
                 if port_taken_re.is_match(&chrome_output) {
-                    return Err(ChromeLaunchError::DebugPortInUse {}.into());
+                    return None;
                 }
 
-                match extract(&chrome_output) {
-                    Some(ws_url) => return Ok(ws_url),
-                    None => continue
-                };
+                extract(&chrome_output)
+            } else {
+                None
             }
+        }, WaitOptions { timeout_ms: 200, sleep_ms: 10 })?;
+
+
+        if port_taken_re.is_match(&chrome_output) {
+            return Err(ChromeLaunchError::DebugPortInUse {}.into());
         }
+
+        Ok(chrome_output)
     }
 
-    pub fn new_tab(&self) -> Result<Tab, Error> {
-        let session = PageSession::new(&self.debug_ws_url)?;
-        Ok(Tab { page_session: RefCell::new(session) })
-    }
 }
 
-impl Drop for Chrome {
+impl Drop for Process {
     fn drop(&mut self) {
         info!("Killing Chrome. PID: {}", self.child_process.id());
         self.child_process.kill().unwrap();
@@ -198,7 +191,6 @@ mod tests {
     use std::io::prelude::*;
     use std::thread;
 
-
     fn current_child_pids() -> Vec<i32> {
         let current_pid = std::process::id();
         let mut current_process_children_file = File::open(format!("/proc/{}/task/{}/children", current_pid, current_pid)).unwrap();
@@ -212,7 +204,7 @@ mod tests {
         env_logger::try_init().unwrap_or(());
         let time_before = std::time::SystemTime::now();
         {
-            let _chrome = &mut super::Chrome::new(Default::default()).unwrap();
+            let _chrome = &mut super::Process::new(Default::default()).unwrap();
 
             let chrome_startup_millis = time_before
                 .elapsed()
@@ -234,7 +226,7 @@ mod tests {
             let handle = thread::spawn(|| {
                 // these sleeps are to make it more likely the chrome startups will overlap
                 std::thread::sleep(std::time::Duration::from_millis(10));
-                let chrome = super::Chrome::new(super::LaunchOptions {
+                let chrome = super::Process::new(super::LaunchOptions {
                     port: None,
                     ..Default::default()
                 }).unwrap();
@@ -257,7 +249,7 @@ mod tests {
         let mut handles = Vec::new();
 
         for _ in 0..10 {
-            let chrome = super::Chrome::new(super::LaunchOptions {
+            let chrome = super::Process::new(super::LaunchOptions {
                 headless: false,
                 ..Default::default()
             }).unwrap();

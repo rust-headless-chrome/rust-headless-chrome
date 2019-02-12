@@ -1,6 +1,20 @@
-// TODO: for when this works with IntelliJ
-//pub use events::*;
-//pub use methods::*;
+use serde::Deserialize;
+
+pub type TargetId = String;
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetInfo {
+    pub target_id: TargetId,
+    #[serde(rename = "type")]
+    pub target_type: String,
+    // TODO: enum?
+    pub title: String,
+    pub url: String,
+    pub attached: bool,
+    pub opener_id: Option<String>,
+    pub browser_context_id: Option<String>,
+}
 
 pub mod events {
     use serde::Deserialize;
@@ -12,22 +26,9 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct TargetInfo {
-        pub target_id: String,
-        #[serde(rename = "type")]
-        pub target_type: String,
-        // TODO: enum?
-        pub title: String,
-        pub url: String,
-        pub attached: bool,
-        pub opener_id: Option<String>,
-        pub browser_context_id: Option<String>,
-    }
-    #[derive(Deserialize, Debug)]
-    #[serde(rename_all = "camelCase")]
     pub struct AttachedToTargetParams {
         pub session_id: String,
-        pub target_info: TargetInfo,
+        pub target_info: super::TargetInfo,
         pub waiting_for_debugger: bool,
     }
 
@@ -40,8 +41,42 @@ pub mod events {
     #[serde(rename_all = "camelCase")]
     pub struct ReceivedMessageFromTargetParams {
         pub session_id: String,
-        pub target_id: String,
+        pub target_id: super::TargetId,
         pub message: String,
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub struct TargetInfoChangedEvent {
+        pub params: TargetInfoChangedParams
+    }
+
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TargetInfoChangedParams {
+        pub target_info: super::TargetInfo,
+    }
+
+
+    #[derive(Deserialize, Debug)]
+    pub struct TargetCreatedEvent {
+        pub params: TargetCreatedParams
+    }
+
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TargetCreatedParams {
+        pub target_info: super::TargetInfo,
+    }
+
+    #[derive(Deserialize, Debug)]
+    pub struct TargetDestroyedEvent {
+        pub params: TargetDestroyedParams
+    }
+
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TargetDestroyedParams {
+        pub target_id: super::TargetId,
     }
 }
 
@@ -50,6 +85,17 @@ pub mod methods {
 
     use crate::cdtp::Method;
 
+    #[derive(Serialize)]
+    pub struct GetTargets {}
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetTargetsReturnObject {
+        pub target_infos: Vec<super::TargetInfo>,
+    }
+    impl Method for GetTargets {
+        const NAME: &'static str = "Target.getTargets";
+        type ReturnObject = GetTargetsReturnObject;
+    }
 
     #[derive(Serialize)]
     pub struct CreateBrowserContext {}
@@ -81,7 +127,7 @@ pub mod methods {
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct CreateTargetReturnObject {
-        pub target_id: String,
+        pub target_id: super::TargetId,
     }
     impl<'a> Method for CreateTarget<'a> {
         const NAME: &'static str = "Target.createTarget";
@@ -104,6 +150,34 @@ pub mod methods {
     impl<'a> Method for AttachToTarget<'a> {
         const NAME: &'static str = "Target.attachToTarget";
         type ReturnObject = AttachToTargetReturnObject;
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AttachToBrowserTarget {}
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AttachToBrowserTargetReturnObject {
+        pub session_id: String,
+    }
+    impl Method for AttachToBrowserTarget {
+        const NAME: &'static str = "Target.attachToBrowserTarget";
+        type ReturnObject = AttachToBrowserTargetReturnObject;
+    }
+
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetDiscoverTargets {
+        pub discover: bool,
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetDiscoverTargetsReturnObject {
+    }
+    impl Method for SetDiscoverTargets {
+        const NAME: &'static str = "Target.setDiscoverTargets";
+        type ReturnObject = SetDiscoverTargetsReturnObject;
     }
 
 

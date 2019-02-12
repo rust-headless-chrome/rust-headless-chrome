@@ -7,13 +7,15 @@
 extern crate log;
 extern crate termcolor;
 
-pub mod chrome;
-pub mod connection;
-pub mod page_session;
-pub mod waiting_call_registry;
 pub mod point;
+pub mod helpers;
 pub mod element;
-pub mod tab;
 pub mod keys;
 pub mod logging;
 pub mod cdtp;
+pub mod browser;
+pub mod process;
+pub mod web_socket_connection;
+pub mod waiting_call_registry;
+pub mod tab;
+pub mod transport;

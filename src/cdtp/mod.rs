@@ -63,6 +63,7 @@ pub fn parse_response<T>(response: Response) -> Result<T, Error>
 }
 
 // TODO: could break down module by module with nested enums...
+// there has got to be a better way!
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method")]
@@ -71,6 +72,12 @@ pub enum Event {
     AttachedToTarget(target::events::AttachedToTargetEvent),
     #[serde(rename = "Target.receivedMessageFromTarget")]
     ReceivedMessageFromTarget(target::events::ReceivedMessageFromTargetEvent),
+    #[serde(rename = "Target.targetInfoChanged")]
+    TargetInfoChanged(target::events::TargetInfoChangedEvent),
+    #[serde(rename = "Target.targetCreated")]
+    TargetCreated(target::events::TargetCreatedEvent),
+    #[serde(rename = "Target.targetDestroyed")]
+    TargetDestroyed(target::events::TargetDestroyedEvent),
     #[serde(rename = "Page.frameStartedLoading")]
     FrameStartedLoading(page::events::FrameStartedLoadingEvent),
     #[serde(rename = "Page.frameNavigated")]
@@ -179,12 +186,12 @@ mod tests {
         ];
 
         for msg_string in &example_message_strings {
-            let message: super::Message = parse_raw_message(msg_string.to_string()).unwrap();
+            let message: super::Message = parse_raw_message(msg_string).unwrap();
         }
     }
 }
 
-pub fn parse_raw_message(raw_message: String) -> Result<Message, Error>
+pub fn parse_raw_message(raw_message: &str) -> Result<Message, Error>
 {
-    Ok(serde_json::from_str::<Message>(raw_message.as_ref())?)
+    Ok(serde_json::from_str::<Message>(raw_message)?)
 }
