@@ -22,11 +22,18 @@ use crate::keys;
 use crate::point::Point;
 use crate::transport;
 use crate::transport::Transport;
+use std::sync::mpsc::Receiver;
+use crate::cdtp::Event;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+use crate::cdtp::target::TargetInfo;
 
 pub struct Tab {
     target_id: TargetId,
     transport: Arc<Transport>,
     session_id: transport::SessionId,
+    navigating: Arc<AtomicBool>,
+    target_info: Arc<Mutex<TargetInfo>>
 }
 
 #[derive(Debug, Fail)]
@@ -50,49 +57,76 @@ pub struct NavigationFailed {
 pub struct NavigationTimedOut {}
 
 impl<'a> Tab {
-    pub fn new(target_id: TargetId, transport: Arc<Transport>) -> Result<Self, Error> {
+    pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
         // TODO: attach to target!!!
+        let target_id = target_info.target_id.clone();
+
         let session_id = transport.call_method(target::methods::AttachToTarget {
-            target_id: target_id.as_ref(),
+            target_id: &target_id,
             flatten: None,
         })?.session_id;
 
         debug!("New tab attached with session ID: {}", session_id);
 
-        let incoming_events_rx = transport.listen_to_target_events(session_id.clone());
+        let target_info_mutex = Arc::new(Mutex::new(target_info));
 
-        let tab = Tab { target_id, transport, session_id };
+        let tab = Tab {
+            target_id,
+            transport,
+            session_id,
+            navigating: Arc::new(AtomicBool::new(false)),
+            target_info: target_info_mutex
+        };
+
         tab.call_method(page::methods::Enable {})?;
+        tab.call_method(page::methods::SetLifecycleEventsEnabled { enabled: true })?;
 
-        std::thread::spawn(move || {
-            for event in incoming_events_rx {
-                trace!("{:?}", &event);
-            }
-        });
-
+        tab.start_event_handler_thread();
 
         Ok(tab)
     }
 
+    pub fn update_target_info(&self, target_info: TargetInfo) {
+        let mut info = self.target_info.lock().unwrap();
+        *info = target_info;
+    }
 
-//    match event {
-//    Event::LifecycleEvent(lifecycle_event) => {
-//    if lifecycle_event.params.frame_id == main_frame_id {
-//    match lifecycle_event.params.name.as_ref() {
-//    "networkAlmostIdle" => {
-//    let mut nav = navigating.lock().unwrap();
-//    *nav = false;
-//    }
-//    "init" => {
-//    let mut nav = navigating.lock().unwrap();
-//    *nav = true;
-//    }
-//    _ => {}
-//    }
-//    }
-//    }
-//    _ => {}
-//    }
+    pub fn get_target_id(&self) -> &TargetId {
+        &self.target_id
+    }
+
+    // TODO: kinda sucks that I do an allocation here
+    pub fn get_url(&self) -> String {
+        let info = self.target_info.lock().unwrap();
+        info.url.clone()
+    }
+
+    fn start_event_handler_thread(&self) {
+        let incoming_events_rx = self.transport.listen_to_target_events(self.session_id.clone());
+        let navigating = Arc::clone(&self.navigating);
+
+        std::thread::spawn(move || {
+            for event in incoming_events_rx {
+                trace!("{:?}", &event);
+                match event {
+                    Event::LifecycleEvent(lifecycle_event) => {
+//                        if lifecycle_event.params.frame_id == main_frame_id {
+                        match lifecycle_event.params.name.as_ref() {
+                            "networkAlmostIdle" => {
+                                navigating.store(false, Ordering::SeqCst);
+                            }
+                            "init" => {
+                                navigating.store(true, Ordering::SeqCst);
+                            }
+                            _ => {}
+                        }
+//                        }
+                    }
+                    _ => {}
+                }
+            }
+        });
+    }
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
         where C: cdtp::Method + serde::Serialize + std::fmt::Debug {
@@ -100,43 +134,30 @@ impl<'a> Tab {
         self.transport.call_method_on_target(&self.session_id, method)
     }
 
-//    pub fn wait_until_navigated(&self) -> Result<(), Error> {
-//        trace!("waiting to start navigating");
-//        // wait for navigating to go to true
-//
-//        let time_before = std::time::SystemTime::now();
-//
-//        let timed_out = || {
-//            let elapsed_seconds = time_before
-//                .elapsed()
-//                .expect("serious problems with your clock bro")
-//                .as_secs();
-//            elapsed_seconds > 20
-//        };
-//
-//        loop {
-//            if timed_out() {
-//                return Err(NavigationTimedOut {}.into());
-//            }
-//            if *session.navigating.lock().unwrap() {
-//                break;
-//            }
-//        }
-//        debug!("A tab started navigating");
-//
-//        // wait for navigating to go to false
-//        loop {
-//            if timed_out() {
-//                return Err(NavigationTimedOut {}.into());
-//            }
-//            if !*session.navigating.lock().unwrap() {
-//                break;
-//            }
-//        }
-//
-//        debug!("A tab finished navigating");
-//        Ok(())
-//    }
+    pub fn wait_until_navigated(&self) -> Result<(), Error> {
+        trace!("waiting to start navigating");
+        // wait for navigating to go to true
+        let navigating = Arc::clone(&self.navigating);
+        wait_for(||{
+            if navigating.load(Ordering::SeqCst) {
+                Some(true)
+            } else {
+                None
+            }
+        }, WaitOptions { timeout_ms: 15_000, sleep_ms: 100 });
+        debug!("A tab started navigating");
+
+        wait_for(||{
+            if navigating.load(Ordering::SeqCst) {
+                None
+            } else {
+                Some(true)
+            }
+        }, WaitOptions { timeout_ms: 15_000, sleep_ms: 100 });
+        debug!("A tab finished navigating");
+
+        Ok(())
+    }
 
     pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
         let return_object = self.call_method(Navigate { url })?;
@@ -153,10 +174,24 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+        self.wait_for_element_with_custom_timeout(selector, 15_000)
+    }
+
+    pub fn wait_for_element_with_custom_timeout(&'a self, selector: &'a str,
+                                                timeout_ms: u128) -> Result<Element<'a>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         wait_for(|| {
-            self.find_element(selector).ok()
-        }, WaitOptions { timeout_ms: 10_000, sleep_ms: 1000 })
+            // TODO: there must be a pattern to replace these nested ifs
+            if let Ok(element) = self.find_element(selector) {
+                if element.get_midpoint().is_ok() {
+                    Some(element)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }, WaitOptions { timeout_ms, sleep_ms: 1000 })
     }
 
     // TODO: have this return a 'can't find element' error when selector returns nothing

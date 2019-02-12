@@ -104,7 +104,8 @@ impl Process {
         let mut args = vec![
             port_option.as_str(),
             "--verbose",
-            data_dir_option.as_str()
+            data_dir_option.as_str(),
+//            "--window-size=1920,1080"
         ];
 
         if launch_options.headless {

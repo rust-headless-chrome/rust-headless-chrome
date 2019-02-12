@@ -29,7 +29,6 @@ pub struct Browser {
 
 impl Browser {
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
-
         let process = Process::new(launch_options)?;
 
         let transport = Arc::new(Transport::new(process.debug_ws_url.clone())?);
@@ -51,28 +50,32 @@ impl Browser {
         Ok(browser)
     }
 
+    pub fn get_tabs(&self) -> Arc<Mutex<Vec<Arc<Tab>>>> {
+        Arc::clone(&self.tabs)
+    }
+
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>, Error> {
-        wait_for(||{
+        wait_for(|| {
             self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab))
         }, WaitOptions { timeout_ms: 300, sleep_ms: 10 })
     }
 
-    pub fn new_tab(&self) -> Result<Arc<Tab>, Error> {
-        let create_target = target::methods::CreateTarget {
-            url: "about:blank",
-            width: None,
-            height: None,
-            browser_context_id: None,
-            enable_begin_frame_control: None,
-        };
-
-        let target_id = self.call_method(create_target)?.target_id;
-        let new_tab = Arc::new(Tab::new(target_id, Arc::clone(&self.transport))?);
-
-        self.add_tab(Arc::clone(&new_tab));
-
-        Ok(new_tab)
-    }
+//    pub fn new_tab(&self) -> Result<Arc<Tab>, Error> {
+//        let create_target = target::methods::CreateTarget {
+//            url: "about:blank",
+//            width: None,
+//            height: None,
+//            browser_context_id: None,
+//            enable_begin_frame_control: None,
+//        };
+//
+////        let target_id = self.call_method(create_target)?.target_id;
+////        let new_tab = Arc::new(Tab::new(target_id, Arc::clone(&self.transport))?);
+////
+////        self.add_tab(Arc::clone(&new_tab));
+//
+//        Ok(new_tab)
+//    }
 
     fn add_tab(&self, tab: Arc<Tab>) {
         let mut tabs = self.tabs.lock().unwrap();
@@ -88,14 +91,25 @@ impl Browser {
             for event in events_rx {
                 match event {
                     Event::TargetCreated(ev) => {
-                        trace!("Target created: {:?}", ev.params.target_info);
-                        if ev.params.target_info.target_type == "page" {
-                            let target_id = ev.params.target_info.target_id;
-                            let new_tab = Arc::new(Tab::new(target_id, Arc::clone(&transport)).unwrap());
+                        let target_info = ev.params.target_info;
+                        trace!("Target created: {:?}", target_info);
+                        if target_info.target_type == "page" {
+                            let new_tab = Arc::new(Tab::new(target_info, Arc::clone(&transport)).unwrap());
                             tabs.lock().unwrap().push(new_tab);
                         }
                     }
-                    Event::TargetInfoChanged(ev) => {}
+                    Event::TargetInfoChanged(ev) => {
+                        let target_info = ev.params.target_info;
+                        trace!("Target info changed: {:?}", target_info);
+                        if target_info.target_type == "page" {
+                            let locked_tabs = tabs.lock().unwrap();
+                            dbg!(locked_tabs.len());
+                            let updated_tab = locked_tabs.iter().find(|tab| {
+                                *tab.get_target_id() == target_info.target_id
+                            }).expect("got TargetInfoChanged event about a tab not in our list");
+                            updated_tab.update_target_info(target_info);
+                        }
+                    }
                     Event::TargetDestroyed(_) => {}
                     _ => {}
                 }
@@ -126,7 +140,6 @@ fn browser_basic_test() {
     logging::enable_logging();
     try_out_browser().expect("returned error");
 }
-
 
 
 #[test]
