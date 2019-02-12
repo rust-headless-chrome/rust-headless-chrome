@@ -2,22 +2,17 @@ use std::sync::Arc;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
-use failure::{Error, Fail};
+use failure::Error;
 use log::*;
 use serde;
 
 use crate::cdtp::{self, Event};
-use crate::cdtp::target;
-use crate::cdtp::target::methods::GetTargets;
 use crate::cdtp::target::methods::SetDiscoverTargets;
-use crate::logging;
+use crate::helpers::{wait_for, WaitOptions};
 pub use crate::process::LaunchOptions;
 use crate::process::Process;
 use crate::tab::Tab;
 use crate::transport::Transport;
-use crate::waiting_call_registry::WaitingCallRegistry;
-use crate::web_socket_connection::WebSocketConnection;
-use crate::helpers::{WaitOptions, wait_for};
 
 pub struct Browser {
     pub process: Process,
@@ -35,7 +30,7 @@ impl Browser {
 
         let tabs = Arc::new(Mutex::new(vec![]));
 
-        let mut browser = Browser {
+        let browser = Browser {
             process,
             tabs,
             transport,
@@ -76,11 +71,6 @@ impl Browser {
 //
 //        Ok(new_tab)
 //    }
-
-    fn add_tab(&self, tab: Arc<Tab>) {
-        let mut tabs = self.tabs.lock().unwrap();
-        tabs.push(tab);
-    }
 
     // TODO: rename cdtp to protocol
     fn handle_incoming_messages(&self, events_rx: mpsc::Receiver<Event>) {
@@ -123,20 +113,19 @@ impl Browser {
     }
 }
 
-fn try_out_browser() -> Result<(), Error> {
-    let mut browser = Browser::new(LaunchOptions { headless: true, ..Default::default() })?;
-
-    let method = GetTargets {};
-    let targets = browser.call_method(method)?.target_infos;
-    let tab = browser.wait_for_initial_tab()?;
-    tab.navigate_to("https://wikipedia.org")?;
-    std::thread::sleep_ms(4000);
-    Ok(())
-}
-
-
 #[test]
 fn browser_basic_test() {
+    use crate::logging;
+    fn try_out_browser() -> Result<(), Error> {
+        let mut browser = Browser::new(LaunchOptions { headless: true, ..Default::default() })?;
+
+        let method = GetTargets {};
+        let targets = browser.call_method(method)?.target_infos;
+        let tab = browser.wait_for_initial_tab()?;
+        tab.navigate_to("https://wikipedia.org")?;
+        std::thread::sleep_ms(4000);
+        Ok(())
+    }
     logging::enable_logging();
     try_out_browser().expect("returned error");
 }
@@ -144,6 +133,7 @@ fn browser_basic_test() {
 
 #[test]
 fn ctrlc_chrome() {
+    use crate::logging;
     logging::enable_logging();
     let mut browser = Browser::new(LaunchOptions { headless: false, ..Default::default() }).unwrap();
     std::thread::sleep_ms(40_000);

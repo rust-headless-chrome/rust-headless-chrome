@@ -1,6 +1,4 @@
-#![feature(uniform_paths)]
 #![feature(test)]
-#![feature(duration_as_u128)]
 #![feature(custom_attribute)]
 #![allow(deprecated)]
 

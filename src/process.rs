@@ -1,5 +1,4 @@
 use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::io::Read;
 use std::net;
 use std::process::{Child, Command, Stdio};
@@ -138,7 +137,7 @@ impl Process {
         };
 
 
-        let chrome_output = wait_for_mut(|| {
+        let chrome_output_result = wait_for_mut(|| {
             let mut buf = [0; 512];
             let my_stderr = child_process.stderr.as_mut();
             // TODO: actually handle this error
@@ -155,14 +154,17 @@ impl Process {
             } else {
                 None
             }
-        }, WaitOptions { timeout_ms: 200, sleep_ms: 10 })?;
+        }, WaitOptions { timeout_ms: 200, sleep_ms: 10 });
 
-
-        if port_taken_re.is_match(&chrome_output) {
-            return Err(ChromeLaunchError::DebugPortInUse {}.into());
+        if let Ok(output) = chrome_output_result {
+            if port_taken_re.is_match(&output) {
+                Err(ChromeLaunchError::DebugPortInUse {}.into())
+            } else {
+                Ok(output)
+            }
+        } else {
+            Err(ChromeLaunchError::PortOpenTimeout {}.into())
         }
-
-        Ok(chrome_output)
     }
 
 }

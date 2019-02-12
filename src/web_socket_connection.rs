@@ -2,14 +2,12 @@ use std::sync::mpsc;
 
 use failure::Error;
 use log::*;
-use serde;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 
 use crate::cdtp;
-use crate::cdtp::{Event, Response};
 use std::sync::Mutex;
 
 pub struct WebSocketConnection {

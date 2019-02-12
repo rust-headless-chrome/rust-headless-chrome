@@ -1,11 +1,6 @@
-use std::cell::RefCell;
 use std::sync::Arc;
-use std::sync::mpsc;
-use std::thread;
-use std::time;
 
 use failure::{Error, Fail};
-use log::*;
 use log::*;
 use serde;
 
@@ -22,7 +17,6 @@ use crate::keys;
 use crate::point::Point;
 use crate::transport;
 use crate::transport::Transport;
-use std::sync::mpsc::Receiver;
 use crate::cdtp::Event;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
@@ -144,7 +138,7 @@ impl<'a> Tab {
             } else {
                 None
             }
-        }, WaitOptions { timeout_ms: 15_000, sleep_ms: 100 });
+        }, WaitOptions { timeout_ms: 15_000, sleep_ms: 100 })?;
         debug!("A tab started navigating");
 
         wait_for(||{
@@ -153,7 +147,7 @@ impl<'a> Tab {
             } else {
                 Some(true)
             }
-        }, WaitOptions { timeout_ms: 15_000, sleep_ms: 100 });
+        }, WaitOptions { timeout_ms: 15_000, sleep_ms: 100 })?;
         debug!("A tab finished navigating");
 
         Ok(())

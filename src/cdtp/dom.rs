@@ -2,6 +2,8 @@ use serde::{Deserialize};
 
 pub type NodeId = u16;
 
+pub type NodeAttributes = Vec<String>;
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
@@ -11,7 +13,7 @@ pub struct Node {
     pub node_value: String,
     pub node_name: String,
     pub node_type: u8,
-    pub attributes: Option<Vec<String>>
+    pub attributes: Option<NodeAttributes>
     // TODO: there's way more here: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-Node
 }
 

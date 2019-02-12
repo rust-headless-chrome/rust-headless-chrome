@@ -1,4 +1,3 @@
-use log::*;
 use failure::{Error, Fail};
 use serde;
 use serde::{Deserialize, Serialize};

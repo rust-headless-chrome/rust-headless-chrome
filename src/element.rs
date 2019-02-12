@@ -83,9 +83,9 @@ impl<'a> Element<'a> {
         Ok(())
     }
 
-    pub fn get_attributes(&self) -> Result<(), Error> {
+    pub fn get_attributes(&self) -> Result<Option<dom::NodeAttributes>, Error> {
         let description = self.get_description()?;
-        Ok(())
+        Ok(description.attributes)
     }
 
     pub fn get_midpoint(&self) -> Result<Point, Error> {
