@@ -1,4 +1,7 @@
 # Headless Chrome
+[![Crate](https://img.shields.io/crates/v/headless_chrome.svg)](https://crates.io/crates/headless_chrome)
+[![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
+
 [Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
 
 ```rust
