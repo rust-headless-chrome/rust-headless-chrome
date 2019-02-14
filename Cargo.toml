@@ -3,7 +3,8 @@ name = "headless_chrome"
 version = "0.1.0"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2018"
-
+description = "Control Chrome programatically"
+license = "MIT"
 [dependencies]
 websocket = "0.21.1"
 regex = "1"
