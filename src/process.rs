@@ -1,5 +1,5 @@
 use std::borrow::BorrowMut;
-use std::io::Read;
+use std::io::{BufRead, BufReader};
 use std::net;
 use std::process::{Child, Command, Stdio};
 
@@ -134,7 +134,7 @@ impl Process {
         let port_taken = "Address already in use";
 
         // TODO: user static or lazy static regex
-        let re = Regex::new(r"listening on (.*/devtools/browser/.*)\n").unwrap();
+        let re = Regex::new(r"listening on (.*/devtools/browser/.*)$").unwrap();
 
         let extract = |text: &str| -> Option<String> {
             let caps = re.captures(text);
@@ -144,22 +144,23 @@ impl Process {
 
         let chrome_output_result = wait_for_mut(
             || {
-                let mut buf = [0; 512];
-                let my_stderr = child_process.stderr.as_mut();
+                let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
                 // TODO: actually handle this error
-                let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
-                if bytes_read > 0 {
-                    let chrome_output = String::from_utf8_lossy(&buf);
+                for line in my_stderr.lines() {
+                    let chrome_output = line.ok()?;
                     trace!("Chrome output: {}", chrome_output);
 
                     if chrome_output.contains(port_taken) {
                         return None;
                     }
 
-                    extract(&chrome_output)
-                } else {
-                    None
+                    let answer = extract(&chrome_output);
+                    if answer.is_some() {
+                        return answer;
+                    }
                 }
+
+                None
             },
             WaitOptions {
                 timeout_ms: 200,
