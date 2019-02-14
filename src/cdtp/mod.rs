@@ -127,7 +127,7 @@ mod tests {
             }
         });
 
-        let event: Message = serde_json::from_value(attached_to_target_json).unwrap();
+        let _event: Message = serde_json::from_value(attached_to_target_json).unwrap();
     }
 
     #[test]
@@ -191,7 +191,7 @@ mod tests {
         ];
 
         for msg_string in &example_message_strings {
-            let message: super::Message = parse_raw_message(msg_string).unwrap();
+            let _message: super::Message = parse_raw_message(msg_string).unwrap();
         }
     }
 }

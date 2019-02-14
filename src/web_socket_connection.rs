@@ -96,10 +96,10 @@ mod tests {
 
         let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
 
-        let mut conn =
+        let conn =
             super::WebSocketConnection::new(&chrome.process.debug_ws_url, messages_tx).unwrap();
 
-        let call = crate::cdtp::target::methods::CreateBrowserContext {};
-        let r1 = conn.send_message("hello").unwrap();
+        let _call = crate::cdtp::target::methods::CreateBrowserContext {};
+        conn.send_message("hello").unwrap();
     }
 }

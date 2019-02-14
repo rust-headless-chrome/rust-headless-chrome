@@ -125,13 +125,13 @@ fn browser_basic_test() {
     use crate::logging;
 
     fn try_out_browser() -> Result<(), Error> {
-        let mut browser = Browser::new(LaunchOptions {
+        let browser = Browser::new(LaunchOptions {
             headless: true,
             ..Default::default()
         })?;
 
         let method = GetTargets {};
-        let targets = browser.call_method(method)?.target_infos;
+        let _targets = browser.call_method(method)?.target_infos;
         let tab = browser.wait_for_initial_tab()?;
         tab.navigate_to("https://wikipedia.org")?;
         std::thread::sleep_ms(4000);
@@ -145,7 +145,7 @@ fn browser_basic_test() {
 fn ctrlc_chrome() {
     use crate::logging;
     logging::enable_logging();
-    let mut browser = Browser::new(LaunchOptions {
+    let _browser = Browser::new(LaunchOptions {
         headless: false,
         ..Default::default()
     })

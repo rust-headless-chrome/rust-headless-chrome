@@ -162,14 +162,18 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
 
     dropbox_tab
         .wait_for_element(".dropins-search-input")?
-        .click();
+        .click()
+        .unwrap();
     dropbox_tab.type_str("digital")?;
     dropbox_tab.wait_until_navigated()?;
 
     let movie_row =
         dropbox_tab.wait_for_element(".dropins-chooser-files-list-item .mc-checkbox")?;
     movie_row.click()?;
-    dropbox_tab.wait_for_element(".mc-button-primary")?.click();
+    dropbox_tab
+        .wait_for_element(".mc-button-primary")?
+        .click()
+        .unwrap();
 
     tab.wait_for_element_with_custom_timeout(".file.status-completed", 40_000)?;
 
