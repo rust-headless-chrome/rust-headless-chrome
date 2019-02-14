@@ -1,7 +1,7 @@
 [package]
 name = "headless_chrome"
-version = "0.0.1"
-authors = ["Alistair Roche <roche.a@gmail.com>"]
+version = "0.1"
+authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2018"
 
 [dependencies]
