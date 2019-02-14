@@ -21,7 +21,7 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     pub struct AttachedToTargetEvent {
-        pub params: AttachedToTargetParams
+        pub params: AttachedToTargetParams,
     }
 
     #[derive(Deserialize, Debug)]
@@ -34,7 +34,7 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     pub struct ReceivedMessageFromTargetEvent {
-        pub params: ReceivedMessageFromTargetParams
+        pub params: ReceivedMessageFromTargetParams,
     }
 
     #[derive(Deserialize, Debug)]
@@ -47,7 +47,7 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     pub struct TargetInfoChangedEvent {
-        pub params: TargetInfoChangedParams
+        pub params: TargetInfoChangedParams,
     }
 
     #[derive(Deserialize, Debug)]
@@ -56,10 +56,9 @@ pub mod events {
         pub target_info: super::TargetInfo,
     }
 
-
     #[derive(Deserialize, Debug)]
     pub struct TargetCreatedEvent {
-        pub params: TargetCreatedParams
+        pub params: TargetCreatedParams,
     }
 
     #[derive(Deserialize, Debug)]
@@ -70,7 +69,7 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     pub struct TargetDestroyedEvent {
-        pub params: TargetDestroyedParams
+        pub params: TargetDestroyedParams,
     }
 
     #[derive(Deserialize, Debug)]
@@ -134,7 +133,6 @@ pub mod methods {
         type ReturnObject = CreateTargetReturnObject;
     }
 
-
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachToTarget<'a> {
@@ -165,7 +163,6 @@ pub mod methods {
         type ReturnObject = AttachToBrowserTargetReturnObject;
     }
 
-
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct SetDiscoverTargets {
@@ -173,13 +170,11 @@ pub mod methods {
     }
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct SetDiscoverTargetsReturnObject {
-    }
+    pub struct SetDiscoverTargetsReturnObject {}
     impl Method for SetDiscoverTargets {
         const NAME: &'static str = "Target.setDiscoverTargets";
         type ReturnObject = SetDiscoverTargetsReturnObject;
     }
-
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -198,4 +193,3 @@ pub mod methods {
         type ReturnObject = SendMessageToTargetReturnObject;
     }
 }
-

@@ -1,6 +1,6 @@
 pub mod methods {
-    use serde::{Deserialize, Serialize};
     use crate::cdtp::Method;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -13,7 +13,7 @@ pub mod methods {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub button: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub click_count: Option<u8>
+        pub click_count: Option<u8>,
     }
     impl<'a> Default for DispatchMouseEvent<'a> {
         fn default() -> Self {
@@ -22,14 +22,13 @@ pub mod methods {
                 x: 0.0,
                 y: 0.0,
                 button: None,
-                click_count: None
+                click_count: None,
             }
         }
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct DispatchMouseEventReturnObject {
-    }
+    pub struct DispatchMouseEventReturnObject {}
     impl<'a> Method for DispatchMouseEvent<'a> {
         const NAME: &'static str = "Input.dispatchMouseEvent";
         type ReturnObject = DispatchMouseEventReturnObject;
@@ -45,11 +44,9 @@ pub mod methods {
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct DispatchKeyEventReturnObject {
-    }
+    pub struct DispatchKeyEventReturnObject {}
     impl<'a> Method for DispatchKeyEvent<'a> {
         const NAME: &'static str = "Input.dispatchKeyEvent";
         type ReturnObject = DispatchKeyEventReturnObject;
     }
 }
-

@@ -1,4 +1,4 @@
-use serde::{Deserialize};
+use serde::Deserialize;
 
 pub type NodeId = u16;
 
@@ -13,19 +13,18 @@ pub struct Node {
     pub node_value: String,
     pub node_name: String,
     pub node_type: u8,
-    pub attributes: Option<NodeAttributes>
-    // TODO: there's way more here: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-Node
+    pub attributes: Option<NodeAttributes>, // TODO: there's way more here: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-Node
 }
 
 pub mod methods {
-    use serde::{Deserialize, Serialize};
     use crate::cdtp::Method;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct GetDocument {
         pub depth: Option<u8>,
-        pub pierce: Option<bool>
+        pub pierce: Option<bool>,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -36,7 +35,6 @@ pub mod methods {
         const NAME: &'static str = "DOM.getDocument";
         type ReturnObject = GetDocumentReturnObject;
     }
-
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -56,7 +54,6 @@ pub mod methods {
         const NAME: &'static str = "DOM.describeNode";
         type ReturnObject = DescribeNodeReturnObject;
     }
-
 
     #[derive(Serialize, Debug, Default)]
     #[serde(rename_all = "camelCase")]
@@ -99,7 +96,7 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct QuerySelector<'a> {
         pub node_id: super::NodeId,
-        pub selector: &'a str
+        pub selector: &'a str,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -132,7 +129,6 @@ pub mod methods {
         type ReturnObject = ResolveNodeReturnObject;
     }
 
-
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct GetContentQuads<'a> {
@@ -155,4 +151,3 @@ pub mod methods {
         type ReturnObject = GetContentQuadsReturnObject;
     }
 }
-

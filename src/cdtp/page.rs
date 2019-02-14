@@ -1,4 +1,4 @@
-use serde::{Deserialize};
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -10,14 +10,14 @@ pub struct Frame {
     pub url: String,
     pub security_origin: String,
     pub mime_type: String,
-    pub unreachable_url: Option<String>
+    pub unreachable_url: Option<String>,
 }
 
 pub mod events {
-    use serde::{Deserialize};
+    use serde::Deserialize;
     #[derive(Deserialize, Debug)]
     pub struct LifecycleEvent {
-        pub params: LifecycleParams
+        pub params: LifecycleParams,
     }
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -31,7 +31,7 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     pub struct FrameStartedLoadingEvent {
-        pub params: FrameStartedLoadingParams
+        pub params: FrameStartedLoadingParams,
     }
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -41,7 +41,7 @@ pub mod events {
 
     #[derive(Deserialize, Debug)]
     pub struct FrameNavigatedEvent {
-        pub params: FrameNavigatedParams
+        pub params: FrameNavigatedParams,
     }
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -49,10 +49,9 @@ pub mod events {
         pub frame: super::Frame,
     }
 
-
     #[derive(Deserialize, Debug)]
     pub struct FrameStoppedLoadingEvent {
-        pub params: FrameStoppedLoadingParams
+        pub params: FrameStoppedLoadingParams,
     }
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -62,18 +61,18 @@ pub mod events {
 }
 
 pub mod methods {
-    use serde::{Deserialize, Serialize};
     use crate::cdtp::Method;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshot<'a> {
-        pub format: &'a str
+        pub format: &'a str,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshotReturnObject {
-        pub data: String
+        pub data: String,
     }
     impl<'a> Method for CaptureScreenshot<'a> {
         const NAME: &'static str = "Page.captureScreenshot";
@@ -83,13 +82,11 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SetLifecycleEventsEnabled {
-        pub enabled: bool
+        pub enabled: bool,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct SetLifecycleEventsEnabledReturnObject {
-
-    }
+    pub struct SetLifecycleEventsEnabledReturnObject {}
     impl Method for SetLifecycleEventsEnabled {
         const NAME: &'static str = "Page.setLifecycleEventsEnabled";
         type ReturnObject = SetLifecycleEventsEnabledReturnObject;
@@ -102,13 +99,13 @@ pub mod methods {
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct FrameTree {
-        pub frame: super::Frame
+        pub frame: super::Frame,
     }
 
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct GetFrameTreeReturnObject {
-        pub frame_tree: FrameTree
+        pub frame_tree: FrameTree,
     }
     impl Method for GetFrameTree {
         const NAME: &'static str = "Page.getFrameTree";
@@ -118,14 +115,14 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct Navigate<'a> {
-        pub url: &'a str
+        pub url: &'a str,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct NavigateReturnObject {
         pub frame_id: String,
         pub loader_id: Option<String>,
-        pub error_text: Option<String>
+        pub error_text: Option<String>,
     }
     impl<'a> Method for Navigate<'a> {
         const NAME: &'static str = "Page.navigate";
@@ -143,7 +140,4 @@ pub mod methods {
         type ReturnObject = EnableReturnObject;
     }
 
-
-
 }
-

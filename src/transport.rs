@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use std::sync::Mutex;
 
 use failure::Error;
@@ -9,12 +9,12 @@ use log::*;
 use serde;
 
 use crate::cdtp;
+use crate::cdtp::target;
 use crate::cdtp::Event;
+use crate::cdtp::Message;
 use crate::waiting_call_registry::WaitingCallRegistry;
 use crate::web_socket_connection::WebSocketConnection;
 use std::sync::mpsc::Receiver;
-use crate::cdtp::Message;
-use crate::cdtp::target;
 
 pub type SessionId = String;
 
@@ -41,8 +41,11 @@ impl Transport {
 
         let listeners = Arc::new(Mutex::new(HashMap::new()));
 
-        Self::handle_incoming_messages(messages_rx, Arc::clone(&waiting_call_registry), Arc::clone(&listeners));
-
+        Self::handle_incoming_messages(
+            messages_rx,
+            Arc::clone(&waiting_call_registry),
+            Arc::clone(&listeners),
+        );
 
         Ok(Transport {
             web_socket_connection,
@@ -52,7 +55,9 @@ impl Transport {
     }
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
-        where C: cdtp::Method + serde::Serialize {
+    where
+        C: cdtp::Method + serde::Serialize,
+    {
         let call = method.to_method_call();
         let message_text = serde_json::to_string(&call).unwrap();
 
@@ -64,8 +69,14 @@ impl Transport {
         cdtp::parse_response::<C::ReturnObject>(response)
     }
 
-    pub fn call_method_on_target<C>(&self, session_id: &SessionId, method: C) -> Result<C::ReturnObject, Error>
-        where C: cdtp::Method + serde::Serialize {
+    pub fn call_method_on_target<C>(
+        &self,
+        session_id: &SessionId,
+        method: C,
+    ) -> Result<C::ReturnObject, Error>
+    where
+        C: cdtp::Method + serde::Serialize,
+    {
         let method_call = method.to_method_call();
         let message = &serde_json::to_string(&method_call).unwrap();
 
@@ -104,9 +115,11 @@ impl Transport {
     }
 
     // TODO: this is way too complex.
-    fn handle_incoming_messages(messages_rx: Receiver<cdtp::Message>,
-                                waiting_call_registry: Arc<WaitingCallRegistry>,
-                                listeners: Listeners) {
+    fn handle_incoming_messages(
+        messages_rx: Receiver<cdtp::Message>,
+        waiting_call_registry: Arc<WaitingCallRegistry>,
+        listeners: Listeners,
+    ) {
         std::thread::spawn(move || {
             for message in messages_rx {
                 match message {
@@ -114,36 +127,41 @@ impl Transport {
                         waiting_call_registry.resolve_call(response_to_browser_method_call);
                     }
 
-                    Message::Event(browser_event) => {
-                        match browser_event {
-                            Event::ReceivedMessageFromTarget(target_message_event) => {
-                                let session_id = target_message_event.params.session_id;
-                                let raw_message = target_message_event.params.message;
+                    Message::Event(browser_event) => match browser_event {
+                        Event::ReceivedMessageFromTarget(target_message_event) => {
+                            let session_id = target_message_event.params.session_id;
+                            let raw_message = target_message_event.params.message;
 
-                                if let Ok(target_message) = cdtp::parse_raw_message(&raw_message) {
-                                    match target_message {
-                                        Message::Event(target_event) => {
-                                            if let Some(tx) = listeners.lock().unwrap().get(&ListenerId::SessionId(session_id)) {
-                                                tx.send(target_event).unwrap();
-                                            }
-                                        }
-
-                                        Message::Response(resp) => {
-                                            waiting_call_registry.resolve_call(resp);
+                            if let Ok(target_message) = cdtp::parse_raw_message(&raw_message) {
+                                match target_message {
+                                    Message::Event(target_event) => {
+                                        if let Some(tx) = listeners
+                                            .lock()
+                                            .unwrap()
+                                            .get(&ListenerId::SessionId(session_id))
+                                        {
+                                            tx.send(target_event).unwrap();
                                         }
                                     }
-                                } else {
-                                    trace!("Message from target isn't recognised: {:?}", &raw_message[..30]);
-                                }
-                            }
 
-                            _ => {
-                                if let Some(tx) = listeners.lock().unwrap().get(&ListenerId::Browser) {
-                                    tx.send(browser_event).unwrap()
+                                    Message::Response(resp) => {
+                                        waiting_call_registry.resolve_call(resp);
+                                    }
                                 }
+                            } else {
+                                trace!(
+                                    "Message from target isn't recognised: {:?}",
+                                    &raw_message[..30]
+                                );
                             }
                         }
-                    }
+
+                        _ => {
+                            if let Some(tx) = listeners.lock().unwrap().get(&ListenerId::Browser) {
+                                tx.send(browser_event).unwrap()
+                            }
+                        }
+                    },
                 }
             }
             // handle incoming messages

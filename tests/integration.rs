@@ -6,14 +6,14 @@ use log::*;
 use toml;
 
 use headless_chrome;
-use headless_chrome::logging;
 use headless_chrome::browser;
-use rand::{self, Rng};
-use rand::distributions::Alphanumeric;
 use headless_chrome::helpers::wait_for;
+use headless_chrome::helpers::wait_until_true;
 use headless_chrome::helpers::WaitOptions;
+use headless_chrome::logging;
+use rand::distributions::Alphanumeric;
+use rand::{self, Rng};
 use std::sync::Arc;
-use headless_chrome::helpers::{wait_until_true};
 
 fn sleep(ms: u64) {
     std::thread::sleep(std::time::Duration::from_millis(ms));
@@ -54,8 +54,8 @@ fn browse_wikipedia() -> Result<(), Error> {
     tab.wait_for_element("#firstHeading")?;
 
     assert_eq!(true, tab.get_url().ends_with("WebKit"));
-//    tab.wait_until_navigated()?;
-//    sleep(1000);
+    //    tab.wait_until_navigated()?;
+    //    sleep(1000);
 
     Ok(())
 }
@@ -94,7 +94,7 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     let tab = browser.wait_for_initial_tab()?;
 
     // so we can use it to upload files
-//    log_in_to_dropbox(&tab);
+    //    log_in_to_dropbox(&tab);
 
     if let Err(_nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
         warn!("Digital Pigeon seems to be down.");
@@ -102,7 +102,6 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     }
 
     let secrets = &parse_secrets()?["digital_pigeon"];
-
 
     let element = tab.wait_for_element(r#"input[type="email"]"#)?;
     let classic_mp = element.get_midpoint()?;
@@ -130,34 +129,45 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     let add_via_dropbox_button = tab.wait_for_element(".popover li.add-dropbox")?;
     add_via_dropbox_button.click()?;
 
-    let dropbox_tab = wait_for(|| {
-        let tabs_mutex = browser.get_tabs();
-        let tabs = tabs_mutex.lock().unwrap();
-        if tabs.len() > 1 {
-            Some(Arc::clone(&tabs.last().unwrap()))
-        } else {
-            None
-        }
-    }, WaitOptions {
-        timeout_ms: 1000,
-        sleep_ms: 100
-    })?;
+    let dropbox_tab = wait_for(
+        || {
+            let tabs_mutex = browser.get_tabs();
+            let tabs = tabs_mutex.lock().unwrap();
+            if tabs.len() > 1 {
+                Some(Arc::clone(&tabs.last().unwrap()))
+            } else {
+                None
+            }
+        },
+        WaitOptions {
+            timeout_ms: 1000,
+            sleep_ms: 100,
+        },
+    )?;
 
     log_in_to_dropbox(&dropbox_tab)?;
 
     // for pre-captcha
-    wait_until_true(|| {
-        dropbox_tab.get_url().starts_with("https://www.dropbox.com/chooser")
-    }, WaitOptions {
-        timeout_ms: 120_000,
-        sleep_ms: 100
-    })?;
+    wait_until_true(
+        || {
+            dropbox_tab
+                .get_url()
+                .starts_with("https://www.dropbox.com/chooser")
+        },
+        WaitOptions {
+            timeout_ms: 120_000,
+            sleep_ms: 100,
+        },
+    )?;
 
-    dropbox_tab.wait_for_element(".dropins-search-input")?.click();
+    dropbox_tab
+        .wait_for_element(".dropins-search-input")?
+        .click();
     dropbox_tab.type_str("digital")?;
     dropbox_tab.wait_until_navigated()?;
 
-    let movie_row = dropbox_tab.wait_for_element(".dropins-chooser-files-list-item .mc-checkbox")?;
+    let movie_row =
+        dropbox_tab.wait_for_element(".dropins-chooser-files-list-item .mc-checkbox")?;
     movie_row.click()?;
     dropbox_tab.wait_for_element(".mc-button-primary")?.click();
 
@@ -230,11 +240,11 @@ fn log_in_to_dropbox(tab: &headless_chrome::tab::Tab) -> Result<(), Error> {
     tab.press_key("Enter")?;
     sleep(100);
 
-//    tab.wait_until_navigated()?;
+    //    tab.wait_until_navigated()?;
 
-//    tab.wait_for_element("a#files")?.click()?;
-//
-//    tab.wait_until_navigated()?;
+    //    tab.wait_for_element("a#files")?.click()?;
+    //
+    //    tab.wait_until_navigated()?;
 
     Ok(())
 }
@@ -256,10 +266,10 @@ fn fastmail() {
 
 #[test]
 fn digital_pigeon() {
-//    for i in 0..30 {
-//        println!("ATTEMPT NUM: {}", i);
-        log_in_to_digital_pigeon().expect("passed");
-//    }
+    //    for i in 0..30 {
+    //        println!("ATTEMPT NUM: {}", i);
+    log_in_to_digital_pigeon().expect("passed");
+    //    }
 }
 
 #[test]
@@ -270,7 +280,8 @@ fn dropbox() {
         path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         headless: true,
         ..Default::default()
-    }).unwrap();
+    })
+    .unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
 
     let nav_result = tab.navigate_to("https://www.dropbox.com/login");

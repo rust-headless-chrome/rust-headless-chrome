@@ -3,14 +3,13 @@ use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub mod target;
-pub mod page;
 pub mod dom;
 pub mod input;
+pub mod page;
 pub mod runtime;
+pub mod target;
 
 pub type CallId = u16;
-
 
 #[derive(Serialize)]
 pub struct MethodCall<T> {
@@ -27,10 +26,15 @@ pub trait Method {
     type ReturnObject: serde::de::DeserializeOwned + std::fmt::Debug; // have this = something?
 
     fn to_method_call(self) -> MethodCall<Self>
-        where Self: std::marker::Sized
+    where
+        Self: std::marker::Sized,
     {
         let call_id = rand::random::<CallId>();
-        MethodCall { id: call_id, params: self, method_name: Self::NAME }
+        MethodCall {
+            id: call_id,
+            params: self,
+            method_name: Self::NAME,
+        }
     }
 }
 
@@ -51,7 +55,9 @@ pub struct Response {
 }
 
 pub fn parse_response<T>(response: Response) -> Result<T, Error>
-    where T: serde::de::DeserializeOwned + std::fmt::Debug {
+where
+    T: serde::de::DeserializeOwned + std::fmt::Debug,
+{
     if let Some(error) = response.error {
         return Err(error.into());
     }
@@ -96,8 +102,8 @@ pub enum Message {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use log::*;
+    use serde_json::json;
 
     use super::*;
 
@@ -144,7 +150,6 @@ mod tests {
             }
         });
 
-
         let event: Event = serde_json::from_value(attached_to_target_json).unwrap();
         match event {
             Event::AttachedToTarget(_) => {}
@@ -166,7 +171,7 @@ mod tests {
             Event::ReceivedMessageFromTarget(ev) => {
                 trace!("{:?}", ev);
             }
-            _ => { panic!("bad news") }
+            _ => panic!("bad news"),
         }
     }
 
@@ -191,7 +196,6 @@ mod tests {
     }
 }
 
-pub fn parse_raw_message(raw_message: &str) -> Result<Message, Error>
-{
+pub fn parse_raw_message(raw_message: &str) -> Result<Message, Error> {
     Ok(serde_json::from_str::<Message>(raw_message)?)
 }

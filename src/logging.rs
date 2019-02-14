@@ -1,5 +1,5 @@
-use std::io::Write;
 use chrono;
+use std::io::Write;
 
 use env_logger;
 use env_logger::fmt;
@@ -9,21 +9,30 @@ pub fn enable_logging() {
     let mut builder = env_logger::Builder::from_default_env();
 
     // NOTE: can infer types here, but I find them a useful reminder.
-    let _result = builder.format(move |buf: &mut fmt::Formatter, record: &log::Record| {
-        // TODO: this is fucked! can't import it.
-//        dbg!(buf.default_styled_level(record.level()));
-        let date = chrono::Local::now();
+    let _result = builder
+        .format(move |buf: &mut fmt::Formatter, record: &log::Record| {
+            // TODO: this is fucked! can't import it.
+            //        dbg!(buf.default_styled_level(record.level()));
+            let date = chrono::Local::now();
 
-        let level_str = level_to_emoji(record.level());
-        let mut style = buf.style();
-        let hours_minutes = date.format("%H:%M").to_string();
-        let seconds_millis = date.format("%S%.3f").to_string();
-        let fmt_seconds = style.set_bold(true).value(seconds_millis);
+            let level_str = level_to_emoji(record.level());
+            let mut style = buf.style();
+            let hours_minutes = date.format("%H:%M").to_string();
+            let seconds_millis = date.format("%S%.3f").to_string();
+            let fmt_seconds = style.set_bold(true).value(seconds_millis);
 
-        let truncated_module_path = &record.module_path().unwrap()[5..];
+            let truncated_module_path = &record.module_path().unwrap()[5..];
 
-        writeln!(buf, "{:<2} [{}:{}] - {:<12} - {}", level_str, hours_minutes, fmt_seconds, truncated_module_path, record.args())
-    })
+            writeln!(
+                buf,
+                "{:<2} [{}:{}] - {:<12} - {}",
+                level_str,
+                hours_minutes,
+                fmt_seconds,
+                truncated_module_path,
+                record.args()
+            )
+        })
         .try_init();
 }
 
