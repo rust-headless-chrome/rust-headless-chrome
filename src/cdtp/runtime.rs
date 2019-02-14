@@ -1,7 +1,6 @@
-
 pub mod methods {
-    use serde::{Deserialize, Serialize};
     use crate::cdtp::Method;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Deserialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -22,7 +21,7 @@ pub mod methods {
         pub subtype: Option<String>,
         pub description: Option<String>,
         pub overflow: bool,
-        pub properties: Vec<PropertyPreview>
+        pub properties: Vec<PropertyPreview>,
     }
 
     #[derive(Deserialize, Debug)]
@@ -35,7 +34,7 @@ pub mod methods {
         pub class_name: Option<String>,
         pub value: Option<serde_json::Value>,
         pub unserializable_value: Option<String>,
-        pub preview: Option<ObjectPreview>
+        pub preview: Option<ObjectPreview>,
     }
 
     #[derive(Serialize, Debug, Default)]
@@ -50,7 +49,7 @@ pub mod methods {
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CallFunctionOnReturnObject {
-       pub result: RemoteObject
+        pub result: RemoteObject,
     }
     impl<'a> Method for CallFunctionOn<'a> {
         const NAME: &'static str = "Runtime.callFunctionOn";

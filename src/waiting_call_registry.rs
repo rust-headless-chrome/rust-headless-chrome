@@ -1,18 +1,16 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 use std::sync::mpsc;
+use std::sync::Mutex;
 
-use crate::cdtp::{Response, CallId};
+use crate::cdtp::{CallId, Response};
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
-
 pub struct WaitingCallRegistry {
-    calls: Mutex<HashMap<CallId, mpsc::Sender<Response>>>
+    calls: Mutex<HashMap<CallId, mpsc::Sender<Response>>>,
 }
-
 
 impl IdentifiableResponse for Response {
     fn call_id(&self) -> u16 {
@@ -20,15 +18,11 @@ impl IdentifiableResponse for Response {
     }
 }
 
-impl WaitingCallRegistry
-{
-    pub fn new() -> Self
-    {
+impl WaitingCallRegistry {
+    pub fn new() -> Self {
         let calls = Mutex::new(HashMap::new());
 
-        WaitingCallRegistry {
-            calls
-        }
+        WaitingCallRegistry { calls }
     }
 
     pub fn resolve_call(&self, response: Response) {
@@ -37,7 +31,9 @@ impl WaitingCallRegistry
             waiting_calls.remove(&response.call_id()).unwrap()
         };
 
-        waiting_call_tx.send(response).expect("failed to send response to waiting call");
+        waiting_call_tx
+            .send(response)
+            .expect("failed to send response to waiting call");
     }
 
     pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Response> {
@@ -60,11 +56,19 @@ mod tests {
         let waiting_calls = WaitingCallRegistry::new();
 
         let call_rx = waiting_calls.register_call(431);
-        let resp = Response { call_id: 431, result: Some(json!{true}), error: None };
+        let resp = Response {
+            call_id: 431,
+            result: Some(json! {true}),
+            error: None,
+        };
         let resp_clone = resp.clone();
 
         let call_rx2 = waiting_calls.register_call(123);
-        let resp2 = Response { call_id: 123, result: Some(json!{false}), error: None };
+        let resp2 = Response {
+            call_id: 123,
+            result: Some(json! {false}),
+            error: None,
+        };
         let resp2_clone = resp2.clone();
 
         waiting_calls.resolve_call(resp);

@@ -36,6 +36,3 @@ impl std::ops::Div<f64> for Point {
         }
     }
 }
-
-
-

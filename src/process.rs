@@ -33,7 +33,7 @@ enum ChromeLaunchError {
 pub struct LaunchOptions<'a> {
     pub headless: bool,
     pub port: Option<u16>,
-    pub path: &'a str
+    pub path: &'a str,
 }
 
 impl<'a> Default for LaunchOptions<'a> {
@@ -78,7 +78,10 @@ impl Process {
                 }
             }
 
-            trace!("Trying again to find available debugging port. Attempts: {}", attempts);
+            trace!(
+                "Trying again to find available debugging port. Attempts: {}",
+                attempts
+            );
             attempts = attempts + 1;
         }
 
@@ -108,7 +111,7 @@ impl Process {
             "--verbose",
             "--no-first-run",
             data_dir_option.as_str(),
-//            "--window-size=1920,1080"
+            //            "--window-size=1920,1080"
         ];
 
         if launch_options.headless {
@@ -121,7 +124,6 @@ impl Process {
             .spawn()?;
         Ok(process)
     }
-
 
     // TODO: URL instead of String return type?
     // let url = Url::parse("ws://bitcoins.pizza").unwrap();
@@ -140,25 +142,30 @@ impl Process {
             Some(cap.into())
         };
 
+        let chrome_output_result = wait_for_mut(
+            || {
+                let mut buf = [0; 512];
+                let my_stderr = child_process.stderr.as_mut();
+                // TODO: actually handle this error
+                let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
+                if bytes_read > 0 {
+                    let chrome_output = String::from_utf8_lossy(&buf);
+                    trace!("Chrome output: {}", chrome_output);
 
-        let chrome_output_result = wait_for_mut(|| {
-            let mut buf = [0; 512];
-            let my_stderr = child_process.stderr.as_mut();
-            // TODO: actually handle this error
-            let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
-            if bytes_read > 0 {
-                let chrome_output = String::from_utf8_lossy(&buf);
-                trace!("Chrome output: {}", chrome_output);
+                    if port_taken_re.is_match(&chrome_output) {
+                        return None;
+                    }
 
-                if port_taken_re.is_match(&chrome_output) {
-                    return None;
+                    extract(&chrome_output)
+                } else {
+                    None
                 }
-
-                extract(&chrome_output)
-            } else {
-                None
-            }
-        }, WaitOptions { timeout_ms: 200, sleep_ms: 10 });
+            },
+            WaitOptions {
+                timeout_ms: 200,
+                sleep_ms: 10,
+            },
+        );
 
         if let Ok(output) = chrome_output_result {
             if port_taken_re.is_match(&output) {
@@ -170,7 +177,6 @@ impl Process {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
         }
     }
-
 }
 
 impl Drop for Process {
@@ -184,13 +190,15 @@ impl Drop for Process {
 fn get_available_port() -> Option<u16> {
     let mut ports: Vec<u16> = (8000..9000).collect();
     ports.shuffle(&mut thread_rng());
-    ports.iter().find(|port| port_is_available(**port)).map(|p| p.clone())
+    ports
+        .iter()
+        .find(|port| port_is_available(**port))
+        .map(|p| p.clone())
 }
 
 fn port_is_available(port: u16) -> bool {
     net::TcpListener::bind(("127.0.0.1", port)).is_ok()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -200,10 +208,19 @@ mod tests {
 
     fn current_child_pids() -> Vec<i32> {
         let current_pid = std::process::id();
-        let mut current_process_children_file = File::open(format!("/proc/{}/task/{}/children", current_pid, current_pid)).unwrap();
+        let mut current_process_children_file = File::open(format!(
+            "/proc/{}/task/{}/children",
+            current_pid, current_pid
+        ))
+        .unwrap();
         let mut child_pids = String::new();
-        current_process_children_file.read_to_string(&mut child_pids).unwrap();
-        return child_pids.split_whitespace().map(|pid_str| pid_str.parse::<i32>().unwrap()).collect();
+        current_process_children_file
+            .read_to_string(&mut child_pids)
+            .unwrap();
+        return child_pids
+            .split_whitespace()
+            .map(|pid_str| pid_str.parse::<i32>().unwrap())
+            .collect();
     }
 
     #[test]
@@ -231,7 +248,8 @@ mod tests {
                 let chrome = super::Process::new(super::LaunchOptions {
                     port: None,
                     ..Default::default()
-                }).unwrap();
+                })
+                .unwrap();
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 chrome.debug_ws_url.clone()
             });
@@ -243,7 +261,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn no_instance_sharing() {
         env_logger::try_init().unwrap_or(());
@@ -254,8 +271,9 @@ mod tests {
             let chrome = super::Process::new(super::LaunchOptions {
                 headless: false,
                 ..Default::default()
-            }).unwrap();
+            })
+            .unwrap();
             handles.push(chrome);
-        };
+        }
     }
 }
