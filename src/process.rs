@@ -16,7 +16,7 @@ use crate::helpers::{wait_for_mut, WaitOptions};
 //use crate::tab::Tab;
 
 pub struct Process {
-    child_process: Child,
+    _child_process: TemporaryProcess,
     pub debug_ws_url: String,
 }
 
@@ -28,6 +28,16 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[fail(display = "The chosen debugging port is already in use")]
     DebugPortInUse,
+}
+
+struct TemporaryProcess(Child);
+
+impl Drop for TemporaryProcess {
+    fn drop(&mut self) {
+        info!("Killing Chrome. PID: {}", self.0.id());
+        self.0.kill().unwrap();
+        self.0.wait().unwrap();
+    }
 }
 
 pub struct LaunchOptions<'a> {
@@ -55,7 +65,7 @@ impl Process {
 
         let mut process = Process::start_process(&launch_options)?;
 
-        info!("Started Chrome. PID: {}", process.id());
+        info!("Started Chrome. PID: {}", process.0.id());
 
         let url;
         let mut attempts = 0;
@@ -64,7 +74,7 @@ impl Process {
                 return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
 
-            match Process::ws_url_from_output(process.borrow_mut()) {
+            match Process::ws_url_from_output(process.0.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
                     break;
@@ -86,12 +96,12 @@ impl Process {
         }
 
         Ok(Process {
-            child_process: process,
+            _child_process: process,
             debug_ws_url: url,
         })
     }
 
-    fn start_process(launch_options: &LaunchOptions) -> Result<Child, Error> {
+    fn start_process(launch_options: &LaunchOptions) -> Result<TemporaryProcess, Error> {
         let debug_port = if let Some(port) = launch_options.port {
             port
         } else {
@@ -118,10 +128,12 @@ impl Process {
             args.extend(&["--headless"]);
         }
 
-        let process = Command::new(launch_options.path)
-            .args(&args)
-            .stderr(Stdio::piped())
-            .spawn()?;
+        let process = TemporaryProcess(
+            Command::new(launch_options.path)
+                .args(&args)
+                .stderr(Stdio::piped())
+                .spawn()?,
+        );
         Ok(process)
     }
 
@@ -177,14 +189,6 @@ impl Process {
         } else {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
         }
-    }
-}
-
-impl Drop for Process {
-    fn drop(&mut self) {
-        info!("Killing Chrome. PID: {}", self.child_process.id());
-        self.child_process.kill().unwrap();
-        self.child_process.wait().unwrap();
     }
 }
 
