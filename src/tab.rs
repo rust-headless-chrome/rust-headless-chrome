@@ -60,9 +60,10 @@ impl<'a> Tab {
                 target_id: &target_id,
                 flatten: None,
             })?
-            .session_id;
+            .session_id
+            .into();
 
-        debug!("New tab attached with session ID: {}", session_id);
+        debug!("New tab attached with session ID: {:?}", session_id);
 
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 

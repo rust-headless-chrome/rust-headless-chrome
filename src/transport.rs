@@ -16,7 +16,20 @@ use crate::waiting_call_registry::WaitingCallRegistry;
 use crate::web_socket_connection::WebSocketConnection;
 use std::sync::mpsc::Receiver;
 
-pub type SessionId = String;
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SessionId(String);
+
+impl SessionId {
+    fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<String> for SessionId {
+    fn from(session_id: String) -> Self {
+        Self(session_id)
+    }
+}
 
 #[derive(Eq, PartialEq, Hash)]
 enum ListenerId {
@@ -82,7 +95,7 @@ impl Transport {
 
         let target_method = target::methods::SendMessageToTarget {
             target_id: None,
-            session_id: Some(&session_id),
+            session_id: Some(session_id.as_str()),
             message,
         };
 
@@ -129,7 +142,7 @@ impl Transport {
 
                     Message::Event(browser_event) => match browser_event {
                         Event::ReceivedMessageFromTarget(target_message_event) => {
-                            let session_id = target_message_event.params.session_id;
+                            let session_id = target_message_event.params.session_id.into();
                             let raw_message = target_message_event.params.message;
 
                             if let Ok(target_message) = cdtp::parse_raw_message(&raw_message) {
