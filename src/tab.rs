@@ -60,9 +60,10 @@ impl<'a> Tab {
                 target_id: &target_id,
                 flatten: None,
             })?
-            .session_id;
+            .session_id
+            .into();
 
-        debug!("New tab attached with session ID: {}", session_id);
+        debug!("New tab attached with session ID: {:?}", session_id);
 
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
@@ -106,21 +107,17 @@ impl<'a> Tab {
         std::thread::spawn(move || {
             for event in incoming_events_rx {
                 trace!("{:?}", &event);
-                match event {
-                    Event::LifecycleEvent(lifecycle_event) => {
-                        //                        if lifecycle_event.params.frame_id == main_frame_id {
-                        match lifecycle_event.params.name.as_ref() {
-                            "networkAlmostIdle" => {
-                                navigating.store(false, Ordering::SeqCst);
-                            }
-                            "init" => {
-                                navigating.store(true, Ordering::SeqCst);
-                            }
-                            _ => {}
+                if let Event::LifecycleEvent(lifecycle_event) = event {
+                    //                        if lifecycle_event.params.frame_id == main_frame_id {
+                    match lifecycle_event.params.name.as_ref() {
+                        "networkAlmostIdle" => {
+                            navigating.store(false, Ordering::SeqCst);
                         }
-                        //                        }
+                        "init" => {
+                            navigating.store(true, Ordering::SeqCst);
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
         });

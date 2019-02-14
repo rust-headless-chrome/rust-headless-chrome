@@ -83,7 +83,7 @@ impl<'a> Element<'a> {
         Ok(node)
     }
 
-    pub fn set_input_files(&self, file_paths: &Vec<&str>) -> Result<(), Error> {
+    pub fn set_input_files(&self, file_paths: &[&str]) -> Result<(), Error> {
         self.parent.call_method(dom::methods::SetFileInputFiles {
             files: file_paths,
             backend_node_id: Some(self.backend_node_id),

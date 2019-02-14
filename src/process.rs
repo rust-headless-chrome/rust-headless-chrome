@@ -1,5 +1,5 @@
 use std::borrow::BorrowMut;
-use std::io::Read;
+use std::io::{BufRead, BufReader};
 use std::net;
 use std::process::{Child, Command, Stdio};
 
@@ -16,7 +16,7 @@ use crate::helpers::{wait_for_mut, WaitOptions};
 //use crate::tab::Tab;
 
 pub struct Process {
-    child_process: Child,
+    _child_process: TemporaryProcess,
     pub debug_ws_url: String,
 }
 
@@ -28,6 +28,16 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[fail(display = "The chosen debugging port is already in use")]
     DebugPortInUse,
+}
+
+struct TemporaryProcess(Child);
+
+impl Drop for TemporaryProcess {
+    fn drop(&mut self) {
+        info!("Killing Chrome. PID: {}", self.0.id());
+        self.0.kill().unwrap();
+        self.0.wait().unwrap();
+    }
 }
 
 pub struct LaunchOptions<'a> {
@@ -55,7 +65,7 @@ impl Process {
 
         let mut process = Process::start_process(&launch_options)?;
 
-        info!("Started Chrome. PID: {}", process.id());
+        info!("Started Chrome. PID: {}", process.0.id());
 
         let url;
         let mut attempts = 0;
@@ -64,7 +74,7 @@ impl Process {
                 return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
 
-            match Process::ws_url_from_output(process.borrow_mut()) {
+            match Process::ws_url_from_output(process.0.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
                     break;
@@ -82,16 +92,16 @@ impl Process {
                 "Trying again to find available debugging port. Attempts: {}",
                 attempts
             );
-            attempts = attempts + 1;
+            attempts += 1;
         }
 
         Ok(Process {
-            child_process: process,
+            _child_process: process,
             debug_ws_url: url,
         })
     }
 
-    fn start_process(launch_options: &LaunchOptions) -> Result<Child, Error> {
+    fn start_process(launch_options: &LaunchOptions) -> Result<TemporaryProcess, Error> {
         let debug_port = if let Some(port) = launch_options.port {
             port
         } else {
@@ -118,10 +128,12 @@ impl Process {
             args.extend(&["--headless"]);
         }
 
-        let process = Command::new(launch_options.path)
-            .args(&args)
-            .stderr(Stdio::piped())
-            .spawn()?;
+        let process = TemporaryProcess(
+            Command::new(launch_options.path)
+                .args(&args)
+                .stderr(Stdio::piped())
+                .spawn()?,
+        );
         Ok(process)
     }
 
@@ -131,10 +143,10 @@ impl Process {
     // let builder = ClientBuilder::from_url(&url);
     fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
         // TODO: will this work on Mac / Windows / etc.?
-        let port_taken_re = Regex::new(r"Address already in use").unwrap();
+        let port_taken = "Address already in use";
 
         // TODO: user static or lazy static regex
-        let re = Regex::new(r"listening on (.*/devtools/browser/.*)\n").unwrap();
+        let re = Regex::new(r"listening on (.*/devtools/browser/.*)$").unwrap();
 
         let extract = |text: &str| -> Option<String> {
             let caps = re.captures(text);
@@ -144,22 +156,23 @@ impl Process {
 
         let chrome_output_result = wait_for_mut(
             || {
-                let mut buf = [0; 512];
-                let my_stderr = child_process.stderr.as_mut();
+                let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
                 // TODO: actually handle this error
-                let bytes_read = my_stderr.unwrap().read(&mut buf).unwrap();
-                if bytes_read > 0 {
-                    let chrome_output = String::from_utf8_lossy(&buf);
+                for line in my_stderr.lines() {
+                    let chrome_output = line.ok()?;
                     trace!("Chrome output: {}", chrome_output);
 
-                    if port_taken_re.is_match(&chrome_output) {
+                    if chrome_output.contains(port_taken) {
                         return None;
                     }
 
-                    extract(&chrome_output)
-                } else {
-                    None
+                    let answer = extract(&chrome_output);
+                    if answer.is_some() {
+                        return answer;
+                    }
                 }
+
+                None
             },
             WaitOptions {
                 timeout_ms: 200,
@@ -168,7 +181,7 @@ impl Process {
         );
 
         if let Ok(output) = chrome_output_result {
-            if port_taken_re.is_match(&output) {
+            if output.contains(port_taken) {
                 Err(ChromeLaunchError::DebugPortInUse {}.into())
             } else {
                 Ok(output)
@@ -179,21 +192,10 @@ impl Process {
     }
 }
 
-impl Drop for Process {
-    fn drop(&mut self) {
-        info!("Killing Chrome. PID: {}", self.child_process.id());
-        self.child_process.kill().unwrap();
-        self.child_process.wait().unwrap();
-    }
-}
-
 fn get_available_port() -> Option<u16> {
     let mut ports: Vec<u16> = (8000..9000).collect();
     ports.shuffle(&mut thread_rng());
-    ports
-        .iter()
-        .find(|port| port_is_available(**port))
-        .map(|p| p.clone())
+    ports.iter().find(|port| port_is_available(**port)).cloned()
 }
 
 fn port_is_available(port: u16) -> bool {
@@ -217,16 +219,15 @@ mod tests {
         current_process_children_file
             .read_to_string(&mut child_pids)
             .unwrap();
-        return child_pids
+        child_pids
             .split_whitespace()
             .map(|pid_str| pid_str.parse::<i32>().unwrap())
-            .collect();
+            .collect()
     }
 
     #[test]
     fn kills_process_on_drop() {
         env_logger::try_init().unwrap_or(());
-        let time_before = std::time::SystemTime::now();
         {
             let _chrome = &mut super::Process::new(Default::default()).unwrap();
         }

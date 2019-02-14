@@ -76,7 +76,7 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SetFileInputFiles<'a> {
-        pub files: &'a Vec<&'a str>,
+        pub files: &'a [&'a str],
         #[serde(skip_serializing_if = "Option::is_none")]
         pub node_id: Option<super::NodeId>,
         #[serde(skip_serializing_if = "Option::is_none")]
