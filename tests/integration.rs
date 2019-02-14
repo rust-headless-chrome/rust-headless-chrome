@@ -5,15 +5,15 @@ use failure::Error;
 use log::*;
 use toml;
 
-use lib;
-use lib::logging;
-use lib::browser;
+use headless_chrome;
+use headless_chrome::logging;
+use headless_chrome::browser;
 use rand::{self, Rng};
 use rand::distributions::Alphanumeric;
-use lib::helpers::wait_for;
-use lib::helpers::WaitOptions;
+use headless_chrome::helpers::wait_for;
+use headless_chrome::helpers::WaitOptions;
 use std::sync::Arc;
-use lib::helpers::wait_until_true;
+use headless_chrome::helpers::{wait_until_true};
 
 fn sleep(ms: u64) {
     std::thread::sleep(std::time::Duration::from_millis(ms));
@@ -214,7 +214,7 @@ fn log_in_to_fastmail() -> Result<(), Error> {
     Ok(())
 }
 
-fn log_in_to_dropbox(tab: &lib::tab::Tab) -> Result<(), Error> {
+fn log_in_to_dropbox(tab: &headless_chrome::tab::Tab) -> Result<(), Error> {
     // NOTE: must be already on the dropbox login page
     let secrets = &parse_secrets()?["dropbox"];
 

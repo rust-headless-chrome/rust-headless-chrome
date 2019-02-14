@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "0.1"
+version = "0.1.0"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2018"
 
@@ -20,5 +20,5 @@ chrono = "0.4"
 termcolor = "1"
 
 [lib]
-name = "lib"
+name = "headless_chrome"
 path = "src/lib.rs"
