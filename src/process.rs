@@ -30,17 +30,20 @@ enum ChromeLaunchError {
     DebugPortInUse,
 }
 
-pub struct LaunchOptions {
+pub struct LaunchOptions<'a> {
     pub headless: bool,
     pub port: Option<u16>,
+    pub path: &'a str
 }
 
-impl Default for LaunchOptions {
+impl<'a> Default for LaunchOptions<'a> {
     fn default() -> Self {
         LaunchOptions {
             headless: true,
             // TODO: extra option for if you want it to keep scanning up from the port you passed?
             port: None,
+            // TODO: this is not at all a sensible default
+            path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         }
     }
 }
@@ -103,6 +106,7 @@ impl Process {
         let mut args = vec![
             port_option.as_str(),
             "--verbose",
+            "--no-first-run",
             data_dir_option.as_str(),
 //            "--window-size=1920,1080"
         ];
@@ -111,7 +115,7 @@ impl Process {
             args.extend(&["--headless"]);
         }
 
-        let process = Command::new("/home/alistair/Downloads/chrome-linux/chrome")
+        let process = Command::new(launch_options.path)
             .args(&args)
             .stderr(Stdio::piped())
             .spawn()?;
@@ -208,11 +212,6 @@ mod tests {
         let time_before = std::time::SystemTime::now();
         {
             let _chrome = &mut super::Process::new(Default::default()).unwrap();
-
-            let chrome_startup_millis = time_before
-                .elapsed()
-                .unwrap()
-                .as_millis();
         }
 
         let child_pids = current_child_pids();

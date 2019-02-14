@@ -1,5 +1,3 @@
-#![feature(test)]
-#![feature(custom_attribute)]
 #![allow(deprecated)]
 
 extern crate log;

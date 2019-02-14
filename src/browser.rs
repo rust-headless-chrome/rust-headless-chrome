@@ -52,7 +52,7 @@ impl Browser {
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>, Error> {
         wait_for(|| {
             self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab))
-        }, WaitOptions { timeout_ms: 300, sleep_ms: 10 })
+        }, WaitOptions { timeout_ms: 5000, sleep_ms: 10 })
     }
 
 //    pub fn new_tab(&self) -> Result<Arc<Tab>, Error> {
@@ -93,7 +93,6 @@ impl Browser {
                         trace!("Target info changed: {:?}", target_info);
                         if target_info.target_type == "page" {
                             let locked_tabs = tabs.lock().unwrap();
-                            dbg!(locked_tabs.len());
                             let updated_tab = locked_tabs.iter().find(|tab| {
                                 *tab.get_target_id() == target_info.target_id
                             }).expect("got TargetInfoChanged event about a tab not in our list");
@@ -116,6 +115,8 @@ impl Browser {
 #[test]
 fn browser_basic_test() {
     use crate::logging;
+    use crate::cdtp::target::methods::{GetTargets};
+
     fn try_out_browser() -> Result<(), Error> {
         let mut browser = Browser::new(LaunchOptions { headless: true, ..Default::default() })?;
 

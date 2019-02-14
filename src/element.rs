@@ -103,8 +103,6 @@ impl<'a> Element<'a> {
             bottom_left: Point { x: raw_quad[6], y: raw_quad[7] },
         };
 
-        dbg!(input_quad);
-
         Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
     }
 

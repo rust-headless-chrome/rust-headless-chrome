@@ -172,7 +172,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element_with_custom_timeout(&'a self, selector: &'a str,
-                                                timeout_ms: u128) -> Result<Element<'a>, Error> {
+                                                timeout_ms: u64) -> Result<Element<'a>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         wait_for(|| {
             // TODO: there must be a pattern to replace these nested ifs

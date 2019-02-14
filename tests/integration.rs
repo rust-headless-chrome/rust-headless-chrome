@@ -38,20 +38,22 @@ fn browse_wikipedia() -> Result<(), Error> {
     logging::enable_logging();
 
     let browser = browser::Browser::new(browser::LaunchOptions {
-        headless: true,
+        headless: false,
+        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         ..Default::default()
     })?;
     let tab = browser.wait_for_initial_tab()?;
 
-    if let Err(_nav_failed) = tab.navigate_to("https://www.wikipedia.org") {
-        warn!("Site seems to be down.");
-        return Ok(());
-    }
+    tab.navigate_to("https://www.wikipedia.org")?;
 
-    let log_in_link = tab.wait_for_element(r#"#js-link-box-en"#)?;
+    tab.wait_for_element(r#"input#searchInput"#)?.click()?;
 
-    log_in_link.click()?;
+    tab.type_str("WebKit")?;
+    tab.press_key("Enter")?;
 
+    tab.wait_for_element("#firstHeading")?;
+
+    assert_eq!(true, tab.get_url().ends_with("WebKit"));
 //    tab.wait_until_navigated()?;
 //    sleep(1000);
 
@@ -84,6 +86,7 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     logging::enable_logging();
 
     let browser = browser::Browser::new(browser::LaunchOptions {
+        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         headless: false,
         ..Default::default()
     })?;
@@ -155,8 +158,6 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
     dropbox_tab.wait_until_navigated()?;
 
     let movie_row = dropbox_tab.wait_for_element(".dropins-chooser-files-list-item .mc-checkbox")?;
-    dbg!(movie_row.get_description()?);
-    dbg!(movie_row.get_attributes()?);
     movie_row.click()?;
     dropbox_tab.wait_for_element(".mc-button-primary")?.click();
 
@@ -169,6 +170,7 @@ fn log_in_to_fastmail() -> Result<(), Error> {
     logging::enable_logging();
 
     let browser = browser::Browser::new(browser::LaunchOptions {
+        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         headless: false,
         ..Default::default()
     })?;
@@ -265,6 +267,7 @@ fn dropbox() {
     logging::enable_logging();
 
     let browser = browser::Browser::new(browser::LaunchOptions {
+        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         headless: true,
         ..Default::default()
     }).unwrap();

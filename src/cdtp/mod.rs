@@ -97,6 +97,7 @@ pub enum Message {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
+    use log::*;
 
     use super::*;
 
