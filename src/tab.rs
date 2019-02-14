@@ -107,21 +107,17 @@ impl<'a> Tab {
         std::thread::spawn(move || {
             for event in incoming_events_rx {
                 trace!("{:?}", &event);
-                match event {
-                    Event::LifecycleEvent(lifecycle_event) => {
-                        //                        if lifecycle_event.params.frame_id == main_frame_id {
-                        match lifecycle_event.params.name.as_ref() {
-                            "networkAlmostIdle" => {
-                                navigating.store(false, Ordering::SeqCst);
-                            }
-                            "init" => {
-                                navigating.store(true, Ordering::SeqCst);
-                            }
-                            _ => {}
+                if let Event::LifecycleEvent(lifecycle_event) = event {
+                    //                        if lifecycle_event.params.frame_id == main_frame_id {
+                    match lifecycle_event.params.name.as_ref() {
+                        "networkAlmostIdle" => {
+                            navigating.store(false, Ordering::SeqCst);
                         }
-                        //                        }
+                        "init" => {
+                            navigating.store(true, Ordering::SeqCst);
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
         });

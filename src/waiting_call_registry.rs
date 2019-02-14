@@ -18,11 +18,17 @@ impl IdentifiableResponse for Response {
     }
 }
 
-impl WaitingCallRegistry {
-    pub fn new() -> Self {
+impl Default for WaitingCallRegistry {
+    fn default() -> Self {
         let calls = Mutex::new(HashMap::new());
 
-        WaitingCallRegistry { calls }
+        Self { calls }
+    }
+}
+
+impl WaitingCallRegistry {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn resolve_call(&self, response: Response) {

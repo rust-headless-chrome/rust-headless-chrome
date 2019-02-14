@@ -82,7 +82,7 @@ impl Process {
                 "Trying again to find available debugging port. Attempts: {}",
                 attempts
             );
-            attempts = attempts + 1;
+            attempts += 1;
         }
 
         Ok(Process {
@@ -131,7 +131,7 @@ impl Process {
     // let builder = ClientBuilder::from_url(&url);
     fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
         // TODO: will this work on Mac / Windows / etc.?
-        let port_taken_re = Regex::new(r"Address already in use").unwrap();
+        let port_taken = "Address already in use";
 
         // TODO: user static or lazy static regex
         let re = Regex::new(r"listening on (.*/devtools/browser/.*)\n").unwrap();
@@ -152,7 +152,7 @@ impl Process {
                     let chrome_output = String::from_utf8_lossy(&buf);
                     trace!("Chrome output: {}", chrome_output);
 
-                    if port_taken_re.is_match(&chrome_output) {
+                    if chrome_output.contains(port_taken) {
                         return None;
                     }
 
@@ -168,7 +168,7 @@ impl Process {
         );
 
         if let Ok(output) = chrome_output_result {
-            if port_taken_re.is_match(&output) {
+            if output.contains(port_taken) {
                 Err(ChromeLaunchError::DebugPortInUse {}.into())
             } else {
                 Ok(output)
@@ -190,10 +190,7 @@ impl Drop for Process {
 fn get_available_port() -> Option<u16> {
     let mut ports: Vec<u16> = (8000..9000).collect();
     ports.shuffle(&mut thread_rng());
-    ports
-        .iter()
-        .find(|port| port_is_available(**port))
-        .map(|p| p.clone())
+    ports.iter().find(|port| port_is_available(**port)).cloned()
 }
 
 fn port_is_available(port: u16) -> bool {
@@ -217,10 +214,10 @@ mod tests {
         current_process_children_file
             .read_to_string(&mut child_pids)
             .unwrap();
-        return child_pids
+        child_pids
             .split_whitespace()
             .map(|pid_str| pid_str.parse::<i32>().unwrap())
-            .collect();
+            .collect()
     }
 
     #[test]

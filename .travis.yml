@@ -4,8 +4,8 @@ before_install:
   - set -e
   - export RUSTFLAGS="-D warnings"
   - rustup self update
-  - rustup component add rustfmt-preview
+  - rustup component add rustfmt-preview clippy-preview
 
 script:
   - cargo fmt --all -- --check
-  - cargo check --tests
+  - cargo clippy --tests
