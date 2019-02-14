@@ -17,7 +17,7 @@ let tab = browser.wait_for_initial_tab()?;
 	
 tab.navigate_to("https://www.wikipedia.org")?;  
   
-tab.wait_for_element(r#"input#searchInput"#)?.click()?;  
+tab.wait_for_element("input#searchInput")?.click()?;
   
 tab.type_str("WebKit")?;  
 tab.press_key("Enter")?;  
