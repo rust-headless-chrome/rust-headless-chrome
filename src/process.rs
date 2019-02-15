@@ -8,7 +8,6 @@ use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
-use tempdir::TempDir;
 
 use crate::helpers::{wait_for_mut, WaitOptions};
 
@@ -111,7 +110,9 @@ impl Process {
 
         // NOTE: picking random data dir so that each a new browser instance is launched
         // (see man google-chrome)
-        let user_data_dir = TempDir::new("rust-headless-chrome-profile")?;
+        let user_data_dir = ::tempfile::Builder::new()
+            .prefix("rust-headless-chrome-profile")
+            .tempdir()?;
         let data_dir_option = format!("--user-data-dir={}", user_data_dir.path().to_str().unwrap());
 
         trace!("Chrome will have profile: {}", data_dir_option);
