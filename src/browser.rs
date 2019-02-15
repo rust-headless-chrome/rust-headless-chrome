@@ -119,39 +119,45 @@ impl Browser {
     }
 }
 
-#[test]
-fn browser_basic_test() {
-    use crate::cdtp::target::methods::GetTargets;
-    use crate::logging;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time;
 
-    fn try_out_browser() -> Result<(), Error> {
-        let browser = Browser::new(LaunchOptions {
-            headless: true,
-            ..Default::default()
-        })?;
+    #[test]
+    fn browser_basic_test() {
+        use crate::cdtp::target::methods::GetTargets;
+        use crate::logging;
 
-        let method = GetTargets {};
-        let _targets = browser.call_method(method)?.target_infos;
-        let tab = browser.wait_for_initial_tab()?;
-        tab.navigate_to("https://wikipedia.org")?;
-        std::thread::sleep_ms(4000);
-        Ok(())
+        fn try_out_browser() -> Result<(), Error> {
+            let browser = Browser::new(LaunchOptions {
+                headless: true,
+                ..Default::default()
+            })?;
+
+            let method = GetTargets {};
+            let _targets = browser.call_method(method)?.target_infos;
+            let tab = browser.wait_for_initial_tab()?;
+            tab.navigate_to("https://wikipedia.org")?;
+            std::thread::sleep(time::Duration::from_secs(4));
+            Ok(())
+        }
+        logging::enable_logging();
+        try_out_browser().expect("returned error");
     }
-    logging::enable_logging();
-    try_out_browser().expect("returned error");
-}
 
-#[test]
-fn ctrlc_chrome() {
-    use crate::logging;
-    logging::enable_logging();
-    let _browser = Browser::new(LaunchOptions {
-        headless: false,
-        ..Default::default()
-    })
-    .unwrap();
-    std::thread::sleep_ms(40_000);
-}
+    #[test]
+    fn ctrlc_chrome() {
+        use crate::logging;
+        logging::enable_logging();
+        let _browser = Browser::new(LaunchOptions {
+            headless: false,
+            ..Default::default()
+        })
+        .unwrap();
+        std::thread::sleep(time::Duration::from_secs(40));
+    }
 
-// things to test:
-// chrome comes with one target there by default.
+    // things to test:
+    // chrome comes with one target there by default.
+}
