@@ -128,10 +128,7 @@ mod tests {
         use crate::logging;
 
         fn try_out_browser() -> Result<(), Error> {
-            let browser = Browser::new(LaunchOptions {
-                headless: true,
-                ..Default::default()
-            })?;
+            let browser = Browser::new(LaunchOptions::default().unwrap().headless(true))?;
 
             let method = GetTargets {};
             let _targets = browser.call_method(method)?.target_infos;
@@ -148,11 +145,7 @@ mod tests {
     fn ctrlc_chrome() {
         use crate::logging;
         logging::enable_logging();
-        let _browser = Browser::new(LaunchOptions {
-            headless: false,
-            ..Default::default()
-        })
-        .unwrap();
+        let _browser = Browser::new(LaunchOptions::default().unwrap().headless(false)).unwrap();
         std::thread::sleep(time::Duration::from_secs(40));
     }
 
