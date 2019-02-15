@@ -1,5 +1,3 @@
-#![allow(deprecated)]
-
 extern crate log;
 extern crate termcolor;
 
