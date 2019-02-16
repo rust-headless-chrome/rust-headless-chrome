@@ -14,22 +14,27 @@ use crate::process::Process;
 use crate::tab::Tab;
 use crate::transport::Transport;
 
+/// Chrome browser.
 pub struct Browser {
-    pub process: Process,
+    _process: Process,
     transport: Arc<Transport>,
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
 }
 
 impl Browser {
+    /// Launch a new Chrome browser.
+    ///
+    /// The browser will have its data directory stored in a temporary directory.
+    /// The browser proces wil be killed when this struct is dropeed.
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
-        let process = Process::new(launch_options)?;
+        let _process = Process::new(launch_options)?;
 
-        let transport = Arc::new(Transport::new(process.debug_ws_url.clone())?);
+        let transport = Arc::new(Transport::new(_process.debug_ws_url.clone())?);
 
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let browser = Browser {
-            process,
+            _process,
             tabs,
             transport,
         };
@@ -84,7 +89,7 @@ impl Browser {
                     Event::TargetCreated(ev) => {
                         let target_info = ev.params.target_info;
                         trace!("Target created: {:?}", target_info);
-                        if target_info.target_type == "page" {
+                        if target_info.target_type.is_page() {
                             let new_tab =
                                 Arc::new(Tab::new(target_info, Arc::clone(&transport)).unwrap());
                             tabs.lock().unwrap().push(new_tab);
@@ -93,7 +98,7 @@ impl Browser {
                     Event::TargetInfoChanged(ev) => {
                         let target_info = ev.params.target_info;
                         trace!("Target info changed: {:?}", target_info);
-                        if target_info.target_type == "page" {
+                        if target_info.target_type.is_page() {
                             let locked_tabs = tabs.lock().unwrap();
                             let updated_tab = locked_tabs
                                 .iter()
@@ -109,11 +114,19 @@ impl Browser {
         });
     }
 
+    /// Call a browser method.
+    ///
+    /// See the `cdtp` module documentation for available methods.
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,
     {
         self.transport.call_method(method)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn process(&self) -> &Process {
+        &self._process
     }
 }
 

@@ -8,6 +8,10 @@ use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
+use which::which;
+
+#[cfg(windows)]
+use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
 use crate::helpers::{wait_for_mut, WaitOptions};
 
@@ -33,13 +37,21 @@ enum ChromeLaunchError {
     NoDefaultLaunchOptions,
 }
 
+#[cfg(windows)]
+fn get_chrome_path_from_registry() -> Option<std::path::PathBuf> {
+    RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe")
+        .and_then(|key| key.get_value::<String, _>(""))
+        .map(std::path::PathBuf::from)
+        .ok()
+}
+
 struct TemporaryProcess(Child);
 
 impl Drop for TemporaryProcess {
     fn drop(&mut self) {
         info!("Killing Chrome. PID: {}", self.0.id());
-        self.0.kill().unwrap();
-        self.0.wait().unwrap();
+        self.0.kill().and_then(|_| self.0.wait()).ok();
     }
 }
 
@@ -51,19 +63,13 @@ pub struct LaunchOptions {
 
 impl LaunchOptions {
     pub fn default_executable() -> Option<std::path::PathBuf> {
-        // TODO BSDs/Unixes are the same?
-        #[cfg(target_os = "linux")]
-        {
-            // TODO Look at $BROWSER and if it points to a chrome binary
-            // $BROWSER may also provide default arguments, which we may
-            // or may not override later on.
+        // TODO Look at $BROWSER and if it points to a chrome binary
+        // $BROWSER may also provide default arguments, which we may
+        // or may not override later on.
 
-            // TODO More paths!?
-            let default_paths = &["/usr/bin/google-chrome-stable"][..];
-            for path in default_paths {
-                if std::path::Path::new(path).exists() {
-                    return Some(path.into());
-                }
+        for app in &["google-chrome-stable", "chromium"] {
+            if let Ok(path) = which(app) {
+                return Some(path);
             }
         }
 
@@ -77,8 +83,16 @@ impl LaunchOptions {
                 }
             }
         }
-        // TODO Windows
-        // Check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe
+
+        #[cfg(windows)]
+        {
+            if let Some(path) = get_chrome_path_from_registry() {
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+        }
+
         None
     }
 

@@ -1,5 +1,10 @@
 language: rust
 
+os:
+  - linux
+  - osx
+  - windows
+
 before_install:
   - set -e
   - export RUSTFLAGS="-D warnings"

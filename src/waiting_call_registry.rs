@@ -48,6 +48,11 @@ impl WaitingCallRegistry {
         calls.insert(call_id, tx);
         rx
     }
+
+    pub fn unregister_call(&self, call_id: CallId) {
+        let mut calls = self.calls.lock().unwrap();
+        calls.remove(&call_id).unwrap();
+    }
 }
 
 #[cfg(test)]

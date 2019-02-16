@@ -75,7 +75,12 @@ impl Transport {
         let message_text = serde_json::to_string(&call).unwrap();
 
         let response_rx = self.waiting_call_registry.register_call(call.id);
-        self.web_socket_connection.send_message(&message_text)?;
+        self.web_socket_connection
+            .send_message(&message_text)
+            .map_err(|e| {
+                self.waiting_call_registry.unregister_call(call.id);
+                e
+            })?;
 
         let response = response_rx.recv().unwrap();
         cdtp::parse_response::<C::ReturnObject>(response)
