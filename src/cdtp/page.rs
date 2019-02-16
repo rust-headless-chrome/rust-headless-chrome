@@ -25,7 +25,6 @@ pub mod events {
         pub frame_id: String,
         pub loader_id: String,
         pub name: String,
-        // TODO: numbers should be type aliased! like, the procotol just calls for 'number'
         pub timestamp: f32,
     }
 

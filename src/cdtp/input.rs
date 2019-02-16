@@ -6,7 +6,6 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct DispatchMouseEvent<'a> {
         #[serde(rename = "type")]
-        // TODO: this can be enum
         pub event_type: &'a str,
         pub x: f64,
         pub y: f64,

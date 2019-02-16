@@ -75,7 +75,6 @@ impl Transport {
         let message_text = serde_json::to_string(&call).unwrap();
 
         let response_rx = self.waiting_call_registry.register_call(call.id);
-        // TODO: what about when the send fails? this would be a memory leak.
         self.web_socket_connection.send_message(&message_text)?;
 
         let response = response_rx.recv().unwrap();
@@ -127,7 +126,6 @@ impl Transport {
         events_rx
     }
 
-    // TODO: this is way too complex.
     fn handle_incoming_messages(
         messages_rx: Receiver<cdtp::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,

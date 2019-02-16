@@ -11,8 +11,6 @@ pub fn enable_logging() {
     // NOTE: can infer types here, but I find them a useful reminder.
     let _result = builder
         .format(move |buf: &mut fmt::Formatter, record: &log::Record| {
-            // TODO: this is fucked! can't import it.
-            //        dbg!(buf.default_styled_level(record.level()));
             let date = chrono::Local::now();
 
             let level_str = level_to_emoji(record.level());

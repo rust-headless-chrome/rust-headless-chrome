@@ -19,7 +19,6 @@ where
         let elapsed = time_before.elapsed()?;
 
         if elapsed > Duration::from_millis(wait_options.timeout_ms) {
-            // TODO: there's gotta be a nicer way to do that.
             return Err(TimedOut {}.into());
         }
 
@@ -56,7 +55,6 @@ where
         let elapsed = time_before.elapsed()?;
 
         if elapsed > Duration::from_millis(wait_options.timeout_ms) {
-            // TODO: there's gotta be a nicer way to do that.
             return Err(TimedOut {}.into());
         }
 
