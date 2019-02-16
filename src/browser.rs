@@ -14,6 +14,7 @@ use crate::process::Process;
 use crate::tab::Tab;
 use crate::transport::Transport;
 
+/// Chrome browser.
 pub struct Browser {
     _process: Process,
     transport: Arc<Transport>,
@@ -21,6 +22,10 @@ pub struct Browser {
 }
 
 impl Browser {
+    /// Launch a new Chrome browser.
+    ///
+    /// The browser will have its data directory stored in a temporary directory.
+    /// The browser proces wil be killed when this struct is dropeed.
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         let _process = Process::new(launch_options)?;
 
@@ -109,6 +114,9 @@ impl Browser {
         });
     }
 
+    /// Call a browser method.
+    ///
+    /// See the `cdtp` module documentation for available methods.
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,

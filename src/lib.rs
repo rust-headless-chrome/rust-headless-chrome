@@ -13,3 +13,5 @@ pub mod tab;
 pub mod transport;
 pub mod waiting_call_registry;
 pub mod web_socket_connection;
+
+pub use browser::{Browser, LaunchOptions};
