@@ -15,9 +15,6 @@ use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
 use crate::helpers::{wait_for_mut, WaitOptions};
 
-//use crate::page_session::PageSession;
-//use crate::tab::Tab;
-
 pub struct Process {
     _child_process: TemporaryProcess,
     pub debug_ws_url: String,
