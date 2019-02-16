@@ -28,6 +28,9 @@ which = "2.0.1"
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"
 
+[dev-dependencies]
+tiny_http = "0.6"
+
 [lib]
 name = "headless_chrome"
 path = "src/lib.rs"

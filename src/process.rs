@@ -284,6 +284,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "linux")]
     fn kills_process_on_drop() {
         env_logger::try_init().unwrap_or(());
         {

@@ -30,22 +30,6 @@ where
     }
 }
 
-pub fn wait_until_true<F>(predicate: F, wait_options: WaitOptions) -> Result<(), Error>
-where
-    F: Fn() -> bool,
-{
-    wait_for(
-        || {
-            if predicate() {
-                Some(())
-            } else {
-                None
-            }
-        },
-        wait_options,
-    )
-}
-
 pub fn wait_for_mut<F, G>(mut predicate: F, wait_options: WaitOptions) -> Result<G, Error>
 where
     F: FnMut() -> Option<G>,

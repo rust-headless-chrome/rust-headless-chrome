@@ -1,0 +1,23 @@
+<html>
+    <body>
+    <script>
+        function launch() {
+            var target = document.getElementById("target");
+            var sneak = document.getElementById("sneakattack");
+            var proto = document.createElement("div");
+            if (sneak.checked) {
+                proto.innerText = "Comrades, have a nice day!";
+            } else {
+                proto.innerText = "Missiles launched against " + target.value;
+            }
+            document.getElementById("protocol").appendChild(proto);
+        }
+    </script>
+        <form id="control">
+            <input type="text" id="target">
+            <input type="checkbox" id="sneakattack">
+            <button type="button" onClick="launch()">Launch the missiles!</button>
+        </form>
+        <div id="protocol"></div>
+    </body>
+</html>
