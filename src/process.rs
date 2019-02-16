@@ -10,6 +10,9 @@ use rand::thread_rng;
 use regex::Regex;
 use which::which;
 
+#[cfg(windows)]
+use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
+
 use crate::helpers::{wait_for_mut, WaitOptions};
 
 //use crate::page_session::PageSession;
@@ -32,6 +35,15 @@ enum ChromeLaunchError {
         display = "No applicable default launch options, most likely the chrome executable was not found"
     )]
     NoDefaultLaunchOptions,
+}
+
+#[cfg(windows)]
+fn get_chrome_path_from_registry() -> Option<std::path::PathBuf> {
+    RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe")
+        .and_then(|key| key.get_value::<String, _>(""))
+        .map(std::path::PathBuf::from)
+        .ok()
 }
 
 struct TemporaryProcess(Child);
@@ -72,8 +84,16 @@ impl LaunchOptions {
                 }
             }
         }
-        // TODO Windows
-        // Check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe
+
+        #[cfg(windows)]
+        {
+            if let Some(path) = get_chrome_path_from_registry() {
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+        }
+
         None
     }
 
