@@ -19,7 +19,6 @@ pub struct MethodCall<T> {
     params: T,
 }
 
-// TODO: what about methods with no ReturnObject?
 pub trait Method {
     const NAME: &'static str;
 
@@ -49,7 +48,6 @@ pub struct RemoteError {
 pub struct Response {
     #[serde(rename(deserialize = "id"))]
     pub call_id: CallId,
-    // TODO: use enum of all possible return objects, like we do for events. maybe?
     pub result: Option<Value>,
     pub error: Option<RemoteError>,
 }
@@ -66,9 +64,6 @@ where
 
     Ok(result)
 }
-
-// TODO: could break down module by module with nested enums...
-// there has got to be a better way!
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method")]

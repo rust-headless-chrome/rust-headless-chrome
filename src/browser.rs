@@ -17,7 +17,6 @@ use crate::transport::Transport;
 pub struct Browser {
     pub process: Process,
     transport: Arc<Transport>,
-    // TODO: surely doesn't need to be behind mutex for reads!
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
 }
 
@@ -75,7 +74,6 @@ impl Browser {
     //        Ok(new_tab)
     //    }
 
-    // TODO: rename cdtp to protocol
     fn handle_incoming_messages(&self, events_rx: mpsc::Receiver<Event>) {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);

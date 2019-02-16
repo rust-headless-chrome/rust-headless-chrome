@@ -13,7 +13,7 @@ pub struct Node {
     pub node_value: String,
     pub node_name: String,
     pub node_type: u8,
-    pub attributes: Option<NodeAttributes>, // TODO: there's way more here: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-Node
+    pub attributes: Option<NodeAttributes>,
 }
 
 pub mod methods {
@@ -121,7 +121,6 @@ pub mod methods {
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct ResolveNodeReturnObject {
-        // TODO: use fixed sized array, check whether integers
         pub object: RemoteObject,
     }
     impl Method for ResolveNode {
@@ -138,12 +137,10 @@ pub mod methods {
         pub backend_node_id: Option<super::NodeId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub object_id: Option<&'a str>,
-        // TODO: two more fields here
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct GetContentQuadsReturnObject {
-        // TODO: use fixed sized array, check whether integers
         pub quads: Vec<[f64; 8]>,
     }
     impl<'a> Method for GetContentQuads<'a> {

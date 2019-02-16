@@ -49,16 +49,13 @@ impl<'a> Default for LaunchOptions<'a> {
     fn default() -> Self {
         LaunchOptions {
             headless: true,
-            // TODO: extra option for if you want it to keep scanning up from the port you passed?
             port: None,
-            // TODO: this is not at all a sensible default
             path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         }
     }
 }
 
 impl Process {
-    // TODO: find out why this complains if named 'new'
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
@@ -138,15 +135,9 @@ impl Process {
         Ok(process)
     }
 
-    // TODO: URL instead of String return type?
-    // let url = Url::parse("ws://bitcoins.pizza").unwrap();
-    //
-    // let builder = ClientBuilder::from_url(&url);
     fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
-        // TODO: will this work on Mac / Windows / etc.?
         let port_taken = "Address already in use";
 
-        // TODO: user static or lazy static regex
         let re = Regex::new(r"listening on (.*/devtools/browser/.*)$").unwrap();
 
         let extract = |text: &str| -> Option<String> {
@@ -158,7 +149,6 @@ impl Process {
         let chrome_output_result = wait_for_mut(
             || {
                 let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
-                // TODO: actually handle this error
                 for line in my_stderr.lines() {
                     let chrome_output = line.ok()?;
                     trace!("Chrome output: {}", chrome_output);

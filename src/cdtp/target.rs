@@ -8,7 +8,6 @@ pub struct TargetInfo {
     pub target_id: TargetId,
     #[serde(rename = "type")]
     pub target_type: String,
-    // TODO: enum?
     pub title: String,
     pub url: String,
     pub attached: bool,

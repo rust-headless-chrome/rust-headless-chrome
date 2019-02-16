@@ -52,7 +52,6 @@ pub struct NavigationTimedOut {}
 
 impl<'a> Tab {
     pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
-        // TODO: attach to target!!!
         let target_id = target_info.target_id.clone();
 
         let session_id = transport
@@ -92,7 +91,6 @@ impl<'a> Tab {
         &self.target_id
     }
 
-    // TODO: kinda sucks that I do an allocation here
     pub fn get_url(&self) -> String {
         let info = self.target_info.lock().unwrap();
         info.url.clone()
@@ -175,10 +173,7 @@ impl<'a> Tab {
             return Err(NavigationFailed { error_text }.into());
         }
 
-        // TODO: implement
-        //        self.wait_until_navigated()?;
-
-        info!("Navigated a tab to {}", url);
+        info!("Navigating a tab to {}", url);
 
         Ok(())
     }
@@ -195,7 +190,6 @@ impl<'a> Tab {
         debug!("Waiting for element with selector: {}", selector);
         wait_for(
             || {
-                // TODO: there must be a pattern to replace these nested ifs
                 if let Ok(element) = self.find_element(selector) {
                     if element.get_midpoint().is_ok() {
                         Some(element)
@@ -213,12 +207,10 @@ impl<'a> Tab {
         )
     }
 
-    // TODO: have this return a 'can't find element' error when selector returns nothing
     pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
-            // TODO: just do this once.
             let root_node_id = self
                 .call_method(dom::methods::GetDocument {
                     depth: Some(0),
@@ -284,7 +276,6 @@ impl<'a> Tab {
     pub fn press_key(&self, key: &str) -> Result<(), Error> {
         let definition = keys::get_key_definition(key)?;
 
-        // TODO: send code and other parts of the def?
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyDown",
             key: definition.key,

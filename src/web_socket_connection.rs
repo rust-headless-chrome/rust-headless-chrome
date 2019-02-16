@@ -68,7 +68,6 @@ impl WebSocketConnection {
     }
 
     pub fn websocket_connection(ws_url: &str) -> Result<Client<TcpStream>, Error> {
-        // TODO: can't keep using that proxy forever, will need to deal with chromes on other ports
         let client = ClientBuilder::new(ws_url)?.connect_insecure()?;
 
         debug!("Successfully connected to WebSocket: {}", ws_url);
