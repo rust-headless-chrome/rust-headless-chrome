@@ -27,6 +27,8 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[fail(display = "The chosen debugging port is already in use")]
     DebugPortInUse,
+    #[fail(display = "No applicable default launch options, most likely the chrome executable was not found")]
+    NoDefaultLaunchOptions,
 }
 
 struct TemporaryProcess(Child);
@@ -95,9 +97,18 @@ impl LaunchOptions {
         self.port = port;
         self
     }
+
+    pub fn path(mut self, path: std::path::PathBuf) -> Self {
+        self.path = path;
+        self
+    }
 }
 
 impl Process {
+    pub fn default() -> Result<Self, Error> {
+        Self::new(LaunchOptions::default().ok_or(ChromeLaunchError::NoDefaultLaunchOptions)?)
+    }
+
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
