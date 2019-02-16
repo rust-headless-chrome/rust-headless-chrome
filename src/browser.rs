@@ -89,7 +89,7 @@ impl Browser {
                     Event::TargetCreated(ev) => {
                         let target_info = ev.params.target_info;
                         trace!("Target created: {:?}", target_info);
-                        if target_info.target_type == "page" {
+                        if target_info.target_type.is_page() {
                             let new_tab =
                                 Arc::new(Tab::new(target_info, Arc::clone(&transport)).unwrap());
                             tabs.lock().unwrap().push(new_tab);
@@ -98,7 +98,7 @@ impl Browser {
                     Event::TargetInfoChanged(ev) => {
                         let target_info = ev.params.target_info;
                         trace!("Target info changed: {:?}", target_info);
-                        if target_info.target_type == "page" {
+                        if target_info.target_type.is_page() {
                             let locked_tabs = tabs.lock().unwrap();
                             let updated_tab = locked_tabs
                                 .iter()
