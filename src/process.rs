@@ -27,7 +27,9 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[fail(display = "The chosen debugging port is already in use")]
     DebugPortInUse,
-    #[fail(display = "No applicable default launch options, most likely the chrome executable was not found")]
+    #[fail(
+        display = "No applicable default launch options, most likely the chrome executable was not found"
+    )]
     NoDefaultLaunchOptions,
 }
 
