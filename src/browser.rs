@@ -15,21 +15,21 @@ use crate::tab::Tab;
 use crate::transport::Transport;
 
 pub struct Browser {
-    pub process: Process,
+    _process: Process,
     transport: Arc<Transport>,
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
 }
 
 impl Browser {
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
-        let process = Process::new(launch_options)?;
+        let _process = Process::new(launch_options)?;
 
-        let transport = Arc::new(Transport::new(process.debug_ws_url.clone())?);
+        let transport = Arc::new(Transport::new(_process.debug_ws_url.clone())?);
 
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let browser = Browser {
-            process,
+            _process,
             tabs,
             transport,
         };
@@ -114,6 +114,11 @@ impl Browser {
         C: cdtp::Method + serde::Serialize,
     {
         self.transport.call_method(method)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn process(&self) -> &Process {
+        &self._process
     }
 }
 
