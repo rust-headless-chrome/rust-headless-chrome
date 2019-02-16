@@ -51,8 +51,7 @@ struct TemporaryProcess(Child);
 impl Drop for TemporaryProcess {
     fn drop(&mut self) {
         info!("Killing Chrome. PID: {}", self.0.id());
-        self.0.kill().unwrap();
-        self.0.wait().unwrap();
+        self.0.kill().and_then(|_| self.0.wait()).ok();
     }
 }
 
