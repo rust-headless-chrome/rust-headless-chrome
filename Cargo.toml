@@ -23,6 +23,7 @@ tempfile = "3"
 toml = "0.4"
 chrono = "0.4"
 termcolor = "1"
+which = "2.0.1"
 
 [lib]
 name = "headless_chrome"

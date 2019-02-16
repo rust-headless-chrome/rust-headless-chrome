@@ -8,6 +8,7 @@ use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
+use which::which;
 
 use crate::helpers::{wait_for_mut, WaitOptions};
 
@@ -51,19 +52,13 @@ pub struct LaunchOptions {
 
 impl LaunchOptions {
     pub fn default_executable() -> Option<std::path::PathBuf> {
-        // TODO BSDs/Unixes are the same?
-        #[cfg(target_os = "linux")]
-        {
-            // TODO Look at $BROWSER and if it points to a chrome binary
-            // $BROWSER may also provide default arguments, which we may
-            // or may not override later on.
+        // TODO Look at $BROWSER and if it points to a chrome binary
+        // $BROWSER may also provide default arguments, which we may
+        // or may not override later on.
 
-            // TODO More paths!?
-            let default_paths = &["/usr/bin/google-chrome-stable"][..];
-            for path in default_paths {
-                if std::path::Path::new(path).exists() {
-                    return Some(path.into());
-                }
+        for app in &["google-chrome-stable", "chromium"] {
+            if let Ok(path) = which(app) {
+                return Some(path);
             }
         }
 
