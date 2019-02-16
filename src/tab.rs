@@ -37,18 +37,10 @@ pub struct NoElementFound {
 }
 
 #[derive(Debug, Fail)]
-#[fail(display = "Timed out waiting for something")]
-pub struct TimeOut {}
-
-#[derive(Debug, Fail)]
 #[fail(display = "Navigate failed: {}", error_text)]
 pub struct NavigationFailed {
     error_text: String,
 }
-
-#[derive(Debug, Fail)]
-#[fail(display = "Navigate timed out")]
-pub struct NavigationTimedOut {}
 
 impl<'a> Tab {
     pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
