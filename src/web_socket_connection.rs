@@ -91,7 +91,9 @@ mod tests {
     #[test]
     fn you_can_send_messages() {
         logging::enable_logging();
-        let chrome = crate::browser::Browser::new(Default::default()).unwrap();
+        let chrome =
+            crate::browser::Browser::new(crate::process::LaunchOptions::default().unwrap())
+                .unwrap();
 
         let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
 

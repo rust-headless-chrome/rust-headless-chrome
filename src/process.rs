@@ -27,6 +27,10 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[fail(display = "The chosen debugging port is already in use")]
     DebugPortInUse,
+    #[fail(
+        display = "No applicable default launch options, most likely the chrome executable was not found"
+    )]
+    NoDefaultLaunchOptions,
 }
 
 struct TemporaryProcess(Child);
@@ -39,23 +43,74 @@ impl Drop for TemporaryProcess {
     }
 }
 
-pub struct LaunchOptions<'a> {
+pub struct LaunchOptions {
     pub headless: bool,
     pub port: Option<u16>,
-    pub path: &'a str,
+    pub path: std::path::PathBuf,
 }
 
-impl<'a> Default for LaunchOptions<'a> {
-    fn default() -> Self {
-        LaunchOptions {
+impl LaunchOptions {
+    pub fn default_executable() -> Option<std::path::PathBuf> {
+        // TODO BSDs/Unixes are the same?
+        #[cfg(target_os = "linux")]
+        {
+            // TODO Look at $BROWSER and if it points to a chrome binary
+            // $BROWSER may also provide default arguments, which we may
+            // or may not override later on.
+
+            // TODO More paths!?
+            let default_paths = &["/usr/bin/google-chrome-stable"][..];
+            for path in default_paths {
+                if std::path::Path::new(path).exists() {
+                    return Some(path.into());
+                }
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            let default_paths =
+                &["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"][..];
+            for path in default_paths {
+                if std::path::Path::new(path).exists() {
+                    return Some(path.into());
+                }
+            }
+        }
+        // TODO Windows
+        // Check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe
+        None
+    }
+
+    pub fn default() -> Option<Self> {
+        Some(LaunchOptions {
             headless: true,
             port: None,
-            path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        }
+            path: Self::default_executable()?,
+        })
+    }
+
+    pub fn headless(mut self, headless: bool) -> Self {
+        self.headless = headless;
+        self
+    }
+
+    pub fn port(mut self, port: Option<u16>) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn path(mut self, path: std::path::PathBuf) -> Self {
+        self.path = path;
+        self
     }
 }
 
 impl Process {
+    pub fn default() -> Result<Self, Error> {
+        Self::new(LaunchOptions::default().ok_or(ChromeLaunchError::NoDefaultLaunchOptions)?)
+    }
+
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
@@ -127,7 +182,7 @@ impl Process {
         }
 
         let process = TemporaryProcess(
-            Command::new(launch_options.path)
+            Command::new(&launch_options.path)
                 .args(&args)
                 .stderr(Stdio::piped())
                 .spawn()?,
@@ -195,6 +250,7 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::fs::File;
     use std::io::prelude::*;
     use std::thread;
@@ -220,7 +276,7 @@ mod tests {
     fn kills_process_on_drop() {
         env_logger::try_init().unwrap_or(());
         {
-            let _chrome = &mut super::Process::new(Default::default()).unwrap();
+            let _chrome = &mut super::Process::new(LaunchOptions::default().unwrap()).unwrap();
         }
 
         let child_pids = current_child_pids();
@@ -237,11 +293,7 @@ mod tests {
             let handle = thread::spawn(|| {
                 // these sleeps are to make it more likely the chrome startups will overlap
                 std::thread::sleep(std::time::Duration::from_millis(10));
-                let chrome = super::Process::new(super::LaunchOptions {
-                    port: None,
-                    ..Default::default()
-                })
-                .unwrap();
+                let chrome = super::Process::new(super::LaunchOptions::default().unwrap()).unwrap();
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 chrome.debug_ws_url.clone()
             });
@@ -260,11 +312,9 @@ mod tests {
         let mut handles = Vec::new();
 
         for _ in 0..10 {
-            let chrome = super::Process::new(super::LaunchOptions {
-                headless: false,
-                ..Default::default()
-            })
-            .unwrap();
+            let chrome =
+                super::Process::new(super::LaunchOptions::default().unwrap().headless(false))
+                    .unwrap();
             handles.push(chrome);
         }
     }
