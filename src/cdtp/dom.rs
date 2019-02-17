@@ -16,6 +16,41 @@ pub struct Node {
     pub attributes: Option<NodeAttributes>,
 }
 
+impl Node {
+    /// Returns the first node for which the given closure returns true.
+    ///
+    /// Nodes are inspected breadth-first down their children.
+    pub fn find<F: FnMut(&Self) -> bool>(&self, predicate: F) -> Option<&Self> {
+        let mut s = SearchVisitor::new(predicate);
+        s.visit(self);
+        s.item
+    }
+}
+
+struct SearchVisitor<'a, F> {
+    predicate: F,
+    item: Option<&'a Node>,
+}
+
+impl<'a, F: FnMut(&Node) -> bool> SearchVisitor<'a, F> {
+    fn new(predicate: F) -> Self {
+        SearchVisitor {
+            predicate,
+            item: None,
+        }
+    }
+
+    fn visit(&mut self, n: &'a Node) {
+        if (self.predicate)(n) {
+            self.item = Some(n);
+        } else if self.item.is_none() {
+            if let Some(c) = &n.children {
+                c.iter().for_each(|n| self.visit(n))
+            }
+        }
+    }
+}
+
 pub mod methods {
     use crate::cdtp::Method;
     use serde::{Deserialize, Serialize};
