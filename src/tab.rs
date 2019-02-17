@@ -130,7 +130,7 @@ impl<'a> Tab {
             .call_method_on_target(&self.session_id, method)
     }
 
-    pub fn wait_until_navigated(&self) -> Result<(), Error> {
+    pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
         trace!("waiting to start navigating");
         // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
@@ -164,10 +164,10 @@ impl<'a> Tab {
         )?;
         debug!("A tab finished navigating");
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn navigate_to(&self, url: &str) -> Result<(), Error> {
+    pub fn navigate_to(&self, url: &str) -> Result<&Self, Error> {
         let return_object = self.call_method(Navigate { url })?;
         if let Some(error_text) = return_object.error_text {
             return Err(NavigationFailed { error_text }.into());
@@ -175,7 +175,7 @@ impl<'a> Tab {
 
         info!("Navigating a tab to {}", url);
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
@@ -262,7 +262,7 @@ impl<'a> Tab {
         Ok(node)
     }
 
-    pub fn type_str(&self, string_to_type: &str) -> Result<(), Error> {
+    pub fn type_str(&self, string_to_type: &str) -> Result<&Self, Error> {
         for c in string_to_type.split("") {
             // split call above will have empty string at start and end which we won't type
             if c == "" {
@@ -270,10 +270,10 @@ impl<'a> Tab {
             }
             self.press_key(c)?;
         }
-        Ok(())
+        Ok(self)
     }
 
-    pub fn press_key(&self, key: &str) -> Result<(), Error> {
+    pub fn press_key(&self, key: &str) -> Result<&Self, Error> {
         let definition = keys::get_key_definition(key)?;
 
         self.call_method(input::methods::DispatchKeyEvent {
@@ -286,10 +286,10 @@ impl<'a> Tab {
             key: definition.key,
             text: definition.text,
         })?;
-        Ok(())
+        Ok(self)
     }
 
-    pub fn click_point(&self, point: Point) -> Result<(), Error> {
+    pub fn click_point(&self, point: Point) -> Result<&Self, Error> {
         trace!("Clicking point: {:?}", point);
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
@@ -318,6 +318,6 @@ impl<'a> Tab {
             click_count: Some(1),
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
-        Ok(())
+        Ok(self)
     }
 }
