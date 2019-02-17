@@ -24,15 +24,15 @@ pub struct Element<'a> {
 }
 
 impl<'a> Element<'a> {
-    pub fn click(&self) -> Result<(), Error> {
+    pub fn click(&self) -> Result<&Self, Error> {
         debug!("Clicking element found via {}", self.found_via_selector);
 
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
-        Ok(())
+        Ok(self)
     }
 
-    pub fn type_into(&self, text: &str) -> Result<(), Error> {
+    pub fn type_into(&self, text: &str) -> Result<&Self, Error> {
         self.click()?;
 
         debug!(
@@ -42,7 +42,7 @@ impl<'a> Element<'a> {
 
         self.parent.type_str(text)?;
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn call_js_fn(
@@ -63,12 +63,12 @@ impl<'a> Element<'a> {
         Ok(result)
     }
 
-    pub fn focus(&self) -> Result<(), Error> {
+    pub fn focus(&self) -> Result<&Self, Error> {
         self.parent.call_method(dom::methods::Focus {
             backend_node_id: Some(self.backend_node_id),
             ..Default::default()
         })?;
-        Ok(())
+        Ok(self)
     }
 
     pub fn get_description(&self) -> Result<dom::Node, Error> {
@@ -83,14 +83,14 @@ impl<'a> Element<'a> {
         Ok(node)
     }
 
-    pub fn set_input_files(&self, file_paths: &[&str]) -> Result<(), Error> {
+    pub fn set_input_files(&self, file_paths: &[&str]) -> Result<&Self, Error> {
         self.parent.call_method(dom::methods::SetFileInputFiles {
             files: file_paths,
             backend_node_id: Some(self.backend_node_id),
             node_id: None,
             object_id: None,
         })?;
-        Ok(())
+        Ok(self)
     }
 
     pub fn get_attributes(&self) -> Result<Option<dom::NodeAttributes>, Error> {
