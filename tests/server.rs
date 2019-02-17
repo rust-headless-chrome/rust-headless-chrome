@@ -11,7 +11,7 @@ pub struct Server {
 
 impl Server {
     pub fn new(
-        responder: impl Fn(tiny_http::Request) -> Result<(), io::Error> + Send + 'static,
+        mut responder: impl FnMut(tiny_http::Request) -> Result<(), io::Error> + Send + 'static,
     ) -> Self {
         let server = Arc::new(tiny_http::Server::http("127.0.0.1:0").unwrap());
         let shall_exit = Arc::new(atomic::AtomicBool::new(false));
