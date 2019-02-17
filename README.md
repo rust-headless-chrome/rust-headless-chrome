@@ -8,27 +8,28 @@
 ```rust
 use headless_chrome::browser::{Browser, LaunchOptions};
 
-let browser = Browser::new(LaunchOptions {  
-    headless: true,  
-    path: "/usr/bin/google-chrome", // BYO Chrome binary
-   ..Default::default()  
-})?;  
+fn browse_wikipedia() -> Result<(), failure::Error> {
+    let options = LaunchOptions::default().expect("Failed to find chrome");
+    let browser = Browser::new(options)?;
 
-let tab = browser.wait_for_initial_tab()?;
-	
-tab.navigate_to("https://www.wikipedia.org")?;  
-  
-tab.wait_for_element("input#searchInput")?.click()?;
-  
-tab.type_str("WebKit")?;  
-tab.press_key("Enter")?;  
-  
-tab.wait_for_element("#firstHeading")?;  
-  
-assert_eq!(true, tab.get_url().ends_with("WebKit"));
+    let tab = browser.wait_for_initial_tab()?;
+
+    tab.navigate_to("https://www.wikipedia.org")?;
+
+    tab.wait_for_element("input#searchInput")?
+       .click()?;
+    tab.type_str("WebKit")?
+       .press_key("Enter")?;
+
+    tab.wait_for_element("#firstHeading")?;
+    assert_eq!(true, tab.get_url().ends_with("WebKit"));
+    Ok(())
+}
+
+assert!(browse_wikipedia().is_ok());
 ```
 
-For fuller examples, take a look at `tests/integration.rs`.
+For fuller examples, take a look at `tests/simple.rs`.
 
 ## Missing features
 * Documentation

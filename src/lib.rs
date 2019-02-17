@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "nightly", feature(external_doc))]
+
 extern crate log;
 extern crate termcolor;
 
@@ -15,3 +17,8 @@ pub mod waiting_call_registry;
 pub mod web_socket_connection;
 
 pub use browser::{Browser, LaunchOptions};
+
+#[cfg(feature = "nightly")]
+#[doc(include = "../README.md")]
+#[allow(dead_code)]
+type _READMETEST = ();
