@@ -59,6 +59,10 @@ pub struct LaunchOptions {
     pub headless: bool,
     pub port: Option<u16>,
     pub path: std::path::PathBuf,
+    /// path of the extension,
+    /// in case of multiple extensions, pass a comma separated string of paths,
+    /// for ex. "/path/of/extension/a,/path/of/extension/b"
+    pub load_extension: Option<String>,
 }
 
 impl LaunchOptions {
@@ -101,6 +105,7 @@ impl LaunchOptions {
             headless: true,
             port: None,
             path: Self::default_executable()?,
+            load_extension: None
         })
     }
 
@@ -193,6 +198,13 @@ impl Process {
 
         if launch_options.headless {
             args.extend(&["--headless"]);
+        }
+
+        let mut load_extension_arg:String = String::from("--load-extension=");
+
+        if let Some(load_extension_path) = &launch_options.load_extension {
+            load_extension_arg.push_str(load_extension_path);
+            args.extend(&[load_extension_arg.as_str()]);
         }
 
         let process = TemporaryProcess(
