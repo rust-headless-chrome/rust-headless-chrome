@@ -264,12 +264,12 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::fs::File;
-    use std::io::prelude::*;
     use std::thread;
 
+    #[cfg(target_os = "linux")]
     fn current_child_pids() -> Vec<i32> {
+        use std::fs::File;
+        use std::io::prelude::*;
         let current_pid = std::process::id();
         let mut current_process_children_file = File::open(format!(
             "/proc/{}/task/{}/children",
@@ -289,6 +289,7 @@ mod tests {
     #[test]
     #[cfg(target_os = "linux")]
     fn kills_process_on_drop() {
+        use super::LaunchOptions;
         env_logger::try_init().unwrap_or(());
         {
             let _chrome = &mut super::Process::new(LaunchOptions::default().unwrap()).unwrap();
