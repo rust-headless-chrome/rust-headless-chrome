@@ -32,16 +32,14 @@ fn form_interaction() -> Result<(), failure::Error> {
         .type_into("mothership")?;
     tab.wait_for_element("button")?.click()?;
     let d = tab.wait_for_element("div#protocol")?.get_description()?;
-    assert_eq!(
-        d.children.unwrap()[0].children.as_ref().unwrap()[0].node_value,
-        "Missiles launched against mothership"
-    );
+    assert!(d
+        .find(|n| n.node_value == "Missiles launched against mothership")
+        .is_some());
     tab.wait_for_element("input#sneakattack")?.click()?;
     tab.wait_for_element("button")?.click()?;
     let d = tab.wait_for_element("div#protocol")?.get_description()?;
-    assert_eq!(
-        d.children.unwrap()[1].children.as_ref().unwrap()[0].node_value,
-        "Comrades, have a nice day!"
-    );
+    assert!(d
+        .find(|n| n.node_value == "Comrades, have a nice day!")
+        .is_some());
     Ok(())
 }
