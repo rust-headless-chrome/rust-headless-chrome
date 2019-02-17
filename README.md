@@ -6,10 +6,10 @@
 [Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
 
 ```rust
-use headless_chrome::{process, browser::{Browser, LaunchOptions}};
+use headless_chrome::browser::{Browser, LaunchOptions};
 
 fn browse_wikipedia() -> Result<(), failure::Error> {
-    let options = process::LaunchOptions::default().expect("Failed to find chrome");
+    let options = LaunchOptions::default().expect("Failed to find chrome");
     let browser = Browser::new(options)?;
 
     let tab = browser.wait_for_initial_tab()?;
