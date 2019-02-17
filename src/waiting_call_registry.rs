@@ -1,15 +1,17 @@
+use failure::Error;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
 use crate::cdtp::{CallId, Response};
+use crate::transport::ConnectionClosed;
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
 pub struct WaitingCallRegistry {
-    calls: Mutex<HashMap<CallId, mpsc::Sender<Response>>>,
+    calls: Mutex<HashMap<CallId, mpsc::Sender<Result<Response, Error>>>>,
 }
 
 impl IdentifiableResponse for Response {
@@ -32,18 +34,18 @@ impl WaitingCallRegistry {
     }
 
     pub fn resolve_call(&self, response: Response) {
-        let waiting_call_tx: mpsc::Sender<Response> = {
+        let waiting_call_tx: mpsc::Sender<Result<Response, Error>> = {
             let mut waiting_calls = self.calls.lock().unwrap();
             waiting_calls.remove(&response.call_id()).unwrap()
         };
 
         waiting_call_tx
-            .send(response)
+            .send(Ok(response))
             .expect("failed to send response to waiting call");
     }
 
-    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Response> {
-        let (tx, rx) = mpsc::channel::<Response>();
+    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Result<Response, Error>> {
+        let (tx, rx) = mpsc::channel::<Result<Response, Error>>();
         let mut calls = self.calls.lock().unwrap();
         calls.insert(call_id, tx);
         rx
@@ -52,6 +54,13 @@ impl WaitingCallRegistry {
     pub fn unregister_call(&self, call_id: CallId) {
         let mut calls = self.calls.lock().unwrap();
         calls.remove(&call_id).unwrap();
+    }
+
+    pub fn cancel_outstanding_method_calls(&self) {
+        let calls = self.calls.lock().unwrap();
+        for (_call_id, sender) in calls.iter() {
+            sender.send(Err(ConnectionClosed {}.into())).unwrap();
+        }
     }
 }
 
@@ -86,7 +95,7 @@ mod tests {
         waiting_calls.resolve_call(resp2);
 
         // note how they're in reverse order to that in which they were called!
-        assert_eq!(resp2_clone, call_rx2.recv().unwrap());
-        assert_eq!(resp_clone, call_rx.recv().unwrap());
+        assert_eq!(resp2_clone, call_rx2.recv().unwrap().unwrap());
+        assert_eq!(resp_clone, call_rx.recv().unwrap().unwrap());
     }
 }

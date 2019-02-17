@@ -4,7 +4,7 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use failure::Error;
+use failure::{Error, Fail};
 use log::*;
 use serde;
 
@@ -14,6 +14,7 @@ use crate::cdtp::Event;
 use crate::cdtp::Message;
 use crate::waiting_call_registry::WaitingCallRegistry;
 use crate::web_socket_connection::WebSocketConnection;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -43,7 +44,12 @@ pub struct Transport {
     web_socket_connection: WebSocketConnection,
     waiting_call_registry: Arc<WaitingCallRegistry>,
     listeners: Listeners,
+    open: Arc<AtomicBool>,
 }
+
+#[derive(Debug, Fail)]
+#[fail(display = "Unable to make method calls because underlying connection is closed")]
+pub struct ConnectionClosed {}
 
 impl Transport {
     pub fn new(ws_url: String) -> Result<Self, Error> {
@@ -54,16 +60,20 @@ impl Transport {
 
         let listeners = Arc::new(Mutex::new(HashMap::new()));
 
+        let open = Arc::new(AtomicBool::new(true));
+
         Self::handle_incoming_messages(
             messages_rx,
             Arc::clone(&waiting_call_registry),
             Arc::clone(&listeners),
+            Arc::clone(&open),
         );
 
         Ok(Transport {
             web_socket_connection,
             waiting_call_registry,
             listeners,
+            open,
         })
     }
 
@@ -71,6 +81,9 @@ impl Transport {
     where
         C: cdtp::Method + serde::Serialize,
     {
+        if !self.open.load(Ordering::SeqCst) {
+            return Err(ConnectionClosed {}.into());
+        }
         let call = method.to_method_call();
         let message_text = serde_json::to_string(&call).unwrap();
 
@@ -82,7 +95,7 @@ impl Transport {
                 e
             })?;
 
-        let response = response_rx.recv().unwrap();
+        let response = response_rx.recv().unwrap()?;
         cdtp::parse_response::<C::ReturnObject>(response)
     }
 
@@ -94,6 +107,10 @@ impl Transport {
     where
         C: cdtp::Method + serde::Serialize,
     {
+        if !self.open.load(Ordering::SeqCst) {
+            return Err(ConnectionClosed {}.into());
+        }
+
         let method_call = method.to_method_call();
         let message = &serde_json::to_string(&method_call).unwrap();
 
@@ -107,7 +124,7 @@ impl Transport {
 
         self.call_method(target_method)?;
 
-        let response = response_rx.recv()?;
+        let response = response_rx.recv().unwrap()?;
 
         let return_object = cdtp::parse_response::<C::ReturnObject>(response)?;
         Ok(return_object)
@@ -135,6 +152,7 @@ impl Transport {
         messages_rx: Receiver<cdtp::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
         listeners: Listeners,
+        open: Arc<AtomicBool>,
     ) {
         std::thread::spawn(move || {
             for message in messages_rx {
@@ -180,7 +198,11 @@ impl Transport {
                     },
                 }
             }
-            // handle incoming messages
+
+            trace!("Shutting down message handling loop");
+
+            open.store(false, Ordering::SeqCst);
+            waiting_call_registry.cancel_outstanding_method_calls();
         });
     }
 }
