@@ -66,7 +66,11 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshot<'a> {
-        pub format: &'a str,
+        pub format: Option<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub quality: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub from_surface: Option<bool>,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]

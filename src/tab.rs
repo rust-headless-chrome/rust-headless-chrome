@@ -50,6 +50,22 @@ pub struct NavigationFailed {
 #[fail(display = "Navigate timed out")]
 pub struct NavigationTimedOut {}
 
+/// The format a screenshot will be captured in
+#[derive(Debug, Clone)]
+pub enum ScreenshotFormat {
+    JPEG,
+    PNG,
+}
+
+impl AsRef<str> for ScreenshotFormat {
+    fn as_ref(&self) -> &str {
+        match self {
+            ScreenshotFormat::JPEG => "jpeg",
+            ScreenshotFormat::PNG => "png",
+        }
+    }
+}
+
 impl<'a> Tab {
     pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
         let target_id = target_info.target_id.clone();
@@ -319,5 +335,28 @@ impl<'a> Tab {
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
         Ok(self)
+    }
+
+    /// Capture a screenshot of the current page.
+    ///
+    /// If `format` is not given, Chrome will default to PNG.
+    /// `quality` has to be an integer in the range [0..100] and only applies to JPEG.
+    /// If `from_surface` is true, the screenshot is taken from the surface rather than
+    /// the view; this is the default.
+    pub fn capture_screenshot(
+        &self,
+        format: Option<ScreenshotFormat>,
+        quality: Option<u8>,
+        from_surface: Option<bool>,
+    ) -> Result<Vec<u8>, Error> {
+        // TODO: Implement `clip`-argument
+        let data = self
+            .call_method(page::methods::CaptureScreenshot {
+                format: format.as_ref().map(|f| f.as_ref()),
+                quality,
+                from_surface,
+            })?
+            .data;
+        base64::decode(&data).map_err(|e| e.into())
     }
 }
