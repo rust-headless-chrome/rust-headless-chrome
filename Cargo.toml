@@ -34,3 +34,6 @@ tiny_http = "0.6"
 [lib]
 name = "headless_chrome"
 path = "src/lib.rs"
+
+[features]
+nightly = []
