@@ -4,16 +4,27 @@ os:
   - linux
   - osx
 
+rust:
+  - stable
+  - nightly
+
 before_install:
   - set -e
   - export RUSTFLAGS="-D warnings"
-  - rustup self update
-  - rustup component add rustfmt-preview clippy-preview
+  - if [ "$TRAVIS_RUST_VERSION" != "nightly" ]; then
+    rustup self update &&
+    rustup component add rustfmt clippy;
+    fi
 
 addons:
   chrome: stable
 
 script:
-  - cargo fmt --all -- --check
-  - cargo clippy --tests
+  - if [ "$TRAVIS_RUST_VERSION" != "nightly"]; then
+    cargo fmt --all -- --check &&
+    cargo clippy --tests;
+    fi
   - env RUST_BACKTRACE=1 RUST_LOG=headless_chrome=trace cargo test -- --nocapture
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then
+    cargo test --doc --features nightly;
+    fi
