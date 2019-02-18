@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
+use super::ConnectionClosed;
 use crate::cdtp::{CallId, Response};
-use crate::transport::ConnectionClosed;
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
@@ -56,6 +56,8 @@ impl WaitingCallRegistry {
         calls.remove(&call_id).unwrap();
     }
 
+    // TODO: make it so we can pass in whatever error we want here
+    // to make it less dependent on browser::transport
     pub fn cancel_outstanding_method_calls(&self) {
         let calls = self.calls.lock().unwrap();
         for (_call_id, sender) in calls.iter() {

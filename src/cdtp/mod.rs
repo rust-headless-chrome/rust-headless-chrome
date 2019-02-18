@@ -1,3 +1,5 @@
+//! For (de)serializing method calls and events from the Chrome DevTools Protocol.
+
 use failure::{Error, Fail};
 use serde;
 use serde::{Deserialize, Serialize};

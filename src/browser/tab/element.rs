@@ -1,11 +1,9 @@
 use failure::Error;
 use log::*;
 
+use super::point::Point;
 use crate::cdtp::dom;
 use crate::cdtp::runtime;
-use crate::element;
-use crate::point::Point;
-use crate::tab;
 use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone)]
@@ -19,7 +17,7 @@ pub struct ElementQuad {
 pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
-    pub parent: &'a tab::Tab,
+    pub parent: &'a super::Tab,
     pub found_via_selector: &'a str,
 }
 
@@ -106,7 +104,7 @@ impl<'a> Element<'a> {
         })?;
         let raw_quad = return_object.quads.first().unwrap();
 
-        let input_quad = element::ElementQuad {
+        let input_quad = ElementQuad {
             top_left: Point {
                 x: raw_quad[0],
                 y: raw_quad[1],

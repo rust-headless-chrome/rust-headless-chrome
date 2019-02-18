@@ -13,10 +13,7 @@ use which::which;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-use crate::helpers::{wait_for_mut, WaitOptions};
-
-//use crate::page_session::PageSession;
-//use crate::tab::Tab;
+use super::waiting_helpers::{wait_for_mut, WaitOptions};
 
 pub struct Process {
     _child_process: TemporaryProcess,
@@ -31,10 +28,6 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[fail(display = "The chosen debugging port is already in use")]
     DebugPortInUse,
-    #[fail(
-        display = "No applicable default launch options, most likely the chrome executable was not found"
-    )]
-    NoDefaultLaunchOptions,
 }
 
 #[cfg(windows)]
@@ -55,6 +48,8 @@ impl Drop for TemporaryProcess {
     }
 }
 
+/// Represents the way in which Chrome is run. By default it will search for a Chrome
+/// binary on the system, use an available port for debugging, and start in headless mode.
 pub struct LaunchOptions {
     pub headless: bool,
     pub port: Option<u16>,
@@ -121,10 +116,6 @@ impl LaunchOptions {
 }
 
 impl Process {
-    pub fn default() -> Result<Self, Error> {
-        Self::new(LaunchOptions::default().ok_or(ChromeLaunchError::NoDefaultLaunchOptions)?)
-    }
-
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 

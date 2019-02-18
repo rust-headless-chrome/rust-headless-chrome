@@ -1,5 +1,6 @@
-use headless_chrome::{browser, logging, process, tab};
+use headless_chrome::{Browser, LaunchOptions, Tab};
 use std::sync::Arc;
+mod logging;
 mod server;
 
 /// Launches a dumb server that unconditionally serves the given data as a
@@ -7,9 +8,9 @@ mod server;
 /// server.
 ///
 /// Users must hold on to the server, which stops when dropped.
-fn dumb_server(data: &'static str) -> (server::Server, browser::Browser, Arc<tab::Tab>) {
+fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
     let server = server::Server::with_dumb_html(data);
-    let browser = browser::Browser::new(process::LaunchOptions::default().unwrap()).unwrap();
+    let browser = Browser::new(LaunchOptions::default().unwrap()).unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();

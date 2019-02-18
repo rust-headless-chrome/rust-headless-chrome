@@ -5,10 +5,6 @@ use failure::Error;
 use log::*;
 use toml;
 
-use headless_chrome;
-use headless_chrome::helpers::wait_for;
-use headless_chrome::helpers::WaitOptions;
-use headless_chrome::logging;
 use headless_chrome::{Browser, LaunchOptions, Tab};
 use rand::distributions::Alphanumeric;
 use rand::{self, Rng};
@@ -50,8 +46,6 @@ fn default_browser_and_tab() -> (Browser, Arc<Tab>) {
 }
 
 fn browse_wikipedia() -> Result<(), Error> {
-    logging::enable_logging();
-
     let (_browser, tab) = default_browser_and_tab();
 
     tab.navigate_to("https://www.wikipedia.org")?;
@@ -69,8 +63,6 @@ fn browse_wikipedia() -> Result<(), Error> {
 }
 
 fn log_in_to_digital_pigeon() -> Result<(), Error> {
-    logging::enable_logging();
-
     let (browser, tab) = default_browser_and_tab();
 
     if let Err(_nav_failed) = tab.navigate_to("https://www.digitalpigeon.com/login") {
@@ -157,8 +149,6 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
 }
 
 fn log_in_to_fastmail_and_send_email() -> Result<(), Error> {
-    logging::enable_logging();
-
     let (_browser, tab) = default_browser_and_tab();
 
     if let Err(_nav_failed) = tab.navigate_to("https://www.fastmail.com/login") {
@@ -231,8 +221,6 @@ fn digital_pigeon() {
 }
 
 fn dropbox() {
-    logging::enable_logging();
-
     let (_browser, tab) = default_browser_and_tab();
 
     let nav_result = tab.navigate_to("https://www.dropbox.com/login");
@@ -255,4 +243,36 @@ where
         },
         wait_options,
     )
+}
+
+use failure::Fail;
+use std::time::{Duration, SystemTime};
+
+#[derive(Debug, Fail)]
+#[fail(display = "The thing you were waiting for never came")]
+pub struct TimedOut {}
+
+pub struct WaitOptions {
+    pub timeout_ms: u64,
+    pub sleep_ms: u64,
+}
+
+pub fn wait_for<F, G>(predicate: F, wait_options: WaitOptions) -> Result<G, Error>
+where
+    F: Fn() -> Option<G>,
+{
+    let time_before = SystemTime::now();
+    loop {
+        let elapsed = time_before.elapsed()?;
+
+        if elapsed > Duration::from_millis(wait_options.timeout_ms) {
+            return Err(TimedOut {}.into());
+        }
+
+        if let Some(thing) = predicate() {
+            return Ok(thing);
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(wait_options.sleep_ms));
+    }
 }
