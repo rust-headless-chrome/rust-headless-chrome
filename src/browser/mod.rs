@@ -8,13 +8,19 @@ use serde;
 
 use crate::cdtp::target::methods::SetDiscoverTargets;
 use crate::cdtp::{self, Event};
-use crate::helpers::{wait_for, WaitOptions};
-pub use crate::process::LaunchOptions;
-use crate::process::Process;
-use crate::tab::Tab;
-use crate::transport::Transport;
 
-/// This represents an instance of Chrome / Chromium, along with a WebSocket connection to its debugging port.
+pub use process::LaunchOptions;
+use process::Process;
+pub use tab::Tab;
+use transport::Transport;
+use waiting_helpers::{wait_for, WaitOptions};
+
+mod process;
+mod tab;
+mod transport;
+mod waiting_helpers;
+
+/// A handle to an instance of Chrome / Chromium, which wraps a WebSocket connection to its debugging port.
 ///
 ///
 /// Most of your actual "driving" (e.g. clicking, typing, navigating) will be via instances of [Tab](../tab/struct.Tab.html), which are accessible via methods such as `get_tabs`.
@@ -24,12 +30,10 @@ use crate::transport::Transport;
 /// by creating LaunchOptions with a custom `path` field.
 ///
 /// ```rust
-/// # use std::error::Error;
-/// #
+/// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
-/// # use crate::logging;
-/// # logging::enable_logging();
 /// #
+/// use headless_chrome::{Browser, LaunchOptions};
 /// let browser = Browser::new(LaunchOptions::default().unwrap())?;
 /// let first_tab = browser.wait_for_initial_tab()?;
 /// assert_eq!("about:blank", first_tab.get_url());
@@ -50,8 +54,8 @@ pub struct Browser {
 impl Browser {
     /// Launch a new Chrome browser.
     ///
-    /// The browser will have its data directory stored in a temporary directory.
-    /// The browser proces wil be killed when this struct is dropeed.
+    /// The browser will have its user data (aka "profile") directory stored in a temporary directory.
+    /// The browser process will be killed when this struct is dropped.
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         let _process = Process::new(launch_options)?;
 
@@ -74,10 +78,15 @@ impl Browser {
         Ok(browser)
     }
 
+    /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
+    /// (including the one that handles incoming protocol events about new or changed tabs).
     pub fn get_tabs(&self) -> Arc<Mutex<Vec<Arc<Tab>>>> {
         Arc::clone(&self.tabs)
     }
 
+    /// Chrome always launches with at least one tab. The reason we have to 'wait' is because information
+    /// about that tab isn't available *immediately* after starting the process. Tabs are behind `Arc`s
+    /// because they each have their own thread which handles events and method responses directed to them.
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>, Error> {
         wait_for(
             || self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)),
@@ -150,6 +159,7 @@ impl Browser {
         self.transport.call_method(method)
     }
 
+    #[allow(dead_code)]
     #[cfg(test)]
     pub(crate) fn process(&self) -> &Process {
         &self._process

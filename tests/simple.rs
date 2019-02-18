@@ -1,5 +1,8 @@
-use headless_chrome::{browser, logging, process, tab};
+use headless_chrome::cdtp::page::ScreenshotFormat;
+use headless_chrome::{Browser, LaunchOptions, Tab};
 use std::sync::Arc;
+
+mod logging;
 mod server;
 
 /// Launches a dumb server that unconditionally serves the given data as a
@@ -7,14 +10,14 @@ mod server;
 /// server.
 ///
 /// Users must hold on to the server, which stops when dropped.
-fn dumb_server(data: &'static str) -> (server::Server, browser::Browser, Arc<tab::Tab>) {
+fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
     let server = server::Server::with_dumb_html(data);
     let (browser, tab) = dumb_client(&server);
     (server, browser, tab)
 }
 
-fn dumb_client(server: &server::Server) -> (browser::Browser, Arc<tab::Tab>) {
-    let browser = browser::Browser::new(process::LaunchOptions::default().unwrap()).unwrap();
+fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
+    let browser = Browser::new(LaunchOptions::default().unwrap()).unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -64,7 +67,7 @@ fn capture_screenshot() -> Result<(), failure::Error> {
     let (_, _browser, tab) = dumb_server(include_str!("simple.html"));
     tab.wait_until_navigated()?;
 
-    let png_data = tab.capture_screenshot(Some(tab::ScreenshotFormat::PNG), None, None)?;
+    let png_data = tab.capture_screenshot(Some(ScreenshotFormat::PNG), None, None)?;
     let decoder = png::Decoder::new(&png_data[..]);
     let (info, mut reader) = decoder.read_info()?;
     let mut buf = vec![0; info.buffer_size()];
@@ -72,8 +75,7 @@ fn capture_screenshot() -> Result<(), failure::Error> {
     // Check that the top-left pixel has the background color set in simple.html
     assert_eq!(buf[0..4], [0x11, 0x22, 0x33, 0xff][..]);
 
-    let jpg_data =
-        tab.capture_screenshot(Some(tab::ScreenshotFormat::JPEG), Some(100), Some(false))?;
+    let jpg_data = tab.capture_screenshot(Some(ScreenshotFormat::JPEG), Some(100), Some(false))?;
     let mut decoder = jpeg_decoder::Decoder::new(&jpg_data[..]);
     let buf = decoder.decode().unwrap();
     // Check that the total compression error is small-ish compared to the expected

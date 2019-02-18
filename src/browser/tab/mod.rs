@@ -1,9 +1,12 @@
-use std::sync::Arc;
-
 use failure::{Error, Fail};
 use log::*;
 use serde;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::Mutex;
 
+use super::transport::SessionId;
+use crate::browser::Transport;
 use crate::cdtp;
 use crate::cdtp::dom;
 use crate::cdtp::input;
@@ -13,19 +16,23 @@ use crate::cdtp::target;
 use crate::cdtp::target::TargetId;
 use crate::cdtp::target::TargetInfo;
 use crate::cdtp::Event;
-use crate::element::Element;
-use crate::helpers::{wait_for, WaitOptions};
-use crate::keys;
-use crate::point::Point;
-use crate::transport;
-use crate::transport::Transport;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 
+use super::waiting_helpers::{wait_for, WaitOptions};
+
+use crate::cdtp::page::ScreenshotFormat;
+use element::Element;
+use point::Point;
+
+mod element;
+mod keys;
+mod point;
+
+/// A handle to a single page. Exposes methods for simulating user actions (clicking,
+/// typing), and also for getting information about the DOM and other parts of the page.
 pub struct Tab {
     target_id: TargetId,
     transport: Arc<Transport>,
-    session_id: transport::SessionId,
+    session_id: SessionId,
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
 }
@@ -37,33 +44,9 @@ pub struct NoElementFound {
 }
 
 #[derive(Debug, Fail)]
-#[fail(display = "Timed out waiting for something")]
-pub struct TimeOut {}
-
-#[derive(Debug, Fail)]
 #[fail(display = "Navigate failed: {}", error_text)]
 pub struct NavigationFailed {
     error_text: String,
-}
-
-#[derive(Debug, Fail)]
-#[fail(display = "Navigate timed out")]
-pub struct NavigationTimedOut {}
-
-/// The format a screenshot will be captured in
-#[derive(Debug, Clone)]
-pub enum ScreenshotFormat {
-    JPEG,
-    PNG,
-}
-
-impl AsRef<str> for ScreenshotFormat {
-    fn as_ref(&self) -> &str {
-        match self {
-            ScreenshotFormat::JPEG => "jpeg",
-            ScreenshotFormat::PNG => "png",
-        }
-    }
 }
 
 impl<'a> Tab {
@@ -352,7 +335,7 @@ impl<'a> Tab {
         // TODO: Implement `clip`-argument
         let data = self
             .call_method(page::methods::CaptureScreenshot {
-                format: format.as_ref().map(|f| f.as_ref()),
+                format,
                 quality,
                 from_surface,
             })?

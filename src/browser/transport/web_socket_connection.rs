@@ -82,25 +82,3 @@ impl WebSocketConnection {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::logging;
-    use std::sync::mpsc;
-
-    #[test]
-    fn you_can_send_messages() {
-        logging::enable_logging();
-        let chrome =
-            crate::browser::Browser::new(crate::process::LaunchOptions::default().unwrap())
-                .unwrap();
-
-        let (messages_tx, _messages_rx) = mpsc::channel::<crate::cdtp::Message>();
-
-        let conn =
-            super::WebSocketConnection::new(&chrome.process().debug_ws_url, messages_tx).unwrap();
-
-        let _call = crate::cdtp::target::methods::CreateBrowserContext {};
-        conn.send_message("hello").unwrap();
-    }
-}

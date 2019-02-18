@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
+use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -12,10 +14,12 @@ use crate::cdtp;
 use crate::cdtp::target;
 use crate::cdtp::Event;
 use crate::cdtp::Message;
-use crate::waiting_call_registry::WaitingCallRegistry;
-use crate::web_socket_connection::WebSocketConnection;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Receiver;
+
+use waiting_call_registry::WaitingCallRegistry;
+use web_socket_connection::WebSocketConnection;
+
+mod waiting_call_registry;
+mod web_socket_connection;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SessionId(String);
