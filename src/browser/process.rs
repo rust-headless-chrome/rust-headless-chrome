@@ -126,7 +126,7 @@ impl Process {
         let url;
         let mut attempts = 0;
         loop {
-            if attempts > 50 {
+            if attempts > 10 {
                 return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
 
@@ -136,6 +136,7 @@ impl Process {
                     break;
                 }
                 Err(error) => {
+                    trace!("Problem getting WebSocket URL from Chrome: {}", error);
                     if launch_options.port.is_none() {
                         process = Process::start_process(&launch_options)?;
                     } else {
@@ -233,6 +234,10 @@ impl Process {
 
         if let Ok(output) = chrome_output_result {
             if output.contains(port_taken) {
+                trace!(
+                    "Chrome is complaining about the debugging port already being in use: {}",
+                    output
+                );
                 Err(ChromeLaunchError::DebugPortInUse {}.into())
             } else {
                 Ok(output)

@@ -11,6 +11,9 @@ before_install:
   - rustup self update
   - rustup component add rustfmt-preview clippy-preview
 
+addons:
+  chrome: stable
+
 script:
   - cargo fmt --all -- --check
   - cargo clippy --tests
