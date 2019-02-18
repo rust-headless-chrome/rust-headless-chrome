@@ -99,20 +99,20 @@ impl Browser {
 
     /// Create a new tab and return a handle to it.
     ///
-/// ```rust
-/// # use failure::Error;
-/// # fn main() -> Result<(), Error> {
-/// #
-/// # use headless_chrome::{Browser, LaunchOptions};
-/// # let browser = Browser::new(LaunchOptions::default().unwrap())?;
-/// let first_tab = browser.wait_for_initial_tab()?;
-/// let new_tab = browser.new_tab()?;
-/// let num_tabs = browser.get_tabs().lock().unwrap().len();
-/// assert_eq!(2, num_tabs);
-/// #
-/// # Ok(())
-/// # }
-/// ```
+    /// ```rust
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// #
+    /// # use headless_chrome::{Browser, LaunchOptions};
+    /// # let browser = Browser::new(LaunchOptions::default().unwrap())?;
+    /// let first_tab = browser.wait_for_initial_tab()?;
+    /// let new_tab = browser.new_tab()?;
+    /// let num_tabs = browser.get_tabs().lock().unwrap().len();
+    /// assert_eq!(2, num_tabs);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// Currently does not support creating the tab in a new "browser context", aka an incognito
     /// window.
