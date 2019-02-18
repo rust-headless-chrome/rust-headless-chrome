@@ -84,6 +84,8 @@ fn capture_screenshot() -> Result<(), failure::Error> {
         .map(|(b, e)| (i16::from(*b) - e).pow(2) as u16)
         .sum::<u16>();
     assert!(err < 5);
+    Ok(())
+}
 
 #[test]
 fn reload() -> Result<(), failure::Error> {

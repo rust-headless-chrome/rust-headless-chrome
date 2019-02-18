@@ -358,6 +358,7 @@ impl<'a> Tab {
             })?
             .data;
         base64::decode(&data).map_err(|e| e.into())
+    }
 
     /// Reloads given page optionally ignoring the cache
     ///
