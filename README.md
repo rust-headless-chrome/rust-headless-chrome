@@ -6,7 +6,7 @@
 [Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
 
 ```rust
-use headless_chrome::browser::{Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptions};
 
 fn browse_wikipedia() -> Result<(), failure::Error> {
     let options = LaunchOptions::default().expect("Failed to find chrome");
