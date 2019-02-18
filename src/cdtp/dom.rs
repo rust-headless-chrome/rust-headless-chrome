@@ -1,8 +1,9 @@
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
 
 pub type NodeId = u16;
 
-pub type NodeAttributes = Vec<String>;
+pub type NodeAttributes = HashMap<String, String>;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -10,10 +11,86 @@ pub struct Node {
     pub node_id: NodeId,
     pub backend_node_id: NodeId,
     pub children: Option<Vec<Node>>,
+    pub parent_id: Option<NodeId>,
     pub node_value: String,
     pub node_name: String,
     pub node_type: u8,
+    #[serde(default, deserialize_with = "attribute_deser")]
     pub attributes: Option<NodeAttributes>,
+    pub local_name: String,
+    pub child_node_count: Option<u32>,
+    #[serde(rename = "documentURL")]
+    pub document_url: Option<String>,
+    #[serde(rename = "baseURL")]
+    pub base_url: Option<String>,
+    pub public_id: Option<String>,
+    pub system_id: Option<String>,
+    pub internal_subset: Option<String>,
+    pub xml_version: Option<String>,
+    pub name: Option<String>,
+    pub value: Option<String>,
+    pub pseudo_type: Option<PseudoType>,
+    pub shadow_root_type: Option<ShadowRootType>,
+    pub frame_id: Option<String>,
+    pub content_document: Option<Box<Node>>,
+    pub shadow_roots: Option<Vec<Node>>,
+    pub pseudo_elements: Option<Vec<Node>>,
+    pub imported_document: Option<Box<Node>>,
+    pub distributed_nodes: Option<Vec<BackendNode>>,
+    #[serde(rename = "isSVG")]
+    pub is_svg: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BackendNode {
+    node_type: NodeId,
+    node_name: String,
+    backend_node_id: NodeId,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum PseudoType {
+    FirstLine,
+    FirstLetter,
+    Before,
+    After,
+    Backdrop,
+    Selection,
+    FirstLineInherited,
+    Scrollbar,
+    ScrollbarThumb,
+    ScrollbarButton,
+    ScrollbarTrack,
+    ScrollbarTrackPiece,
+    ScrollbarCorner,
+    Resizer,
+    InputListButton,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum ShadowRootType {
+    UserAgent,
+    Open,
+    Close,
+}
+
+fn attribute_deser<'de, D>(d: D) -> Result<Option<NodeAttributes>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt: Option<Vec<String>> = Option::deserialize(d)?;
+    Ok(opt.map(|attr| {
+        let mut map = HashMap::new();
+        let mut i = 0;
+        while i < attr.len() - 1 {
+            map.insert(attr[i].clone(), attr[i + 1].clone());
+            i += 2;
+        }
+        map
+    }))
 }
 
 impl Node {
