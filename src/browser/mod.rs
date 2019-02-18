@@ -9,8 +9,8 @@ use serde;
 use crate::cdtp::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::cdtp::{self, Event};
 
-pub use process::LaunchOptions;
-use process::Process;
+pub use process::LaunchOptionsBuilder;
+use process::{LaunchOptions, Process};
 pub use tab::Tab;
 use transport::Transport;
 use waiting_helpers::{wait_for, WaitOptions};

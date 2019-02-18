@@ -2,10 +2,13 @@
 
 extern crate log;
 
+#[macro_use]
+extern crate derive_builder;
+
 mod browser;
 pub mod cdtp;
 
-pub use browser::{Browser, LaunchOptions, Tab};
+pub use browser::{Browser, LaunchOptionsBuilder, Tab};
 
 #[cfg(feature = "nightly")]
 #[doc(include = "../README.md")]
