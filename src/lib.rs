@@ -17,6 +17,7 @@ pub mod waiting_call_registry;
 pub mod web_socket_connection;
 
 pub use browser::{Browser, LaunchOptions};
+pub use tab::Tab;
 
 #[cfg(feature = "nightly")]
 #[doc(include = "../README.md")]

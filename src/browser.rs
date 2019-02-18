@@ -14,7 +14,33 @@ use crate::process::Process;
 use crate::tab::Tab;
 use crate::transport::Transport;
 
-/// Chrome browser.
+/// This represents an instance of Chrome / Chromium, along with a WebSocket connection to its debugging port.
+///
+///
+/// Most of your actual "driving" (e.g. clicking, typing, navigating) will be via instances of [Tab](../tab/struct.Tab.html), which are accessible via methods such as `get_tabs`.
+///
+/// With the default [LaunchOptions](../process/LaunchOptions.struct.html), your locally
+/// installed copy of Chrome launches in headless mode. You can provide your own binary
+/// by creating LaunchOptions with a custom `path` field.
+///
+/// ```rust
+/// # use std::error::Error;
+/// #
+/// # fn main() -> Result<(), Error> {
+/// # use crate::logging;
+/// # logging::enable_logging();
+/// #
+/// let browser = Browser::new(LaunchOptions::default().unwrap())?;
+/// let first_tab = browser.wait_for_initial_tab()?;
+/// assert_eq!("about:blank", first_tab.get_url());
+/// #
+/// # Ok(())
+/// # }
+/// ```
+///
+/// While the Chrome DevTools Protocl (CDTP) does define some methods in a
+/// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
+/// (such as for resizing the window in non-headless mode), we currently don't implement those.
 pub struct Browser {
     _process: Process,
     transport: Arc<Transport>,
@@ -117,7 +143,7 @@ impl Browser {
     /// Call a browser method.
     ///
     /// See the `cdtp` module documentation for available methods.
-    pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
+    fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,
     {
@@ -128,40 +154,4 @@ impl Browser {
     pub(crate) fn process(&self) -> &Process {
         &self._process
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::time;
-
-    #[test]
-    fn browser_basic_test() {
-        use crate::cdtp::target::methods::GetTargets;
-        use crate::logging;
-
-        fn try_out_browser() -> Result<(), Error> {
-            let browser = Browser::new(LaunchOptions::default().unwrap().headless(true))?;
-
-            let method = GetTargets {};
-            let _targets = browser.call_method(method)?.target_infos;
-            let tab = browser.wait_for_initial_tab()?;
-            tab.navigate_to("https://wikipedia.org")?;
-            std::thread::sleep(time::Duration::from_secs(4));
-            Ok(())
-        }
-        logging::enable_logging();
-        try_out_browser().expect("returned error");
-    }
-
-    #[test]
-    fn ctrlc_chrome() {
-        use crate::logging;
-        logging::enable_logging();
-        let _browser = Browser::new(LaunchOptions::default().unwrap().headless(false)).unwrap();
-        std::thread::sleep(time::Duration::from_secs(40));
-    }
-
-    // things to test:
-    // chrome comes with one target there by default.
 }
