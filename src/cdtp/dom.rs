@@ -84,10 +84,9 @@ where
     let opt: Option<Vec<String>> = Option::deserialize(d)?;
     Ok(opt.map(|attr| {
         let mut map = HashMap::new();
-        let mut i = 0;
-        while i < attr.len() - 1 {
-            map.insert(attr[i].clone(), attr[i + 1].clone());
-            i += 2;
+        let mut iter = attr.into_iter();
+        while let Some(n) = iter.next() {
+            map.insert(n, iter.next().unwrap());
         }
         map
     }))
