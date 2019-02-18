@@ -80,6 +80,21 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
+    pub struct Reload<'a> {
+        pub ignore_cache: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub script_to_evaluate: Option<&'a str>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ReloadReturnObject {}
+    impl<'a> Method for Reload<'a> {
+        const NAME: &'static str = "Page.reload";
+        type ReturnObject = ReloadReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct SetLifecycleEventsEnabled {
         pub enabled: bool,
     }

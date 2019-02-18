@@ -320,4 +320,21 @@ impl<'a> Tab {
         std::thread::sleep(std::time::Duration::from_millis(100));
         Ok(self)
     }
+
+    /// Reloads given page optionally ignoring the cache
+    ///
+    /// If `ignore_cache` is true, the browser cache is ignored (as if the user pressed Shift+F5).
+    /// If `script_to_evaluate` is given, the script will be injected into all frames of the
+    /// inspected page after reload. Argument will be ignored if reloading dataURL origin.
+    pub fn reload(
+        &self,
+        ignore_cache: bool,
+        script_to_evaluate: Option<&str>,
+    ) -> Result<&Self, Error> {
+        self.call_method(page::methods::Reload {
+            ignore_cache,
+            script_to_evaluate,
+        })?;
+        Ok(self)
+    }
 }
