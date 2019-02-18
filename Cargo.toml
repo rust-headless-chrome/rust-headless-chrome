@@ -24,12 +24,15 @@ toml = "0.4"
 chrono = "0.4"
 termcolor = "1"
 which = "2.0.1"
+base64 = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"
 
 [dev-dependencies]
 tiny_http = "0.6"
+png = "0.14"
+jpeg-decoder = { version = "0.1", default_features = false }
 
 [lib]
 name = "headless_chrome"
