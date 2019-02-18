@@ -64,34 +64,10 @@ fn browse_wikipedia() -> Result<(), Error> {
     tab.wait_for_element("#firstHeading")?;
 
     assert_eq!(true, tab.get_url().ends_with("WebKit"));
-    //    tab.wait_until_navigated()?;
-    //    sleep(1000);
 
     Ok(())
 }
 
-//
-//fn log_in_to_ml() -> Result<(), Error> {
-//    logging::enable_logging();
-//
-//    let chrome = chrome::Process::new(chrome::LaunchOptions { headless: true, ..Default::default() })?;
-//    let tab = chrome.new_tab()?;
-//
-//    if let Err(_nav_failed) = tab.navigate_to("https://app-staging.mentorloop.com/") {
-//        warn!("Mentorloop seems to be down.");
-//        return Ok(());
-//    }
-//
-//    let _element = tab.find_element(r#"input[type="email"]"#)?;
-//
-//    tab.type_str("roche.a@gmail.com")?;
-//    tab.press_key("Enter")?;
-//
-//    Ok(())
-//}
-//
-//
-//
 fn log_in_to_digital_pigeon() -> Result<(), Error> {
     logging::enable_logging();
 
@@ -179,8 +155,8 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
 
     Ok(())
 }
-//
-fn log_in_to_fastmail() -> Result<(), Error> {
+
+fn log_in_to_fastmail_and_send_email() -> Result<(), Error> {
     logging::enable_logging();
 
     let (_browser, tab) = default_browser_and_tab();
@@ -237,13 +213,6 @@ fn log_in_to_dropbox(tab: &Tab) -> Result<(), Error> {
     sleep(100);
 
     tab.press_key("Enter")?;
-    sleep(100);
-
-    //    tab.wait_until_navigated()?;
-
-    //    tab.wait_for_element("a#files")?.click()?;
-    //
-    //    tab.wait_until_navigated()?;
 
     Ok(())
 }
@@ -252,17 +221,13 @@ fn log_in_to_dropbox(tab: &Tab) -> Result<(), Error> {
 fn wikipedia() {
     browse_wikipedia().expect("passed");
 }
-//
 
 fn fastmail() {
-    log_in_to_fastmail().expect("passed");
+    log_in_to_fastmail_and_send_email().expect("passed");
 }
 
 fn digital_pigeon() {
-    //    for i in 0..30 {
-    //        println!("ATTEMPT NUM: {}", i);
     log_in_to_digital_pigeon().expect("passed");
-    //    }
 }
 
 fn dropbox() {
