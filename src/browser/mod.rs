@@ -6,7 +6,7 @@ use failure::Error;
 use log::*;
 use serde;
 
-use crate::cdtp::target::methods::SetDiscoverTargets;
+use crate::cdtp::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::cdtp::{self, Event};
 
 pub use process::LaunchOptions;
@@ -97,22 +97,49 @@ impl Browser {
         )
     }
 
-    //    pub fn new_tab(&self) -> Result<Arc<Tab>, Error> {
-    //        let create_target = target::methods::CreateTarget {
-    //            url: "about:blank",
-    //            width: None,
-    //            height: None,
-    //            browser_context_id: None,
-    //            enable_begin_frame_control: None,
-    //        };
-    //
-    ////        let target_id = self.call_method(create_target)?.target_id;
-    ////        let new_tab = Arc::new(Tab::new(target_id, Arc::clone(&self.transport))?);
-    ////
-    ////        self.add_tab(Arc::clone(&new_tab));
-    //
-    //        Ok(new_tab)
-    //    }
+    /// Create a new tab and return a handle to it.
+    ///
+    /// ```rust
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// #
+    /// # use headless_chrome::{Browser, LaunchOptions};
+    /// # let browser = Browser::new(LaunchOptions::default().unwrap())?;
+    /// let first_tab = browser.wait_for_initial_tab()?;
+    /// let new_tab = browser.new_tab()?;
+    /// let num_tabs = browser.get_tabs().lock().unwrap().len();
+    /// assert_eq!(2, num_tabs);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Currently does not support creating the tab in a new "browser context", aka an incognito
+    /// window.
+    pub fn new_tab(&self) -> Result<Arc<Tab>, Error> {
+        let create_target = CreateTarget {
+            url: "about:blank",
+            width: None,
+            height: None,
+            browser_context_id: None,
+            enable_begin_frame_control: None,
+        };
+
+        let target_id = self.call_method(create_target)?.target_id;
+
+        wait_for(
+            || {
+                let tabs = self.tabs.lock().unwrap();
+                tabs.iter()
+                    .find(|tab| *tab.get_target_id() == target_id)
+                    .map(|tab_ref| Arc::clone(tab_ref))
+            },
+            WaitOptions {
+                timeout_ms: 5000,
+                sleep_ms: 10,
+            },
+        )
+    }
 
     fn handle_incoming_messages(&self, events_rx: mpsc::Receiver<Event>) {
         let tabs = Arc::clone(&self.tabs);
