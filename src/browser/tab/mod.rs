@@ -19,6 +19,7 @@ use crate::cdtp::Event;
 
 use super::waiting_helpers::{wait_for, WaitOptions};
 
+use crate::cdtp::page::ScreenshotFormat;
 use element::Element;
 use point::Point;
 
@@ -316,6 +317,46 @@ impl<'a> Tab {
             click_count: Some(1),
         })?;
         std::thread::sleep(std::time::Duration::from_millis(100));
+        Ok(self)
+    }
+
+    /// Capture a screenshot of the current page.
+    ///
+    /// If `format` is not given, Chrome will default to PNG.
+    /// `quality` has to be an integer in the range [0..100] and only applies to JPEG.
+    /// If `from_surface` is true, the screenshot is taken from the surface rather than
+    /// the view; this is the default.
+    pub fn capture_screenshot(
+        &self,
+        format: Option<ScreenshotFormat>,
+        quality: Option<u8>,
+        from_surface: Option<bool>,
+    ) -> Result<Vec<u8>, Error> {
+        // TODO: Implement `clip`-argument
+        let data = self
+            .call_method(page::methods::CaptureScreenshot {
+                format,
+                quality,
+                from_surface,
+            })?
+            .data;
+        base64::decode(&data).map_err(|e| e.into())
+    }
+
+    /// Reloads given page optionally ignoring the cache
+    ///
+    /// If `ignore_cache` is true, the browser cache is ignored (as if the user pressed Shift+F5).
+    /// If `script_to_evaluate` is given, the script will be injected into all frames of the
+    /// inspected page after reload. Argument will be ignored if reloading dataURL origin.
+    pub fn reload(
+        &self,
+        ignore_cache: bool,
+        script_to_evaluate: Option<&str>,
+    ) -> Result<&Self, Error> {
+        self.call_method(page::methods::Reload {
+            ignore_cache,
+            script_to_evaluate,
+        })?;
         Ok(self)
     }
 }

@@ -1,5 +1,7 @@
+use headless_chrome::cdtp::page::ScreenshotFormat;
 use headless_chrome::{Browser, LaunchOptions, Tab};
 use std::sync::Arc;
+
 mod logging;
 mod server;
 
@@ -10,11 +12,16 @@ mod server;
 /// Users must hold on to the server, which stops when dropped.
 fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
     let server = server::Server::with_dumb_html(data);
+    let (browser, tab) = dumb_client(&server);
+    (server, browser, tab)
+}
+
+fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
     let browser = Browser::new(LaunchOptions::default().unwrap()).unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
-    (server, browser, tab)
+    (browser, tab)
 }
 
 #[test]
@@ -51,5 +58,65 @@ fn form_interaction() -> Result<(), failure::Error> {
     assert!(d
         .find(|n| n.node_value == "Comrades, have a nice day!")
         .is_some());
+    Ok(())
+}
+
+#[test]
+fn capture_screenshot() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, _browser, tab) = dumb_server(include_str!("simple.html"));
+    tab.wait_until_navigated()?;
+
+    let png_data = tab.capture_screenshot(Some(ScreenshotFormat::PNG), None, None)?;
+    let decoder = png::Decoder::new(&png_data[..]);
+    let (info, mut reader) = decoder.read_info()?;
+    let mut buf = vec![0; info.buffer_size()];
+    reader.next_frame(&mut buf)?;
+    // Check that the top-left pixel has the background color set in simple.html
+    assert_eq!(buf[0..4], [0x11, 0x22, 0x33, 0xff][..]);
+
+    let jpg_data = tab.capture_screenshot(Some(ScreenshotFormat::JPEG), Some(100), Some(false))?;
+    let mut decoder = jpeg_decoder::Decoder::new(&jpg_data[..]);
+    let buf = decoder.decode().unwrap();
+    // Check that the total compression error is small-ish compared to the expected
+    // pixel color
+    let err = buf[0..3]
+        .iter()
+        .zip(&[0x11, 0x22, 0x33])
+        .map(|(b, e)| (i16::from(*b) - e).pow(2) as u16)
+        .sum::<u16>();
+    assert!(err < 5);
+    Ok(())
+}
+
+#[test]
+fn reload() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let mut counter = 0;
+    let responder = move |r: tiny_http::Request| {
+        let response = tiny_http::Response::new(
+            200.into(),
+            vec![tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..]).unwrap()],
+            std::io::Cursor::new(format!(r#"<div id="counter">{}</div>"#, counter)),
+            None,
+            None,
+        );
+        counter += 1;
+        r.respond(response)
+    };
+    let server = server::Server::new(responder);
+    let (_browser, tab) = dumb_client(&server);
+    assert!(tab
+        .wait_for_element("div#counter")?
+        .get_description()?
+        .find(|n| n.node_value == "0")
+        .is_some());
+    assert!(tab
+        .reload(false, None)?
+        .wait_for_element("div#counter")?
+        .get_description()?
+        .find(|n| n.node_value == "1")
+        .is_some());
+    // TODO test effect of scriptEvaluateOnLoad
     Ok(())
 }

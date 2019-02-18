@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -11,6 +11,14 @@ pub struct Frame {
     pub security_origin: String,
     pub mime_type: String,
     pub unreachable_url: Option<String>,
+}
+
+/// The format a screenshot will be captured in
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScreenshotFormat {
+    JPEG,
+    PNG,
 }
 
 pub mod events {
@@ -65,17 +73,36 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct CaptureScreenshot<'a> {
-        pub format: &'a str,
+    pub struct CaptureScreenshot {
+        pub format: Option<super::ScreenshotFormat>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub quality: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub from_surface: Option<bool>,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CaptureScreenshotReturnObject {
         pub data: String,
     }
-    impl<'a> Method for CaptureScreenshot<'a> {
+    impl Method for CaptureScreenshot {
         const NAME: &'static str = "Page.captureScreenshot";
         type ReturnObject = CaptureScreenshotReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Reload<'a> {
+        pub ignore_cache: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub script_to_evaluate: Option<&'a str>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ReloadReturnObject {}
+    impl<'a> Method for Reload<'a> {
+        const NAME: &'static str = "Page.reload";
+        type ReturnObject = ReloadReturnObject;
     }
 
     #[derive(Serialize, Debug)]
