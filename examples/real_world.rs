@@ -5,7 +5,7 @@ use failure::Error;
 use log::*;
 use toml;
 
-use headless_chrome::{Browser, LaunchOptions, Tab};
+use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use rand::distributions::Alphanumeric;
 use rand::{self, Rng};
 use std::sync::Arc;
@@ -37,7 +37,9 @@ fn rand_ascii() -> String {
 }
 
 fn default_browser_and_tab() -> (Browser, Arc<Tab>) {
-    let options = LaunchOptions::default().expect("Couldn't find appropriate Chrome binary.");
+    let options = LaunchOptionsBuilder::default()
+        .build()
+        .expect("Couldn't find appropriate Chrome binary.");
     let browser = Browser::new(options).expect("Failed to launch and connect to Chrome");
     let tab = browser
         .wait_for_initial_tab()
