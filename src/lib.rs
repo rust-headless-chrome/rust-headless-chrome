@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "nightly", feature(external_doc))]
 
 extern crate log;
-extern crate termcolor;
 
 mod browser;
 pub mod cdtp;
