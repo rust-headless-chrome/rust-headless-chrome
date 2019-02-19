@@ -109,7 +109,7 @@ impl Transport {
             return Err(e);
         }
 
-        let response_result = response_rx.recv_timeout(Duration::from_millis(100))?;
+        let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
         cdtp::parse_response::<C::ReturnObject>(response_result?)
     }
 
