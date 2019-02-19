@@ -1,5 +1,6 @@
 use headless_chrome::cdtp::page::ScreenshotFormat;
 use headless_chrome::{Browser, LaunchOptions, Tab};
+use log::*;
 use std::sync::Arc;
 
 mod logging;
@@ -36,8 +37,11 @@ fn simple() -> Result<(), failure::Error> {
 fn actions_on_tab_wont_hang_after_browser_drops() -> Result<(), failure::Error> {
     logging::enable_logging();
     for _ in 0..10 {
+        trace!("starting browser, server and tab");
         let (_, browser, tab) = dumb_server(include_str!("simple.html"));
+        trace!("dropping browser");
         drop(browser);
+        trace!("finding element");
         assert_eq!(true, tab.find_element("div#foobar").is_err());
     }
     Ok(())
