@@ -13,11 +13,18 @@ pub struct Frame {
     pub unreachable_url: Option<String>,
 }
 
-/// The format a screenshot will be captured in
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ScreenshotFormat {
+pub(crate) enum InternalScreenshotFormat {
     JPEG,
+    PNG,
+}
+
+/// The format a screenshot will be captured in
+#[derive(Debug, Clone)]
+pub enum ScreenshotFormat {
+    /// Optionally compression quality from range [0..100]
+    JPEG(Option<u8>),
     PNG,
 }
 
@@ -73,12 +80,11 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub struct CaptureScreenshot {
-        pub format: Option<super::ScreenshotFormat>,
+    pub(crate) struct CaptureScreenshot {
+        pub format: super::InternalScreenshotFormat,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub quality: Option<u8>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub from_surface: Option<bool>,
+        pub from_surface: bool,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]

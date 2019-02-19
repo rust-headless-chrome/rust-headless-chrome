@@ -19,7 +19,6 @@ use crate::cdtp::Event;
 
 use super::waiting_helpers::{wait_for, WaitOptions};
 
-use crate::cdtp::page::ScreenshotFormat;
 use element::Element;
 use point::Point;
 
@@ -324,17 +323,20 @@ impl<'a> Tab {
 
     /// Capture a screenshot of the current page.
     ///
-    /// If `format` is not given, Chrome will default to PNG.
-    /// `quality` has to be an integer in the range [0..100] and only applies to JPEG.
     /// If `from_surface` is true, the screenshot is taken from the surface rather than
-    /// the view; this is the default.
+    /// the view.
     pub fn capture_screenshot(
         &self,
-        format: Option<ScreenshotFormat>,
-        quality: Option<u8>,
-        from_surface: Option<bool>,
+        format: page::ScreenshotFormat,
+        from_surface: bool,
     ) -> Result<Vec<u8>, Error> {
         // TODO: Implement `clip`-argument
+        let (format, quality) = match format {
+            page::ScreenshotFormat::JPEG(quality) => {
+                (page::InternalScreenshotFormat::JPEG, quality)
+            }
+            page::ScreenshotFormat::PNG => (page::InternalScreenshotFormat::PNG, None),
+        };
         let data = self
             .call_method(page::methods::CaptureScreenshot {
                 format,
