@@ -2,6 +2,7 @@ use std::sync::mpsc;
 
 use failure::Error;
 use log::*;
+use loom;
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
@@ -22,7 +23,7 @@ impl WebSocketConnection {
         let connection = WebSocketConnection::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
-        std::thread::spawn(move || {
+        loom::thread::spawn(move || {
             trace!("Starting msg dispatching loop");
             Self::dispatch_incoming_messages(websocket_receiver, target_messages_tx);
             trace!("Quit loop msg dispatching loop");

@@ -33,20 +33,14 @@ fn simple() -> Result<(), failure::Error> {
     Ok(())
 }
 
+use loom;
 #[test]
 fn actions_on_tab_wont_hang_after_browser_drops() -> Result<(), failure::Error> {
     logging::enable_logging();
-    for _ in 0..20 {
+    loom::fuzz(|| {
         let (_, browser, tab) = dumb_server(include_str!("simple.html"));
-        std::thread::spawn(move || {
-            let mut rng = rand::thread_rng();
-            let millis: u64 = rng.gen_range(0, 5000);
-            std::thread::sleep(std::time::Duration::from_millis(millis));
-            trace!("dropping browser");
-            drop(browser);
-        });
         let _element = tab.find_element("div#foobar");
-    }
+    });
 
     // We terminate
     assert_eq!(true, true);

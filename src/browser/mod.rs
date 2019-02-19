@@ -5,6 +5,7 @@ use std::sync::Mutex;
 use failure::Error;
 use log::*;
 use serde;
+use loom;
 
 use crate::cdtp::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::cdtp::{self, Event};
@@ -147,7 +148,7 @@ impl Browser {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
 
-        std::thread::spawn(move || {
+        loom::thread::spawn(move || {
             for event in events_rx {
                 match event {
                     Event::TargetCreated(ev) => {

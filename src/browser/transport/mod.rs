@@ -8,6 +8,7 @@ use std::sync::Mutex;
 
 use failure::{Error, Fail};
 use log::*;
+use loom;
 use serde;
 
 use crate::cdtp;
@@ -168,7 +169,7 @@ impl Transport {
         listeners: Listeners,
         open: Arc<AtomicBool>,
     ) {
-        std::thread::spawn(move || {
+        loom::thread::spawn(move || {
             for message in messages_rx {
                 match message {
                     Message::Response(response_to_browser_method_call) => {
