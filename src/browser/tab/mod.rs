@@ -53,7 +53,7 @@ impl<'a> Tab {
         let target_id = target_info.target_id.clone();
 
         let session_id = transport
-            .call_method(target::methods::AttachToTarget {
+            .call_method_on_browser(target::methods::AttachToTarget {
                 target_id: &target_id,
                 flatten: None,
             })?
@@ -123,11 +123,8 @@ impl<'a> Tab {
     where
         C: cdtp::Method + serde::Serialize + std::fmt::Debug,
     {
-        let call_id = self.transport.unique_call_id();
-        let method_call = method.to_method_call(call_id);
-        trace!("Calling method: {:?}", method_call);
         self.transport
-            .call_method_on_target(&self.session_id, method_call)
+            .call_method_on_target(self.session_id.clone(), method)
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {

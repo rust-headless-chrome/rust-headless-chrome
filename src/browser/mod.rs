@@ -194,7 +194,7 @@ impl Browser {
     where
         C: cdtp::Method + serde::Serialize,
     {
-        self.transport.call_method(method)
+        self.transport.call_method_on_browser(method)
     }
 
     #[allow(dead_code)]
