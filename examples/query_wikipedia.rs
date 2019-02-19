@@ -1,8 +1,11 @@
-use headless_chrome::{Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptionsBuilder};
 
 fn query(input: &str) -> Result<(), failure::Error> {
-    let browser =
-        Browser::new(LaunchOptions::default().expect("Could not find chrome-executable"))?;
+    let browser = Browser::new(
+        LaunchOptionsBuilder::default()
+            .build()
+            .expect("Could not find chrome-executable"),
+    )?;
     let tab = browser.wait_for_initial_tab()?;
     tab.navigate_to("https://en.wikipedia.org")?
         .wait_for_element("input#searchInput")?
