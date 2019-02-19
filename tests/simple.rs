@@ -102,6 +102,17 @@ fn capture_screenshot() -> Result<(), failure::Error> {
 }
 
 #[test]
+fn get_box_model() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, _browser, tab) = dumb_server(include_str!("simple.html"));
+    let pox = tab.wait_for_element("div#foobar")?.get_box_model()?;
+    // Check that the div has exactly the dimensions we set in simple.html
+    assert_eq!(pox.width, 100);
+    assert_eq!(pox.height, 20);
+    Ok(())
+}
+
+#[test]
 fn reload() -> Result<(), failure::Error> {
     logging::enable_logging();
     let mut counter = 0;
