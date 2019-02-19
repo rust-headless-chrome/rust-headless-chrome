@@ -1,6 +1,6 @@
 use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder, Tab};
-use std::sync::Arc;
 use log::*;
+use std::sync::Arc;
 
 mod logging;
 mod server;
