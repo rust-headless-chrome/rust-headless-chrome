@@ -11,7 +11,7 @@ pub mod page;
 pub mod runtime;
 pub mod target;
 
-pub type CallId = u16;
+pub type CallId = usize;
 
 #[derive(Serialize, Debug)]
 pub struct MethodCall<T> {
@@ -26,11 +26,10 @@ pub trait Method {
 
     type ReturnObject: serde::de::DeserializeOwned + std::fmt::Debug; // have this = something?
 
-    fn to_method_call(self) -> MethodCall<Self>
+    fn to_method_call(self, call_id: CallId) -> MethodCall<Self>
     where
         Self: std::marker::Sized,
     {
-        let call_id = rand::random::<CallId>();
         MethodCall {
             id: call_id,
             params: self,

@@ -16,7 +16,7 @@ pub struct WaitingCallRegistry {
 }
 
 impl IdentifiableResponse for Response {
-    fn call_id(&self) -> u16 {
+    fn call_id(&self) -> CallId {
         self.call_id
     }
 }

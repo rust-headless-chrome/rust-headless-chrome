@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
@@ -15,7 +15,7 @@ use crate::cdtp::target;
 use crate::cdtp::Event;
 use crate::cdtp::Message;
 
-use crate::cdtp::MethodCall;
+use crate::cdtp::{CallId, MethodCall};
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 
@@ -50,6 +50,7 @@ pub struct Transport {
     waiting_call_registry: Arc<WaitingCallRegistry>,
     listeners: Listeners,
     open: Arc<AtomicBool>,
+    call_id_counter: Arc<AtomicUsize>,
 }
 
 #[derive(Debug, Fail)]
@@ -79,7 +80,14 @@ impl Transport {
             waiting_call_registry,
             listeners,
             open,
+            call_id_counter: Arc::new(AtomicUsize::new(0)),
         })
+    }
+
+    /// Returns a number based on thread-safe unique counter, incrementing it so that the
+    /// next CallId is different.
+    pub fn unique_call_id(&self) -> CallId {
+        self.call_id_counter.fetch_add(1, Ordering::SeqCst)
     }
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
@@ -89,7 +97,8 @@ impl Transport {
         if !self.open.load(Ordering::SeqCst) {
             return Err(ConnectionClosed {}.into());
         }
-        let call = method.to_method_call();
+        let call_id = self.unique_call_id();
+        let call = method.to_method_call(call_id);
         let message_text = serde_json::to_string(&call).unwrap();
 
         let response_rx = self.waiting_call_registry.register_call(call.id);

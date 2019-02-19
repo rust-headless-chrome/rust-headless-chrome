@@ -124,7 +124,8 @@ impl<'a> Tab {
     where
         C: cdtp::Method + serde::Serialize + std::fmt::Debug,
     {
-        let method_call = method.to_method_call();
+        let call_id = self.transport.unique_call_id();
+        let method_call = method.to_method_call(call_id);
         trace!("Calling method: {:?}", method_call);
         self.transport
             .call_method_on_target(&self.session_id, method_call)
