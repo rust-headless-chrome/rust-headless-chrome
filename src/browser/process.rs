@@ -349,7 +349,7 @@ mod tests {
 
         for _ in 0..10 {
             let chrome =
-                super::Process::new(super::LaunchOptions::default().unwrap().headless(false))
+                super::Process::new(super::LaunchOptions::default().unwrap().headless(true))
                     .unwrap();
             handles.push(chrome);
         }
