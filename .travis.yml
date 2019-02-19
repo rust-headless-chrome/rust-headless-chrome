@@ -3,6 +3,7 @@ language: rust
 os:
   - linux
   - osx
+  - windows
 
 before_install:
   - set -e
