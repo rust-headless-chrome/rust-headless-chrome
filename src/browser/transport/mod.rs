@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
@@ -15,6 +15,8 @@ use crate::cdtp::target;
 use crate::cdtp::Event;
 use crate::cdtp::Message;
 
+use crate::cdtp::{CallId, MethodCall};
+use std::time::Duration;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 
@@ -49,6 +51,7 @@ pub struct Transport {
     waiting_call_registry: Arc<WaitingCallRegistry>,
     listeners: Listeners,
     open: Arc<AtomicBool>,
+    call_id_counter: Arc<AtomicUsize>,
 }
 
 #[derive(Debug, Fail)]
@@ -78,7 +81,14 @@ impl Transport {
             waiting_call_registry,
             listeners,
             open,
+            call_id_counter: Arc::new(AtomicUsize::new(0)),
         })
+    }
+
+    /// Returns a number based on thread-safe unique counter, incrementing it so that the
+    /// next CallId is different.
+    pub fn unique_call_id(&self) -> CallId {
+        self.call_id_counter.fetch_add(1, Ordering::SeqCst)
     }
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
@@ -88,25 +98,25 @@ impl Transport {
         if !self.open.load(Ordering::SeqCst) {
             return Err(ConnectionClosed {}.into());
         }
-        let call = method.to_method_call();
+        let call_id = self.unique_call_id();
+        let call = method.to_method_call(call_id);
         let message_text = serde_json::to_string(&call).unwrap();
 
         let response_rx = self.waiting_call_registry.register_call(call.id);
-        self.web_socket_connection
-            .send_message(&message_text)
-            .map_err(|e| {
-                self.waiting_call_registry.unregister_call(call.id);
-                e
-            })?;
+        if let Err(e) = self.web_socket_connection.send_message(&message_text) {
+            trace!("Can't send over websocket, deregistering {:?}", call.id);
+            self.waiting_call_registry.unregister_call(call.id);
+            return Err(e);
+        }
 
-        let response = response_rx.recv().unwrap()?;
-        cdtp::parse_response::<C::ReturnObject>(response)
+        let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
+        cdtp::parse_response::<C::ReturnObject>(response_result?)
     }
 
     pub fn call_method_on_target<C>(
         &self,
         session_id: &SessionId,
-        method: C,
+        method_call: MethodCall<C>,
     ) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,
@@ -115,7 +125,6 @@ impl Transport {
             return Err(ConnectionClosed {}.into());
         }
 
-        let method_call = method.to_method_call();
         let message = &serde_json::to_string(&method_call).unwrap();
 
         let target_method = target::methods::SendMessageToTarget {
@@ -126,12 +135,13 @@ impl Transport {
 
         let response_rx = self.waiting_call_registry.register_call(method_call.id);
 
-        self.call_method(target_method)?;
+        if let Err(e) = self.call_method(target_method) {
+            self.waiting_call_registry.unregister_call(method_call.id);
+            return Err(e);
+        };
 
-        let response = response_rx.recv().unwrap()?;
-
-        let return_object = cdtp::parse_response::<C::ReturnObject>(response)?;
-        Ok(return_object)
+        let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
+        cdtp::parse_response::<C::ReturnObject>(response_result?)
     }
 
     pub fn listen_to_browser_events(&self) -> Receiver<Event> {
@@ -162,7 +172,13 @@ impl Transport {
             for message in messages_rx {
                 match message {
                     Message::Response(response_to_browser_method_call) => {
-                        waiting_call_registry.resolve_call(response_to_browser_method_call);
+                        if waiting_call_registry
+                            .resolve_call(response_to_browser_method_call)
+                            .is_err()
+                        {
+                            warn!("The browser registered a call but then closed its receiving channel");
+                            break;
+                        }
                     }
 
                     Message::Event(browser_event) => match browser_event {
@@ -178,12 +194,16 @@ impl Transport {
                                             .unwrap()
                                             .get(&ListenerId::SessionId(session_id))
                                         {
-                                            tx.send(target_event).unwrap();
+                                            tx.send(target_event)
+                                                .expect("Couldn't send event to listener");
                                         }
                                     }
 
                                     Message::Response(resp) => {
-                                        waiting_call_registry.resolve_call(resp);
+                                        if waiting_call_registry.resolve_call(resp).is_err() {
+                                            warn!("The browser registered a call but then closed its receiving channel");
+                                            break;
+                                        }
                                     }
                                 }
                             } else {

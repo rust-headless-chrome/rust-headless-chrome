@@ -1,4 +1,5 @@
 use failure::Error;
+use log::*;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Mutex;
@@ -15,7 +16,7 @@ pub struct WaitingCallRegistry {
 }
 
 impl IdentifiableResponse for Response {
-    fn call_id(&self) -> u16 {
+    fn call_id(&self) -> CallId {
         self.call_id
     }
 }
@@ -33,21 +34,20 @@ impl WaitingCallRegistry {
         Default::default()
     }
 
-    pub fn resolve_call(&self, response: Response) {
+    pub fn resolve_call(&self, response: Response) -> Result<(), Error> {
         let waiting_call_tx: mpsc::Sender<Result<Response, Error>> = {
             let mut waiting_calls = self.calls.lock().unwrap();
             waiting_calls.remove(&response.call_id()).unwrap()
         };
-
-        waiting_call_tx
-            .send(Ok(response))
-            .expect("failed to send response to waiting call");
+        waiting_call_tx.send(Ok(response))?;
+        Ok(())
     }
 
     pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Result<Response, Error>> {
         let (tx, rx) = mpsc::channel::<Result<Response, Error>>();
         let mut calls = self.calls.lock().unwrap();
         calls.insert(call_id, tx);
+        trace!("registered {:?}", call_id);
         rx
     }
 
@@ -60,8 +60,18 @@ impl WaitingCallRegistry {
     // to make it less dependent on browser::transport
     pub fn cancel_outstanding_method_calls(&self) {
         let calls = self.calls.lock().unwrap();
-        for (_call_id, sender) in calls.iter() {
-            sender.send(Err(ConnectionClosed {}.into())).unwrap();
+        for (call_id, sender) in calls.iter() {
+            trace!(
+                "Telling waiting method call {:?} that the connection closed",
+                call_id
+            );
+            if let Err(e) = sender.send(Err(ConnectionClosed {}.into())) {
+                trace!(
+                    "Couldn't send ConnectionClosed to waiting method call: {:?} because {:?}",
+                    call_id,
+                    e
+                );
+            }
         }
     }
 }
@@ -93,8 +103,8 @@ mod tests {
         };
         let resp2_clone = resp2.clone();
 
-        waiting_calls.resolve_call(resp);
-        waiting_calls.resolve_call(resp2);
+        waiting_calls.resolve_call(resp).unwrap();
+        waiting_calls.resolve_call(resp2).unwrap();
 
         // note how they're in reverse order to that in which they were called!
         assert_eq!(resp2_clone, call_rx2.recv().unwrap().unwrap());

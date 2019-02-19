@@ -3,7 +3,6 @@ language: rust
 os:
   - linux
   - osx
-  - windows
 
 before_install:
   - set -e
@@ -11,6 +10,10 @@ before_install:
   - rustup self update
   - rustup component add rustfmt-preview clippy-preview
 
+addons:
+  chrome: stable
+
 script:
   - cargo fmt --all -- --check
   - cargo clippy --tests
+  - env RUST_BACKTRACE=1 RUST_LOG=headless_chrome=trace cargo test -- --nocapture

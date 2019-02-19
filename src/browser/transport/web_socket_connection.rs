@@ -40,7 +40,10 @@ impl WebSocketConnection {
         for ws_message in receiver.incoming_messages() {
             match ws_message {
                 Err(error) => match error {
-                    WebSocketError::NoDataAvailable => {}
+                    WebSocketError::NoDataAvailable => {
+                        warn!("{}", error);
+                        break;
+                    }
                     WebSocketError::IoError(err) => {
                         warn!("{}", err);
                         break;
