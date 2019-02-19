@@ -16,6 +16,7 @@ use crate::cdtp::Event;
 use crate::cdtp::Message;
 
 use crate::cdtp::{CallId, MethodCall};
+use std::time::Duration;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 
@@ -108,8 +109,8 @@ impl Transport {
             return Err(e);
         }
 
-        let response = response_rx.recv().unwrap()?;
-        cdtp::parse_response::<C::ReturnObject>(response)
+        let response_result = response_rx.recv_timeout(Duration::from_millis(100))?;
+        cdtp::parse_response::<C::ReturnObject>(response_result?)
     }
 
     pub fn call_method_on_target<C>(
@@ -139,12 +140,8 @@ impl Transport {
             return Err(e);
         };
 
-        trace!("waiting for response to method call");
-        let response = response_rx.recv().unwrap()?;
-        trace!("received response to method call");
-
-        let return_object = cdtp::parse_response::<C::ReturnObject>(response)?;
-        Ok(return_object)
+        let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
+        cdtp::parse_response::<C::ReturnObject>(response_result?)
     }
 
     pub fn listen_to_browser_events(&self) -> Receiver<Event> {
@@ -175,7 +172,13 @@ impl Transport {
             for message in messages_rx {
                 match message {
                     Message::Response(response_to_browser_method_call) => {
-                        waiting_call_registry.resolve_call(response_to_browser_method_call);
+                        if waiting_call_registry
+                            .resolve_call(response_to_browser_method_call)
+                            .is_err()
+                        {
+                            warn!("The browser registered a call but then closed its receiving channel");
+                            break;
+                        }
                     }
 
                     Message::Event(browser_event) => match browser_event {
@@ -197,7 +200,10 @@ impl Transport {
                                     }
 
                                     Message::Response(resp) => {
-                                        waiting_call_registry.resolve_call(resp);
+                                        if waiting_call_registry.resolve_call(resp).is_err() {
+                                            warn!("The browser registered a call but then closed its receiving channel");
+                                            break;
+                                        }
                                     }
                                 }
                             } else {

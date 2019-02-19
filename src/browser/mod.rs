@@ -70,10 +70,12 @@ impl Browser {
         };
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
-        browser.handle_incoming_messages(incoming_events_rx);
+        browser.handle_browser_level_events(incoming_events_rx);
 
         // so we get events like 'targetCreated' and 'targetDestroyed'
         browser.call_method(SetDiscoverTargets { discover: true })?;
+
+        browser.wait_for_initial_tab()?;
 
         Ok(browser)
     }
@@ -141,7 +143,7 @@ impl Browser {
         )
     }
 
-    fn handle_incoming_messages(&self, events_rx: mpsc::Receiver<Event>) {
+    fn handle_browser_level_events(&self, events_rx: mpsc::Receiver<Event>) {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
 
@@ -152,9 +154,18 @@ impl Browser {
                         let target_info = ev.params.target_info;
                         trace!("Target created: {:?}", target_info);
                         if target_info.target_type.is_page() {
-                            let new_tab =
-                                Arc::new(Tab::new(target_info, Arc::clone(&transport)).unwrap());
-                            tabs.lock().unwrap().push(new_tab);
+                            match Tab::new(target_info, Arc::clone(&transport)) {
+                                Ok(new_tab) => {
+                                    tabs.lock().unwrap().push(Arc::new(new_tab));
+                                }
+                                Err(tab_creation_err) => {
+                                    error!(
+                                        "Failed to create a handle to new tab: {:?}",
+                                        tab_creation_err
+                                    );
+                                    break;
+                                }
+                            }
                         }
                     }
                     Event::TargetInfoChanged(ev) => {
