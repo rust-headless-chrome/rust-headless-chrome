@@ -227,7 +227,7 @@ impl Process {
                 None
             },
             WaitOptions {
-                timeout_ms: 200,
+                timeout_ms: 5000,
                 sleep_ms: 10,
             },
         );
