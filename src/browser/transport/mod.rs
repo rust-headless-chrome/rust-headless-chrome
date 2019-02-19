@@ -115,7 +115,6 @@ impl Transport {
             return Err(ConnectionClosed {}.into());
         }
 
-        //        let method_call = method.to_method_call();
         let message = &serde_json::to_string(&method_call).unwrap();
 
         let target_method = target::methods::SendMessageToTarget {
