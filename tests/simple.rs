@@ -1,5 +1,5 @@
 use headless_chrome::cdtp::page::ScreenshotFormat;
-use headless_chrome::{Browser, LaunchOptions, Tab};
+use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use log::*;
 use std::sync::Arc;
 
@@ -18,7 +18,7 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
-    let browser = Browser::new(LaunchOptions::default().unwrap()).unwrap();
+    let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();

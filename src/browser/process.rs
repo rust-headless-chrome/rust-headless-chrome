@@ -50,21 +50,27 @@ impl Drop for TemporaryProcess {
 
 /// Represents the way in which Chrome is run. By default it will search for a Chrome
 /// binary on the system, use an available port for debugging, and start in headless mode.
+#[derive(Builder)]
 pub struct LaunchOptions {
-    pub headless: bool,
-    pub port: Option<u16>,
-    pub path: std::path::PathBuf,
+    #[builder(default = "true")]
+    headless: bool,
+
+    #[builder(default = "None")]
+    port: Option<u16>,
+
+    #[builder(default = "self.default_executable()?")]
+    path: std::path::PathBuf,
 }
 
-impl LaunchOptions {
-    pub fn default_executable() -> Option<std::path::PathBuf> {
+impl LaunchOptionsBuilder {
+    fn default_executable(&self) -> Result<std::path::PathBuf, String> {
         // TODO Look at $BROWSER and if it points to a chrome binary
         // $BROWSER may also provide default arguments, which we may
         // or may not override later on.
 
         for app in &["google-chrome-stable", "chromium"] {
             if let Ok(path) = which(app) {
-                return Some(path);
+                return Ok(path);
             }
         }
 
@@ -74,7 +80,7 @@ impl LaunchOptions {
                 &["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"][..];
             for path in default_paths {
                 if std::path::Path::new(path).exists() {
-                    return Some(path.into());
+                    return Ok(path.into());
                 }
             }
         }
@@ -83,35 +89,12 @@ impl LaunchOptions {
         {
             if let Some(path) = get_chrome_path_from_registry() {
                 if path.exists() {
-                    return Some(path);
+                    return Ok(path);
                 }
             }
         }
 
-        None
-    }
-
-    pub fn default() -> Option<Self> {
-        Some(LaunchOptions {
-            headless: true,
-            port: None,
-            path: Self::default_executable()?,
-        })
-    }
-
-    pub fn headless(mut self, headless: bool) -> Self {
-        self.headless = headless;
-        self
-    }
-
-    pub fn port(mut self, port: Option<u16>) -> Self {
-        self.port = port;
-        self
-    }
-
-    pub fn path(mut self, path: std::path::PathBuf) -> Self {
-        self.path = path;
-        self
+        Err("Could not auto detect a chrome executable".to_string())
     }
 }
 
@@ -260,6 +243,7 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::thread;
 
     #[cfg(target_os = "linux")]
@@ -285,10 +269,10 @@ mod tests {
     #[test]
     #[cfg(target_os = "linux")]
     fn kills_process_on_drop() {
-        use super::LaunchOptions;
         env_logger::try_init().unwrap_or(());
         {
-            let _chrome = &mut super::Process::new(LaunchOptions::default().unwrap()).unwrap();
+            let _chrome =
+                &mut super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
         }
 
         let child_pids = current_child_pids();
@@ -305,7 +289,8 @@ mod tests {
             let handle = thread::spawn(|| {
                 // these sleeps are to make it more likely the chrome startups will overlap
                 std::thread::sleep(std::time::Duration::from_millis(10));
-                let chrome = super::Process::new(super::LaunchOptions::default().unwrap()).unwrap();
+                let chrome =
+                    super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 chrome.debug_ws_url.clone()
             });
@@ -324,9 +309,13 @@ mod tests {
         let mut handles = Vec::new();
 
         for _ in 0..10 {
-            let chrome =
-                super::Process::new(super::LaunchOptions::default().unwrap().headless(true))
-                    .unwrap();
+            let chrome = super::Process::new(
+                super::LaunchOptionsBuilder::default()
+                    .headless(true)
+                    .build()
+                    .unwrap(),
+            )
+            .unwrap();
             handles.push(chrome);
         }
     }
