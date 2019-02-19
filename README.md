@@ -31,10 +31,13 @@ assert!(browse_wikipedia().is_ok());
 
 For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples/real_world.rs`](examples/real_world.rs).
 
+If you're looking to do general browser testing or scraping (rather than anything specific to Chrome / DevTools), you're probably better off with [fantoccini](https://github.com/jonhoo/fantoccini) for now. It's a lot more feature-complete and stable.
+
 ## Missing features
-* Documentation
 * Frame / iframe support
 * `window.alert` handlers
+* Frankly, most of what's possible using the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot)
+
 ## Contributing
 Pull requests and issues are most welcome, even if they're just experience reports. If you find anything frustrating or confusing, let me know!
 

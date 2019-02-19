@@ -7,6 +7,8 @@ use log::*;
 use serde;
 use loom;
 
+use crate::cdtp::browser::methods::GetVersion;
+pub use crate::cdtp::browser::methods::VersionInformationReturnObject;
 use crate::cdtp::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::cdtp::{self, Event};
 
@@ -144,6 +146,24 @@ impl Browser {
         )
     }
 
+    /// Get version information
+    ///
+    /// ```rust
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// #
+    /// # use headless_chrome::{Browser, LaunchOptionsBuilder};
+    /// # let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
+    /// let version_info = browser.get_version()?;
+    /// println!("User-Agent is `{}`", version_info.user_agent);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get_version(&self) -> Result<VersionInformationReturnObject, Error> {
+        self.call_method(GetVersion {})
+    }
+
     fn handle_browser_level_events(&self, events_rx: mpsc::Receiver<Event>) {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
@@ -195,7 +215,7 @@ impl Browser {
     where
         C: cdtp::Method + serde::Serialize,
     {
-        self.transport.call_method(method)
+        self.transport.call_method_on_browser(method)
     }
 
     #[allow(dead_code)]

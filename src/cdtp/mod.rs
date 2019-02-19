@@ -5,6 +5,7 @@ use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+pub mod browser;
 pub mod dom;
 pub mod input;
 pub mod page;

@@ -16,7 +16,7 @@ use crate::cdtp::target;
 use crate::cdtp::Event;
 use crate::cdtp::Message;
 
-use crate::cdtp::{CallId, MethodCall};
+use crate::cdtp::CallId;
 use std::time::Duration;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
@@ -26,6 +26,11 @@ mod web_socket_connection;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SessionId(String);
+
+pub enum MethodDestination {
+    Target(SessionId),
+    Browser,
+}
 
 impl SessionId {
     fn as_str(&self) -> &str {
@@ -92,22 +97,43 @@ impl Transport {
         self.call_id_counter.fetch_add(1, Ordering::SeqCst)
     }
 
-    pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
+    pub fn call_method<C>(
+        &self,
+        method: C,
+        destination: MethodDestination,
+    ) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,
     {
+        // TODO: use get_mut to get exclusive access for entire block... maybe.
         if !self.open.load(Ordering::SeqCst) {
             return Err(ConnectionClosed {}.into());
         }
         let call_id = self.unique_call_id();
         let call = method.to_method_call(call_id);
-        let message_text = serde_json::to_string(&call).unwrap();
+
+        let message_text = serde_json::to_string(&call)?;
 
         let response_rx = self.waiting_call_registry.register_call(call.id);
-        if let Err(e) = self.web_socket_connection.send_message(&message_text) {
-            trace!("Can't send over websocket, deregistering {:?}", call.id);
-            self.waiting_call_registry.unregister_call(call.id);
-            return Err(e);
+
+        match destination {
+            MethodDestination::Target(session_id) => {
+                let target_method = target::methods::SendMessageToTarget {
+                    target_id: None,
+                    session_id: Some(session_id.as_str()),
+                    message: &message_text,
+                };
+                if let Err(e) = self.call_method_on_browser(target_method) {
+                    self.waiting_call_registry.unregister_call(call.id);
+                    return Err(e);
+                }
+            }
+            MethodDestination::Browser => {
+                if let Err(e) = self.web_socket_connection.send_message(&message_text) {
+                    self.waiting_call_registry.unregister_call(call.id);
+                    return Err(e);
+                }
+            }
         }
 
         let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
@@ -116,33 +142,21 @@ impl Transport {
 
     pub fn call_method_on_target<C>(
         &self,
-        session_id: &SessionId,
-        method_call: MethodCall<C>,
+        session_id: SessionId,
+        method: C,
     ) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,
     {
-        if !self.open.load(Ordering::SeqCst) {
-            return Err(ConnectionClosed {}.into());
-        }
+        // TODO: remove clone
+        self.call_method(method, MethodDestination::Target(session_id))
+    }
 
-        let message = &serde_json::to_string(&method_call).unwrap();
-
-        let target_method = target::methods::SendMessageToTarget {
-            target_id: None,
-            session_id: Some(session_id.as_str()),
-            message,
-        };
-
-        let response_rx = self.waiting_call_registry.register_call(method_call.id);
-
-        if let Err(e) = self.call_method(target_method) {
-            self.waiting_call_registry.unregister_call(method_call.id);
-            return Err(e);
-        };
-
-        let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
-        cdtp::parse_response::<C::ReturnObject>(response_result?)
+    pub fn call_method_on_browser<C>(&self, method: C) -> Result<C::ReturnObject, Error>
+    where
+        C: cdtp::Method + serde::Serialize,
+    {
+        self.call_method(method, MethodDestination::Browser)
     }
 
     pub fn listen_to_browser_events(&self) -> Receiver<Event> {

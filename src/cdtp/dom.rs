@@ -258,4 +258,34 @@ pub mod methods {
         const NAME: &'static str = "DOM.getContentQuads";
         type ReturnObject = GetContentQuadsReturnObject;
     }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetBoxModel<'a> {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub backend_node_id: Option<super::NodeId>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub object_id: Option<&'a str>,
+    }
+    #[derive(Debug, Deserialize)]
+    pub struct BoxModel {
+        pub content: [f64; 8],
+        pub padding: [f64; 8],
+        pub border: [f64; 8],
+        pub margin: [f64; 8],
+        pub width: u64,
+        pub height: u64,
+        // TODO shapeOutside
+    }
+    #[derive(Debug, Deserialize)]
+    pub struct GetBoxModelReturnObject {
+        pub model: BoxModel,
+    }
+    impl<'a> Method for GetBoxModel<'a> {
+        const NAME: &'static str = "DOM.getBoxModel";
+        type ReturnObject = GetBoxModelReturnObject;
+    }
+
 }
