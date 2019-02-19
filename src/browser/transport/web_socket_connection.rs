@@ -41,7 +41,7 @@ impl WebSocketConnection {
             match ws_message {
                 Err(error) => match error {
                     WebSocketError::NoDataAvailable => {
-                        warn!("{}", err);
+                        warn!("{}", error);
                         break;
                     }
                     WebSocketError::IoError(err) => {
