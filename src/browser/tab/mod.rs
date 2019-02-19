@@ -301,7 +301,6 @@ impl<'a> Tab {
             y: point.y,
             ..Default::default()
         })?;
-        std::thread::sleep(std::time::Duration::from_millis(100));
         self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,
@@ -309,7 +308,6 @@ impl<'a> Tab {
             button: Some("left"),
             click_count: Some(1),
         })?;
-        std::thread::sleep(std::time::Duration::from_millis(100));
         self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mouseReleased",
             x: point.x,
@@ -317,7 +315,6 @@ impl<'a> Tab {
             button: Some("left"),
             click_count: Some(1),
         })?;
-        std::thread::sleep(std::time::Duration::from_millis(100));
         Ok(self)
     }
 
