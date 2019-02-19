@@ -115,7 +115,7 @@ impl LaunchOptions {
     }
 }
 
-const DISABLE_SERVICES_FLAGS: [&'static str; 9] = [
+const DISABLE_SERVICES_FLAGS: [&str; 9] = [
     // Disable built-in Google Translate service
     "--disable-translate",
     // Disable all chrome extensions entirely
