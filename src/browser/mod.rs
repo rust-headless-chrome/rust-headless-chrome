@@ -9,8 +9,8 @@ use serde;
 use crate::cdtp::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::cdtp::{self, Event};
 
-pub use process::LaunchOptions;
-use process::Process;
+pub use process::LaunchOptionsBuilder;
+use process::{LaunchOptions, Process};
 pub use tab::Tab;
 use transport::Transport;
 use waiting_helpers::{wait_for, WaitOptions};
@@ -33,8 +33,8 @@ mod waiting_helpers;
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
 /// #
-/// use headless_chrome::{Browser, LaunchOptions};
-/// let browser = Browser::new(LaunchOptions::default().unwrap())?;
+/// use headless_chrome::{Browser, LaunchOptionsBuilder};
+/// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
 /// let first_tab = browser.wait_for_initial_tab()?;
 /// assert_eq!("about:blank", first_tab.get_url());
 /// #
@@ -103,8 +103,8 @@ impl Browser {
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
     /// #
-    /// # use headless_chrome::{Browser, LaunchOptions};
-    /// # let browser = Browser::new(LaunchOptions::default().unwrap())?;
+    /// # use headless_chrome::{Browser, LaunchOptionsBuilder};
+    /// # let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
     /// let first_tab = browser.wait_for_initial_tab()?;
     /// let new_tab = browser.new_tab()?;
     /// let num_tabs = browser.get_tabs().lock().unwrap().len();
