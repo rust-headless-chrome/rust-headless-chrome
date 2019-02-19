@@ -14,6 +14,52 @@ pub struct ElementQuad {
     pub bottom_right: Point,
 }
 
+impl ElementQuad {
+    pub fn from_raw_points(raw_quad: &[f64; 8]) -> Self {
+        ElementQuad {
+            top_left: Point {
+                x: raw_quad[0],
+                y: raw_quad[1],
+            },
+            top_right: Point {
+                x: raw_quad[2],
+                y: raw_quad[3],
+            },
+            bottom_right: Point {
+                x: raw_quad[4],
+                y: raw_quad[5],
+            },
+            bottom_left: Point {
+                x: raw_quad[6],
+                y: raw_quad[7],
+            },
+        }
+    }
+
+    pub fn height(&self) -> f64 {
+        self.bottom_left.y - self.top_left.y
+    }
+
+    pub fn width(&self) -> f64 {
+        self.top_right.x - self.top_left.x
+    }
+
+    /// The width divided by the height
+    pub fn aspect_ratio(&self) -> f64 {
+        self.width() / self.height()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BoxModel {
+    pub content: ElementQuad,
+    pub padding: ElementQuad,
+    pub border: ElementQuad,
+    pub margin: ElementQuad,
+    pub width: u64,
+    pub height: u64,
+}
+
 pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
@@ -96,6 +142,26 @@ impl<'a> Element<'a> {
         Ok(description.attributes)
     }
 
+    /// Get boxes for this element
+    pub fn get_box_model(&self) -> Result<BoxModel, Error> {
+        let model = self
+            .parent
+            .call_method(dom::methods::GetBoxModel {
+                node_id: None,
+                backend_node_id: Some(self.backend_node_id),
+                object_id: None,
+            })?
+            .model;
+        Ok(BoxModel {
+            content: ElementQuad::from_raw_points(&model.content),
+            padding: ElementQuad::from_raw_points(&model.padding),
+            border: ElementQuad::from_raw_points(&model.border),
+            margin: ElementQuad::from_raw_points(&model.margin),
+            width: model.width,
+            height: model.height,
+        })
+    }
+
     pub fn get_midpoint(&self) -> Result<Point, Error> {
         let return_object = self.parent.call_method(dom::methods::GetContentQuads {
             node_id: None,
@@ -103,25 +169,7 @@ impl<'a> Element<'a> {
             object_id: None,
         })?;
         let raw_quad = return_object.quads.first().unwrap();
-
-        let input_quad = ElementQuad {
-            top_left: Point {
-                x: raw_quad[0],
-                y: raw_quad[1],
-            },
-            top_right: Point {
-                x: raw_quad[2],
-                y: raw_quad[3],
-            },
-            bottom_right: Point {
-                x: raw_quad[4],
-                y: raw_quad[5],
-            },
-            bottom_left: Point {
-                x: raw_quad[6],
-                y: raw_quad[7],
-            },
-        };
+        let input_quad = ElementQuad::from_raw_points(&raw_quad);
 
         Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
     }
