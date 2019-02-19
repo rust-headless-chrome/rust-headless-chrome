@@ -35,9 +35,11 @@ fn simple() -> Result<(), failure::Error> {
 #[test]
 fn actions_on_tab_wont_hang_after_browser_drops() -> Result<(), failure::Error> {
     logging::enable_logging();
-    let (_, browser, tab) = dumb_server(include_str!("simple.html"));
-    drop(browser);
-    assert_eq!(true, tab.find_element("div#foobar").is_err());
+    for _ in 0..10 {
+        let (_, browser, tab) = dumb_server(include_str!("simple.html"));
+        drop(browser);
+        assert_eq!(true, tab.find_element("div#foobar").is_err());
+    }
     Ok(())
 }
 

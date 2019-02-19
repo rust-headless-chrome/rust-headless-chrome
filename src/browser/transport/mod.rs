@@ -15,6 +15,7 @@ use crate::cdtp::target;
 use crate::cdtp::Event;
 use crate::cdtp::Message;
 
+use crate::cdtp::MethodCall;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 
@@ -92,12 +93,11 @@ impl Transport {
         let message_text = serde_json::to_string(&call).unwrap();
 
         let response_rx = self.waiting_call_registry.register_call(call.id);
-        self.web_socket_connection
-            .send_message(&message_text)
-            .map_err(|e| {
-                self.waiting_call_registry.unregister_call(call.id);
-                e
-            })?;
+        if let Err(e) = self.web_socket_connection.send_message(&message_text) {
+            trace!("Can't send over websocket, deregistering {:?}", call.id);
+            self.waiting_call_registry.unregister_call(call.id);
+            return Err(e);
+        }
 
         let response = response_rx.recv().unwrap()?;
         cdtp::parse_response::<C::ReturnObject>(response)
@@ -106,7 +106,7 @@ impl Transport {
     pub fn call_method_on_target<C>(
         &self,
         session_id: &SessionId,
-        method: C,
+        method_call: MethodCall<C>,
     ) -> Result<C::ReturnObject, Error>
     where
         C: cdtp::Method + serde::Serialize,
@@ -115,7 +115,7 @@ impl Transport {
             return Err(ConnectionClosed {}.into());
         }
 
-        let method_call = method.to_method_call();
+        //        let method_call = method.to_method_call();
         let message = &serde_json::to_string(&method_call).unwrap();
 
         let target_method = target::methods::SendMessageToTarget {
@@ -126,9 +126,14 @@ impl Transport {
 
         let response_rx = self.waiting_call_registry.register_call(method_call.id);
 
-        self.call_method(target_method)?;
+        if let Err(e) = self.call_method(target_method) {
+            self.waiting_call_registry.unregister_call(method_call.id);
+            return Err(e);
+        };
 
+        trace!("waiting for response to method call");
         let response = response_rx.recv().unwrap()?;
+        trace!("received response to method call");
 
         let return_object = cdtp::parse_response::<C::ReturnObject>(response)?;
         Ok(return_object)
@@ -178,7 +183,8 @@ impl Transport {
                                             .unwrap()
                                             .get(&ListenerId::SessionId(session_id))
                                         {
-                                            tx.send(target_event).unwrap();
+                                            tx.send(target_event)
+                                                .expect("Couldn't send event to listener");
                                         }
                                     }
 

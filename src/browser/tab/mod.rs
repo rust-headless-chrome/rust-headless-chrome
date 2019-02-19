@@ -124,9 +124,10 @@ impl<'a> Tab {
     where
         C: cdtp::Method + serde::Serialize + std::fmt::Debug,
     {
-        trace!("Calling method: {:?}", method);
+        let method_call = method.to_method_call();
+        trace!("Calling method: {:?}", method_call);
         self.transport
-            .call_method_on_target(&self.session_id, method)
+            .call_method_on_target(&self.session_id, method_call)
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {

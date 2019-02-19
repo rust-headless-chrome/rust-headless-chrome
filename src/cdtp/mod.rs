@@ -13,7 +13,7 @@ pub mod target;
 
 pub type CallId = u16;
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct MethodCall<T> {
     #[serde(rename = "method")]
     method_name: &'static str,
