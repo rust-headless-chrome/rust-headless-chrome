@@ -318,14 +318,35 @@ impl<'a> Tab {
 
     /// Capture a screenshot of the current page.
     ///
+    /// If `clip` is given, the screenshot is taken of the specified region only.
+    /// `Element::get_box_model()` can be used to get regions of certains elements
+    /// on the page; there is also `Element::capture_screenhot()` as a shorthand.
+    ///
     /// If `from_surface` is true, the screenshot is taken from the surface rather than
     /// the view.
+    ///
+    /// ```rust,no_run
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// #
+    /// use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+    /// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
+    /// let tab = browser.wait_for_initial_tab()?;
+    /// let viewport = tab.navigate_to("https://en.wikipedia.org/wiki/WebKit")?
+    ///     .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
+    ///     .get_box_model()?
+    ///     .margin_viewport();
+    ///  let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, Some(viewport), true)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn capture_screenshot(
         &self,
         format: page::ScreenshotFormat,
+        clip: Option<page::Viewport>,
         from_surface: bool,
     ) -> Result<Vec<u8>, Error> {
-        // TODO: Implement `clip`-argument
         let (format, quality) = match format {
             page::ScreenshotFormat::JPEG(quality) => {
                 (page::InternalScreenshotFormat::JPEG, quality)
@@ -335,6 +356,7 @@ impl<'a> Tab {
         let data = self
             .call_method(page::methods::CaptureScreenshot {
                 format,
+                clip,
                 quality,
                 from_surface,
             })?
