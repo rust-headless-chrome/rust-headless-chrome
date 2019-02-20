@@ -1,13 +1,13 @@
-use std::borrow::BorrowMut;
-use std::io::{BufRead, BufReader};
-use std::net;
-use std::process::{Child, Command, Stdio};
-
 use failure::{Error, Fail};
 use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
+use std::borrow::BorrowMut;
+use std::ffi::OsStr;
+use std::io::{BufRead, BufReader};
+use std::net;
+use std::process::{Child, Command, Stdio};
 use which::which;
 
 #[cfg(windows)]
@@ -51,18 +51,27 @@ impl Drop for TemporaryProcess {
 /// Represents the way in which Chrome is run. By default it will search for a Chrome
 /// binary on the system, use an available port for debugging, and start in headless mode.
 #[derive(Builder)]
-pub struct LaunchOptions {
+pub struct LaunchOptions<'a> {
+    /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
     headless: bool,
 
+    /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
     port: Option<u16>,
 
+    /// Path for Chrome or Chromium.
+    ///
+    /// If unspecified, the create will try to automatically detect a suitable binary.
     #[builder(default = "self.default_executable()?")]
     path: std::path::PathBuf,
+
+    /// A list of Chrome extensions to load.
+    #[builder(default)]
+    extensions: Vec<&'a OsStr>,
 }
 
-impl LaunchOptionsBuilder {
+impl<'a> LaunchOptionsBuilder<'a> {
     fn default_executable(&self) -> Result<std::path::PathBuf, String> {
         // TODO Look at $BROWSER and if it points to a chrome binary
         // $BROWSER may also provide default arguments, which we may
@@ -169,6 +178,14 @@ impl Process {
         if launch_options.headless {
             args.extend(&["--headless"]);
         }
+
+        let extension_args: Vec<String> = launch_options
+            .extensions
+            .iter()
+            .map(|e| format!("--load-extension={}", e.to_str().unwrap()))
+            .collect();
+
+        args.extend(extension_args.iter().map(|s| s.as_str()));
 
         let process = TemporaryProcess(
             Command::new(&launch_options.path)
