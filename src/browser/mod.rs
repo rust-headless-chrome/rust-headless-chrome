@@ -4,8 +4,8 @@ use std::sync::Mutex;
 
 use failure::Error;
 use log::*;
+
 use serde;
-use loom;
 
 use crate::cdtp::browser::methods::GetVersion;
 pub use crate::cdtp::browser::methods::VersionInformationReturnObject;
@@ -14,6 +14,7 @@ use crate::cdtp::{self, Event};
 
 pub use process::LaunchOptionsBuilder;
 use process::{LaunchOptions, Process};
+use std::time::Duration;
 pub use tab::Tab;
 use transport::Transport;
 use waiting_helpers::{wait_for, WaitOptions};
@@ -64,6 +65,8 @@ impl Browser {
 
         let transport = Arc::new(Transport::new(_process.debug_ws_url.clone())?);
 
+        trace!("created transport");
+
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let browser = Browser {
@@ -74,8 +77,10 @@ impl Browser {
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
         browser.handle_browser_level_events(incoming_events_rx);
+        trace!("created browser event listener");
 
         // so we get events like 'targetCreated' and 'targetDestroyed'
+        trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
 
         browser.wait_for_initial_tab()?;
@@ -168,43 +173,49 @@ impl Browser {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
 
-        loom::thread::spawn(move || {
-            for event in events_rx {
-                match event {
-                    Event::TargetCreated(ev) => {
-                        let target_info = ev.params.target_info;
-                        trace!("Target created: {:?}", target_info);
-                        if target_info.target_type.is_page() {
-                            match Tab::new(target_info, Arc::clone(&transport)) {
-                                Ok(new_tab) => {
-                                    tabs.lock().unwrap().push(Arc::new(new_tab));
-                                }
-                                Err(tab_creation_err) => {
-                                    error!(
-                                        "Failed to create a handle to new tab: {:?}",
-                                        tab_creation_err
-                                    );
-                                    break;
+        std::thread::spawn(move || {
+            trace!("Starting browser's event handling loop");
+            loop {
+                match events_rx.recv_timeout(Duration::from_millis(20_000)) {
+                    Err(_) => {
+                        break;
+                    }
+                    Ok(event) => {
+                        match event {
+                            Event::TargetCreated(ev) => {
+                                let target_info = ev.params.target_info;
+                                trace!("Target created: {:?}", target_info);
+                                if target_info.target_type.is_page() {
+                                    match Tab::new(target_info, Arc::clone(&transport)) {
+                                        Ok(new_tab) => {
+                                            tabs.lock().unwrap().push(Arc::new(new_tab));
+                                        }
+                                        Err(_tab_creation_err) => {
+                                            error!("Failed to create a handle to new tab");
+                                            break;
+                                        }
+                                    }
                                 }
                             }
+                            Event::TargetInfoChanged(ev) => {
+                                let target_info = ev.params.target_info;
+                                trace!("Target info changed: {:?}", target_info);
+                                if target_info.target_type.is_page() {
+                                    let locked_tabs = tabs.lock().unwrap();
+                                    let updated_tab = locked_tabs
+                                        .iter()
+                                        .find(|tab| *tab.get_target_id() == target_info.target_id)
+                                        .expect("got TargetInfoChanged event about a tab not in our list");
+                                    updated_tab.update_target_info(target_info);
+                                }
+                            }
+                            Event::TargetDestroyed(_) => {}
+                            _ => {}
                         }
                     }
-                    Event::TargetInfoChanged(ev) => {
-                        let target_info = ev.params.target_info;
-                        trace!("Target info changed: {:?}", target_info);
-                        if target_info.target_type.is_page() {
-                            let locked_tabs = tabs.lock().unwrap();
-                            let updated_tab = locked_tabs
-                                .iter()
-                                .find(|tab| *tab.get_target_id() == target_info.target_id)
-                                .expect("got TargetInfoChanged event about a tab not in our list");
-                            updated_tab.update_target_info(target_info);
-                        }
-                    }
-                    Event::TargetDestroyed(_) => {}
-                    _ => {}
                 }
             }
+            trace!("Finished browser's event handling loop");
         });
     }
 

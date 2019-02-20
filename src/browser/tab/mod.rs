@@ -1,7 +1,7 @@
 use failure::{Error, Fail};
 use log::*;
+
 use serde;
-use loom;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -101,7 +101,7 @@ impl<'a> Tab {
             .listen_to_target_events(self.session_id.clone());
         let navigating = Arc::clone(&self.navigating);
 
-        loom::thread::spawn(move || {
+        std::thread::spawn(move || {
             for event in incoming_events_rx {
                 trace!("{:?}", &event);
                 if let Event::LifecycleEvent(lifecycle_event) = event {

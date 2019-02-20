@@ -95,6 +95,7 @@ pub enum Event {
 pub enum Message {
     Event(Event),
     Response(Response),
+    ConnectionShutdown,
 }
 
 #[cfg(test)]

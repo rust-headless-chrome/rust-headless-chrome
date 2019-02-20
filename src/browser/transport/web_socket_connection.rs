@@ -2,7 +2,7 @@ use std::sync::mpsc;
 
 use failure::Error;
 use log::*;
-use loom;
+
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
@@ -23,7 +23,7 @@ impl WebSocketConnection {
         let connection = WebSocketConnection::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
-        loom::thread::spawn(move || {
+        std::thread::spawn(move || {
             trace!("Starting msg dispatching loop");
             Self::dispatch_incoming_messages(websocket_receiver, target_messages_tx);
             trace!("Quit loop msg dispatching loop");
@@ -32,6 +32,13 @@ impl WebSocketConnection {
         Ok(WebSocketConnection {
             sender: Mutex::new(sender),
         })
+    }
+
+    pub fn shutdown(&self) {
+        trace!("Shutting down WebSocket connection");
+        if self.sender.lock().unwrap().shutdown_all().is_err() {
+            warn!("Couldn't shut down WS connection");
+        }
     }
 
     fn dispatch_incoming_messages(
@@ -68,6 +75,11 @@ impl WebSocketConnection {
                     }
                 }
             }
+        }
+
+        trace!("Sending shutdown message to message handling loop");
+        if messages_tx.send(cdtp::Message::ConnectionShutdown).is_err() {
+            warn!("Couldn't send message to transport loop telling it to shut down")
         }
     }
 

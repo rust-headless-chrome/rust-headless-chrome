@@ -9,7 +9,7 @@
 use headless_chrome::{Browser, LaunchOptionsBuilder};
 
 fn browse_wikipedia() -> Result<(), failure::Error> {
-    let options = LaunchOptionsBuilder::default().unwrap().expect("Failed to find chrome");
+    let options = LaunchOptionsBuilder::default().build().expect("Failed to find chrome");
     let browser = Browser::new(options)?;
 
     let tab = browser.wait_for_initial_tab()?;
