@@ -67,6 +67,9 @@ pub struct LaunchOptions<'a> {
     path: std::path::PathBuf,
 
     /// A list of Chrome extensions to load.
+    ///
+    /// An extension should be a path to a folder containing the extension code.
+    /// CRX files cannot be used directly and must be first extracted.
     #[builder(default)]
     extensions: Vec<&'a OsStr>,
 }
