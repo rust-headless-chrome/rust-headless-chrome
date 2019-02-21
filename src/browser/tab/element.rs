@@ -3,6 +3,7 @@ use log::*;
 
 use super::point::Point;
 use crate::cdtp::dom;
+use crate::cdtp::page;
 use crate::cdtp::runtime;
 use std::collections::HashMap;
 
@@ -58,6 +59,52 @@ pub struct BoxModel {
     pub margin: ElementQuad,
     pub width: u64,
     pub height: u64,
+}
+
+impl BoxModel {
+    /// Create a `page::Viewport` equal to the content-box, using a scale of 1.0
+    pub fn content_viewport(&self) -> page::Viewport {
+        page::Viewport {
+            x: self.content.top_left.x,
+            y: self.content.top_left.y,
+            width: self.content.width(),
+            height: self.content.height(),
+            scale: 1.0,
+        }
+    }
+
+    /// Create a `page::Viewport` equal to the padding-box, using a scale of 1.0
+    pub fn padding_viewport(&self) -> page::Viewport {
+        page::Viewport {
+            x: self.padding.top_left.x,
+            y: self.padding.top_left.y,
+            width: self.padding.width(),
+            height: self.padding.height(),
+            scale: 1.0,
+        }
+    }
+
+    /// Create a `page::Viewport` equal to the border-box, using a scale of 1.0
+    pub fn border_viewport(&self) -> page::Viewport {
+        page::Viewport {
+            x: self.border.top_left.x,
+            y: self.border.top_left.y,
+            width: self.border.width(),
+            height: self.border.height(),
+            scale: 1.0,
+        }
+    }
+
+    /// Create a `page::Viewport` equal to the margin-box, using a scale of 1.0
+    pub fn margin_viewport(&self) -> page::Viewport {
+        page::Viewport {
+            x: self.margin.top_left.x,
+            y: self.margin.top_left.y,
+            width: self.margin.width(),
+            height: self.margin.height(),
+            scale: 1.0,
+        }
+    }
 }
 
 pub struct Element<'a> {
@@ -125,6 +172,29 @@ impl<'a> Element<'a> {
             })?
             .node;
         Ok(node)
+    }
+
+    /// Capture a screenshot of this element.
+    ///
+    /// The screenshot is taken from the surface using this element's content-box.
+    ///
+    /// ```rust,no_run
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// #
+    /// use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+    /// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
+    /// let png_data = browser.wait_for_initial_tab()?
+    ///     .navigate_to("https://en.wikipedia.org/wiki/WebKit")?
+    ///     .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
+    ///     .capture_screenshot(ScreenshotFormat::PNG)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn capture_screenshot(&self, format: page::ScreenshotFormat) -> Result<Vec<u8>, Error> {
+        self.parent
+            .capture_screenshot(format, Some(self.get_box_model()?.content_viewport()), true)
     }
 
     pub fn set_input_files(&self, file_paths: &[&str]) -> Result<&Self, Error> {
