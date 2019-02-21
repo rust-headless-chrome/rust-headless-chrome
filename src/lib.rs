@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "nightly", feature(external_doc))]
+#![deny(clippy::all)]
 
 extern crate log;
 
