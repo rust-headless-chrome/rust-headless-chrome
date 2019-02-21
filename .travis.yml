@@ -15,5 +15,5 @@ addons:
 
 script:
   - cargo fmt --all -- --check
-  - cargo clippy --tests
+  - cargo clippy --all --tests --examples
   - env RUST_BACKTRACE=1 RUST_LOG=headless_chrome=trace cargo test -- --nocapture
