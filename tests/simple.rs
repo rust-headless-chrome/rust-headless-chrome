@@ -28,7 +28,7 @@ fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
 #[test]
 fn simple() -> Result<(), failure::Error> {
     logging::enable_logging();
-    let (_server, _browser, tab) = dumb_server(include_str!("simple.html"));
+    let (_, _, tab) = dumb_server(include_str!("simple.html"));
     tab.wait_for_element("div#foobar")?;
     Ok(())
 }
@@ -47,16 +47,13 @@ fn actions_on_tab_wont_hang_after_browser_drops() -> Result<(), failure::Error> 
         });
         let _element = tab.find_element("div#foobar");
     }
-
-    // We terminate
-    assert_eq!(true, true);
     Ok(())
 }
 
 #[test]
 fn form_interaction() -> Result<(), failure::Error> {
     logging::enable_logging();
-    let (_server, _browser, tab) = dumb_server(include_str!("form.html"));
+    let (_, _, tab) = dumb_server(include_str!("form.html"));
     tab.wait_for_element("input#target")?
         .type_into("mothership")?;
     tab.wait_for_element("button")?.click()?;
@@ -73,26 +70,65 @@ fn form_interaction() -> Result<(), failure::Error> {
     Ok(())
 }
 
-#[test]
-fn capture_screenshot() -> Result<(), failure::Error> {
-    logging::enable_logging();
-    let (_, _browser, tab) = dumb_server(include_str!("simple.html"));
-    tab.wait_for_element("div#foobar")?;
-
-    let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, true)?;
-    let decoder = png::Decoder::new(&png_data[..]);
+fn decode_png(i: &[u8]) -> Result<Vec<u8>, failure::Error> {
+    let decoder = png::Decoder::new(&i[..]);
     let (info, mut reader) = decoder.read_info()?;
     let mut buf = vec![0; info.buffer_size()];
     reader.next_frame(&mut buf)?;
-    // Check that the top-left pixel has the background color set in simple.html
-    assert_eq!(buf[0..4], [0x11, 0x22, 0x33, 0xff][..]);
+    Ok(buf)
+}
 
-    let jpg_data = tab.capture_screenshot(ScreenshotFormat::JPEG(Some(100)), true)?;
+#[test]
+fn capture_screenshot_png() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, _, tab) = dumb_server(include_str!("simple.html"));
+    tab.wait_for_element("div#foobar")?;
+    // Check that the top-left pixel on the page has the background color set in simple.html
+    let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, None, true)?;
+    let buf = decode_png(&png_data[..])?;
+    assert_eq!(buf[0..4], [0x11, 0x22, 0x33, 0xff][..]);
+    Ok(())
+}
+
+#[test]
+fn capture_screenshot_element() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, _, tab) = dumb_server(include_str!("simple.html"));
+    // Check that the screenshot of the div's content-box has no other color than the one set in simple.html
+    let png_data = tab
+        .wait_for_element("div#foobar")?
+        .capture_screenshot(ScreenshotFormat::PNG)?;
+    let buf = decode_png(&png_data[..])?;
+    for i in 0..buf.len() / 4 {
+        assert_eq!(buf[i * 4..(i + 1) * 4], [0x33, 0x22, 0x11, 0xff][..]);
+    }
+    Ok(())
+}
+
+#[test]
+fn capture_screenshot_element_box() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, _, tab) = dumb_server(include_str!("simple.html"));
+    // Check that the top-left pixel of the div's border-box has the border's color set in simple.html
+    let pox = tab.wait_for_element("div#foobar")?.get_box_model()?;
+    let png_data =
+        tab.capture_screenshot(ScreenshotFormat::PNG, Some(pox.border_viewport()), true)?;
+    let buf = decode_png(&png_data[..])?;
+    assert_eq!(buf[0..4], [0x22, 0x11, 0x33, 0xff][..]);
+    Ok(())
+}
+
+#[test]
+fn capture_screenshot_jpeg() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, _, tab) = dumb_server(include_str!("simple.html"));
+    tab.wait_until_navigated()?;
+    let jpg_data = tab.capture_screenshot(ScreenshotFormat::JPEG(Some(100)), None, true)?;
     let mut decoder = jpeg_decoder::Decoder::new(&jpg_data[..]);
     let buf = decoder.decode().unwrap();
     // Check that the total compression error is small-ish compared to the expected
     // pixel color
-    let err = buf[0..3]
+    let err = buf
         .iter()
         .zip(&[0x11, 0x22, 0x33])
         .map(|(b, e)| (i32::from(*b) - e).pow(2) as u32)
@@ -104,11 +140,11 @@ fn capture_screenshot() -> Result<(), failure::Error> {
 #[test]
 fn get_box_model() -> Result<(), failure::Error> {
     logging::enable_logging();
-    let (_, _browser, tab) = dumb_server(include_str!("simple.html"));
+    let (_, _, tab) = dumb_server(include_str!("simple.html"));
     let pox = tab.wait_for_element("div#foobar")?.get_box_model()?;
     // Check that the div has exactly the dimensions we set in simple.html
-    assert_eq!(pox.width, 100);
-    assert_eq!(pox.height, 20);
+    assert_eq!(pox.width, 3+100+3);
+    assert_eq!(pox.height, 3+20+3);
     Ok(())
 }
 
@@ -129,7 +165,7 @@ fn reload() -> Result<(), failure::Error> {
         r.respond(response)
     };
     let server = server::Server::new(responder);
-    let (_browser, tab) = dumb_client(&server);
+    let (_, tab) = dumb_client(&server);
     assert!(tab
         .wait_for_element("div#counter")?
         .get_description()?
