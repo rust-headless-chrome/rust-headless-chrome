@@ -5,7 +5,7 @@ extern crate log;
 #[macro_use]
 extern crate derive_builder;
 
-mod browser;
+pub mod browser;
 pub mod cdtp;
 
 pub use browser::{Browser, LaunchOptionsBuilder, Tab};

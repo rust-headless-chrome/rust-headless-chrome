@@ -20,7 +20,7 @@ use transport::Transport;
 use waiting_helpers::{wait_for, WaitOptions};
 
 mod process;
-mod tab;
+pub mod tab;
 mod transport;
 mod waiting_helpers;
 
