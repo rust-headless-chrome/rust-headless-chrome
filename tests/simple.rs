@@ -77,7 +77,7 @@ fn form_interaction() -> Result<(), failure::Error> {
 fn capture_screenshot() -> Result<(), failure::Error> {
     logging::enable_logging();
     let (_, _browser, tab) = dumb_server(include_str!("simple.html"));
-    tab.wait_until_navigated()?;
+    tab.wait_for_element("div#foobar")?;
 
     let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, true)?;
     let decoder = png::Decoder::new(&png_data[..]);
