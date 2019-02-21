@@ -23,7 +23,7 @@ use super::waiting_helpers::{wait_for, WaitOptions};
 use element::Element;
 use point::Point;
 
-mod element;
+pub mod element;
 mod keys;
 mod point;
 
