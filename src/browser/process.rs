@@ -70,6 +70,9 @@ pub struct LaunchOptions<'a> {
     ///
     /// An extension should be a path to a folder containing the extension code.
     /// CRX files cannot be used directly and must be first extracted.
+    ///
+    /// Note that Chrome does not support loading extensions in headless-mode.
+    /// See https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c5
     #[builder(default)]
     extensions: Vec<&'a OsStr>,
 }
