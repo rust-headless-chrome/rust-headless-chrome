@@ -20,7 +20,7 @@ impl WebSocketConnection {
         ws_url: &str,
         target_messages_tx: mpsc::Sender<cdtp::Message>,
     ) -> Result<Self, Error> {
-        let connection = WebSocketConnection::websocket_connection(&ws_url)?;
+        let connection = Self::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
         std::thread::spawn(move || {
@@ -29,7 +29,7 @@ impl WebSocketConnection {
             trace!("Quit loop msg dispatching loop");
         });
 
-        Ok(WebSocketConnection {
+        Ok(Self {
             sender: Mutex::new(sender),
         })
     }

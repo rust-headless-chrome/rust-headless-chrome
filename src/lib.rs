@@ -1,5 +1,11 @@
 #![cfg_attr(feature = "nightly", feature(external_doc))]
-#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![allow(
+    clippy::stutter,
+    clippy::doc_markdown,
+    clippy::default_trait_access,
+    clippy::needless_pass_by_value
+)]
 
 extern crate log;
 

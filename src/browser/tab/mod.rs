@@ -65,7 +65,7 @@ impl<'a> Tab {
 
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
-        let tab = Tab {
+        let tab = Self {
             target_id,
             transport,
             session_id,
@@ -104,7 +104,7 @@ impl<'a> Tab {
         std::thread::spawn(move || {
             for event in incoming_events_rx {
                 trace!("{:?}", &event);
-                if let Event::LifecycleEvent(lifecycle_event) = event {
+                if let Event::Lifecycle(lifecycle_event) = event {
                     //                        if lifecycle_event.params.frame_id == main_frame_id {
                     match lifecycle_event.params.name.as_ref() {
                         "networkAlmostIdle" => {

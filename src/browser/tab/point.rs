@@ -5,10 +5,10 @@ pub struct Point {
 }
 
 impl std::ops::Add<Point> for Point {
-    type Output = Point;
+    type Output = Self;
 
-    fn add(self, other: Point) -> Point {
-        Point {
+    fn add(self, other: Self) -> Self {
+        Self {
             x: self.x + other.x,
             y: self.y + other.y,
         }
@@ -16,10 +16,10 @@ impl std::ops::Add<Point> for Point {
 }
 
 impl std::ops::Sub<Point> for Point {
-    type Output = Point;
+    type Output = Self;
 
-    fn sub(self, other: Point) -> Point {
-        Point {
+    fn sub(self, other: Self) -> Self {
+        Self {
             x: self.x - other.x,
             y: self.y - other.y,
         }
@@ -27,10 +27,10 @@ impl std::ops::Sub<Point> for Point {
 }
 
 impl std::ops::Div<f64> for Point {
-    type Output = Point;
+    type Output = Self;
 
-    fn div(self, other: f64) -> Point {
-        Point {
+    fn div(self, other: f64) -> Self {
+        Self {
             x: self.x / other,
             y: self.y / other,
         }

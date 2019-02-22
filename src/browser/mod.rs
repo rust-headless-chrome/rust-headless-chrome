@@ -61,16 +61,16 @@ impl Browser {
     /// The browser will have its user data (aka "profile") directory stored in a temporary directory.
     /// The browser process will be killed when this struct is dropped.
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
-        let _process = Process::new(launch_options)?;
+        let process = Process::new(launch_options)?;
 
-        let transport = Arc::new(Transport::new(_process.debug_ws_url.clone())?);
+        let transport = Arc::new(Transport::new(process.debug_ws_url.clone())?);
 
         trace!("created transport");
 
         let tabs = Arc::new(Mutex::new(vec![]));
 
-        let browser = Browser {
-            _process,
+        let browser = Self {
+            _process: process,
             tabs,
             transport,
         };
@@ -209,7 +209,9 @@ impl Browser {
                                     updated_tab.update_target_info(target_info);
                                 }
                             }
-                            Event::TargetDestroyed(_) => {}
+                            Event::TargetDestroyed(ev) => {
+                                trace!("Target destroyed: {:?}", ev.params.target_id);
+                            }
                             _ => {}
                         }
                     }

@@ -114,7 +114,7 @@ impl Process {
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         info!("Trying to start Chrome");
 
-        let mut process = Process::start_process(&launch_options)?;
+        let mut process = Self::start_process(&launch_options)?;
 
         info!("Started Chrome. PID: {}", process.0.id());
 
@@ -125,7 +125,7 @@ impl Process {
                 return Err(ChromeLaunchError::NoAvailablePorts {}.into());
             }
 
-            match Process::ws_url_from_output(process.0.borrow_mut()) {
+            match Self::ws_url_from_output(process.0.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
                     break;
@@ -133,7 +133,7 @@ impl Process {
                 Err(error) => {
                     trace!("Problem getting WebSocket URL from Chrome: {}", error);
                     if launch_options.port.is_none() {
-                        process = Process::start_process(&launch_options)?;
+                        process = Self::start_process(&launch_options)?;
                     } else {
                         return Err(error);
                     }
@@ -147,7 +147,7 @@ impl Process {
             attempts += 1;
         }
 
-        Ok(Process {
+        Ok(Self {
             _child_process: process,
             debug_ws_url: url,
         })

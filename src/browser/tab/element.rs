@@ -17,7 +17,7 @@ pub struct ElementQuad {
 
 impl ElementQuad {
     pub fn from_raw_points(raw_quad: &[f64; 8]) -> Self {
-        ElementQuad {
+        Self {
             top_left: Point {
                 x: raw_quad[0],
                 y: raw_quad[1],
