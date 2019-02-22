@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "nightly", feature(external_doc))]
 #![deny(clippy::pedantic)]
 #![allow(
-    clippy::stutter,
     clippy::module_name_repetitions,
     clippy::doc_markdown, // a number of false positives here
     clippy::default_trait_access, // fails on output of derive_builder
