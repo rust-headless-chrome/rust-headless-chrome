@@ -188,7 +188,7 @@ impl Process {
             .map(|e| format!("--load-extension={}", e.to_str().unwrap()))
             .collect();
 
-        args.extend(extension_args.iter().map(|s| s.as_str()));
+        args.extend(extension_args.iter().map(String::as_str));
 
         let process = TemporaryProcess(
             Command::new(&launch_options.path)
