@@ -20,6 +20,7 @@ pub use tab::Tab;
 use transport::Transport;
 
 mod process;
+mod revision;
 pub mod tab;
 mod transport;
 
