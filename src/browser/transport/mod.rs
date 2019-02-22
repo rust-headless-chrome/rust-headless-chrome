@@ -85,7 +85,7 @@ impl Transport {
             Arc::clone(&web_socket_connection),
         );
 
-        Ok(Transport {
+        Ok(Self {
             web_socket_connection,
             waiting_call_registry,
             listeners,
