@@ -234,6 +234,7 @@ impl Browser {
     #[allow(dead_code)]
     #[cfg(test)]
     pub(crate) fn process(&self) -> &Process {
+        #[allow(clippy::used_underscore_binding)]
         &self._process
     }
 }

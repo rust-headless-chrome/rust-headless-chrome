@@ -148,12 +148,9 @@ mod tests {
             }
         });
 
-        let event: Event = serde_json::from_value(attached_to_target_json).unwrap();
-        match event {
-            Event::AttachedToTarget(_) => {}
-            _ => {
-                panic!("bad news");
-            }
+        if let Ok(Event::AttachedToTarget(_)) = serde_json::from_value(attached_to_target_json) {
+        } else {
+            panic!("Failed to parse event properly");
         }
 
         let received_target_msg_event = json!({
