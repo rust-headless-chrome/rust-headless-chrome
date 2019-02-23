@@ -11,14 +11,14 @@ use log::*;
 
 use serde;
 
-use crate::cdtp;
-use crate::cdtp::target;
-use crate::cdtp::Event;
-use crate::cdtp::Message;
+use crate::protocol;
+use crate::protocol::target;
+use crate::protocol::Event;
+use crate::protocol::Message;
 
 use crate::browser::waiting_helpers::wait_for;
 use crate::browser::waiting_helpers::WaitOptions;
-use crate::cdtp::CallId;
+use crate::protocol::CallId;
 use std::time::Duration;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
@@ -106,7 +106,7 @@ impl Transport {
         destination: MethodDestination,
     ) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         // TODO: use get_mut to get exclusive access for entire block... maybe.
         if !self.open.load(Ordering::SeqCst) {
@@ -151,7 +151,7 @@ impl Transport {
                 sleep_ms: 10,
             },
         );
-        cdtp::parse_response::<C::ReturnObject>((response_result?)?)
+        protocol::parse_response::<C::ReturnObject>((response_result?)?)
     }
 
     pub fn call_method_on_target<C>(
@@ -160,7 +160,7 @@ impl Transport {
         method: C,
     ) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         // TODO: remove clone
         self.call_method(method, MethodDestination::Target(session_id))
@@ -168,7 +168,7 @@ impl Transport {
 
     pub fn call_method_on_browser<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         self.call_method(method, MethodDestination::Browser)
     }
@@ -192,7 +192,7 @@ impl Transport {
     }
 
     fn handle_incoming_messages(
-        messages_rx: Receiver<cdtp::Message>,
+        messages_rx: Receiver<protocol::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
         listeners: Listeners,
         open: Arc<AtomicBool>,
@@ -231,7 +231,7 @@ impl Transport {
                                     let raw_message = target_message_event.params.message;
 
                                     if let Ok(target_message) =
-                                        cdtp::parse_raw_message(&raw_message)
+                                        protocol::parse_raw_message(&raw_message)
                                     {
                                         match target_message {
                                             Message::Event(target_event) => {

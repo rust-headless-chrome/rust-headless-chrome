@@ -100,7 +100,7 @@ pub mod events {
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
-    use crate::cdtp::Method;
+    use crate::protocol::Method;
 
     #[derive(Serialize)]
     pub struct GetTargets {}

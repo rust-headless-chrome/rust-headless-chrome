@@ -16,7 +16,7 @@ extern crate log;
 extern crate derive_builder;
 
 pub mod browser;
-pub mod cdtp;
+pub mod protocol;
 
 pub use browser::{Browser, LaunchOptionsBuilder, Tab};
 

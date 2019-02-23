@@ -128,7 +128,7 @@ impl<'a, F: FnMut(&Node) -> bool> SearchVisitor<'a, F> {
 }
 
 pub mod methods {
-    use crate::cdtp::Method;
+    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]

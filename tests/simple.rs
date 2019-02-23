@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder, Tab};
+use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder, Tab};
 use log::*;
 use rand::prelude::*;
 use std::sync::Arc;

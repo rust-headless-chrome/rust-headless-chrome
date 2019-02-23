@@ -7,10 +7,10 @@ use log::*;
 
 use serde;
 
-use crate::cdtp::browser::methods::GetVersion;
-pub use crate::cdtp::browser::methods::VersionInformationReturnObject;
-use crate::cdtp::target::methods::{CreateTarget, SetDiscoverTargets};
-use crate::cdtp::{self, Event};
+use crate::protocol::browser::methods::GetVersion;
+pub use crate::protocol::browser::methods::VersionInformationReturnObject;
+use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
+use crate::protocol::{self, Event};
 
 pub use process::LaunchOptionsBuilder;
 use process::{LaunchOptions, Process};
@@ -226,7 +226,7 @@ impl Browser {
     /// See the `cdtp` module documentation for available methods.
     fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         self.transport.call_method_on_browser(method)
     }

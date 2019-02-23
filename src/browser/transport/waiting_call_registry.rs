@@ -5,7 +5,7 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 
 use super::ConnectionClosed;
-use crate::cdtp::{CallId, Response};
+use crate::protocol::{CallId, Response};
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;

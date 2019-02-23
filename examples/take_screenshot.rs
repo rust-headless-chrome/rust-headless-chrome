@@ -1,4 +1,4 @@
-use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
 use std::fs;
 
 fn main() -> Result<(), failure::Error> {
