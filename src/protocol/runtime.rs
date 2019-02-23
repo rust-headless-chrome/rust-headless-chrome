@@ -1,5 +1,5 @@
 pub mod methods {
-    use crate::cdtp::Method;
+    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
     #[derive(Deserialize, Debug)]

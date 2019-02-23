@@ -2,9 +2,9 @@ use failure::Error;
 use log::*;
 
 use super::point::Point;
-use crate::cdtp::dom;
-use crate::cdtp::page;
-use crate::cdtp::runtime;
+use crate::protocol::dom;
+use crate::protocol::page;
+use crate::protocol::runtime;
 use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone)]
@@ -182,7 +182,7 @@ impl<'a> Element<'a> {
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
     /// #
-    /// use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+    /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
     /// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
     /// let png_data = browser.wait_for_initial_tab()?
     ///     .navigate_to("https://en.wikipedia.org/wiki/WebKit")?

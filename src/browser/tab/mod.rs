@@ -8,15 +8,15 @@ use std::sync::Mutex;
 
 use super::transport::SessionId;
 use crate::browser::Transport;
-use crate::cdtp;
-use crate::cdtp::dom;
-use crate::cdtp::input;
-use crate::cdtp::page;
-use crate::cdtp::page::methods::Navigate;
-use crate::cdtp::target;
-use crate::cdtp::target::TargetId;
-use crate::cdtp::target::TargetInfo;
-use crate::cdtp::Event;
+use crate::protocol;
+use crate::protocol::dom;
+use crate::protocol::input;
+use crate::protocol::page;
+use crate::protocol::page::methods::Navigate;
+use crate::protocol::target;
+use crate::protocol::target::TargetId;
+use crate::protocol::target::TargetInfo;
+use crate::protocol::Event;
 
 use super::waiting_helpers::{wait_for, WaitOptions};
 
@@ -122,7 +122,7 @@ impl<'a> Tab {
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize + std::fmt::Debug,
+        C: protocol::Method + serde::Serialize + std::fmt::Debug,
     {
         self.transport
             .call_method_on_target(self.session_id.clone(), method)
@@ -329,7 +329,7 @@ impl<'a> Tab {
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
     /// #
-    /// use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+    /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
     /// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
     /// let tab = browser.wait_for_initial_tab()?;
     /// let viewport = tab.navigate_to("https://en.wikipedia.org/wiki/WebKit")?

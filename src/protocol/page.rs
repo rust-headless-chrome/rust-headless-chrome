@@ -90,7 +90,7 @@ pub mod events {
 }
 
 pub mod methods {
-    use crate::cdtp::Method;
+    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]
