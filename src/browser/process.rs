@@ -14,7 +14,7 @@ use which::which;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-use super::revision;
+use super::fetcher;
 use crate::util;
 
 pub struct Process {
@@ -81,8 +81,8 @@ pub struct LaunchOptions<'a> {
     /// The revision of chrome to use
     ///
     /// By default, we'll use a revision guaranteed to work with our API.
-    #[builder(default = "self.default_revision()?")]
-    revision: String,
+    #[builder(default = "self.default_revision()")]
+    revision: &'static str,
 }
 
 impl<'a> LaunchOptionsBuilder<'a> {
@@ -120,11 +120,8 @@ impl<'a> LaunchOptionsBuilder<'a> {
         Err("Could not auto detect a chrome executable".to_string())
     }
 
-    fn default_revision(&self) -> Result<String, String> {
-        match revision::get_latest_rev() {
-            Ok(r) => Ok(r),
-            _ => Err("Failed to get latest chrome revision".to_string()),
-        }
+    fn default_revision(&self) -> &'static str {
+        fetcher::CUR_REV
     }
 }
 

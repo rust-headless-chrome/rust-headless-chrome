@@ -27,6 +27,7 @@ base64 = "0.10"
 derive_builder = "0.7.1"
 reqwest = "0.9"
 directories = "1.0"
+indicatif = "0.11"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"

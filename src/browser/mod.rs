@@ -19,8 +19,8 @@ use std::time::Duration;
 pub use tab::Tab;
 use transport::Transport;
 
+mod fetcher;
 mod process;
-mod revision;
 pub mod tab;
 mod transport;
 
