@@ -34,7 +34,6 @@ const PLATFORM: &str = "win";
 struct DownloadProgress<W, F> {
     inner: W,
     bytes_read: usize,
-    total: u64,
     progress: F,
 }
 
@@ -43,9 +42,8 @@ where
     W: Write,
     F: FnMut(usize),
 {
-    pub fn new(inner: W, total: u64, progress: F) -> Self {
+    pub fn new(inner: W, progress: F) -> Self {
         Self {
-            total,
             inner,
             bytes_read: 0,
             progress,
@@ -164,7 +162,7 @@ impl<'a> Fetcher<'a> {
                 .template("[{elapsed_precise}] [{bar:60}] {bytes}/{total_bytes} ({eta})")
                 .progress_chars("#>-"),
         );
-        let mut dest = DownloadProgress::new(file, total, |n| pb.set_position(n as u64));
+        let mut dest = DownloadProgress::new(file, |n| pb.set_position(n as u64));
 
         let mut resp = reqwest::get(&url)?;
         io::copy(&mut resp, &mut dest)?;
