@@ -130,7 +130,7 @@ impl Process {
         let fetch = Fetcher::new(launch_options.revision)?;
         launch_options.path = fetch.run()?;
 
-        info!("Trying to start Chrome");
+        info!("Trying to start Chrome: {:#?}", launch_options.path);
 
         let mut process = Self::start_process(&launch_options)?;
 

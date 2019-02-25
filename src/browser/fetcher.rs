@@ -1,6 +1,6 @@
 use directories::ProjectDirs;
 use failure::{format_err, Error};
-use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 use log::*;
 use reqwest::{self, header::CONTENT_LENGTH};
 use zip;
@@ -96,7 +96,7 @@ impl<'a> Fetcher<'a> {
         for entry in fs::read_dir(self.dirs.data_dir())? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() {
+            if path.is_dir() {
                 let filename = path
                     .file_name()
                     .ok_or_else(|| format_err!("Failed to turn into OsStr"))?
@@ -113,16 +113,15 @@ impl<'a> Fetcher<'a> {
         Ok(revisions)
     }
 
-    fn zip_path(&self) -> PathBuf {
+    fn base_path(&self, rev: &str) -> PathBuf {
         let mut path = self.dirs.data_dir().to_path_buf();
-        path.push(format!("{}-{}.zip", PLATFORM, self.rev));
+        path.push(format!("{}-{}", PLATFORM, rev));
         path
     }
 
-    fn chrome_path(&self) -> PathBuf {
-        let mut path = self.dirs.data_dir().to_path_buf();
-        path.push(format!("{}-{}", PLATFORM, self.rev));
-        path.push(archive_name(self.rev));
+    fn chrome_path(&self, rev: &str) -> PathBuf {
+        let mut path = self.base_path(rev);
+        path.push(archive_name(rev));
 
         #[cfg(unix)]
         {
@@ -147,39 +146,46 @@ impl<'a> Fetcher<'a> {
         let revisions = self.local_revisions()?;
         if let Some(revision) = revisions.into_iter().find(|r| r.rev == self.rev) {
             info!("No need to download, we have the correct revision");
-            return Ok(revision.path);
+            return Ok(self.chrome_path(&revision.rev));
         }
 
         let url = dl_url(self.rev);
         info!("Chrome url based on revision: {}", url);
         let total = get_size(&url)?;
         info!("Total size of download: {}", total);
-        let path = self.zip_path();
+        let path = self.base_path(self.rev).with_extension("zip");
+
         info!("Creating file for download: {:#?}", &path);
         let file = OpenOptions::new().create(true).write(true).open(&path)?;
 
         let pb = ProgressBar::new(total);
-        pb.set_style(ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-            .progress_chars("#>-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] [{bar:60}] {bytes}/{total_bytes} ({eta})")
+                .progress_chars("#>-"),
+        );
         let mut dest = DownloadProgress::new(file, total, |n| pb.set_position(n as u64));
 
         let mut resp = reqwest::get(&url)?;
         io::copy(&mut resp, &mut dest)?;
 
-        pb.finish_with_message("downloaded");
+        pb.finish_with_message("Downloaded");
 
-        Fetcher::unzip(&path)?;
+        self.unzip(&path)?;
 
-        Ok(self.chrome_path())
+        Ok(self.chrome_path(self.rev))
     }
 
-    pub fn unzip<P: AsRef<Path>>(path: P) -> Result<(), Error> {
-        info!("Extracting: {}", path.as_ref().display());
+    pub fn unzip<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
         let mut archive = zip::ZipArchive::new(File::open(path.as_ref())?)?;
+        let extract_path = self.base_path(self.rev);
+        fs::create_dir_all(&extract_path)?;
+        info!("Extracting: {:#?}", extract_path);
+
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
-            let out_path = file.sanitized_name();
+            let mut out_path = extract_path.clone();
+            out_path.push(file.sanitized_name().as_path());
 
             let comment = file.comment();
             if !comment.is_empty() {
@@ -207,6 +213,15 @@ impl<'a> Fetcher<'a> {
                 }
                 let mut out_file = File::create(&out_path)?;
                 io::copy(&mut file, &mut out_file)?;
+            }
+            // Get and Set permissions
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+
+                if let Some(mode) = file.unix_mode() {
+                    fs::set_permissions(&out_path, fs::Permissions::from_mode(mode)).unwrap();
+                }
             }
         }
 
