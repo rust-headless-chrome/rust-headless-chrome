@@ -1,6 +1,6 @@
 use directories::ProjectDirs;
 use failure::{format_err, Error};
-use indicatif::ProgressBar;
+use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 use log::*;
 use reqwest::{self, header::CONTENT_LENGTH};
 use zip;
@@ -159,13 +159,15 @@ impl<'a> Fetcher<'a> {
         let file = OpenOptions::new().create(true).write(true).open(&path)?;
 
         let pb = ProgressBar::new(total);
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .progress_chars("#>-"));
         let mut dest = DownloadProgress::new(file, total, |n| pb.set_position(n as u64));
 
-        info!("Downloading file from: {}", &url);
         let mut resp = reqwest::get(&url)?;
-
-        info!("Copying data into location");
         io::copy(&mut resp, &mut dest)?;
+
+        pb.finish_with_message("downloaded");
 
         Fetcher::unzip(&path)?;
 
