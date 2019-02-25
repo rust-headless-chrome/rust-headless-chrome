@@ -1,15 +1,16 @@
-use failure::{Error, Fail};
+use failure::{format_err, Error, Fail};
 use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
-use std::borrow::BorrowMut;
-use std::ffi::OsStr;
-use std::io::prelude::*;
-use std::io::{BufRead, BufReader};
-use std::net;
-use std::process::{Child, Command, Stdio};
-use which::which;
+
+use std::{
+    borrow::BorrowMut,
+    ffi::OsStr,
+    io::{prelude::*, BufRead, BufReader},
+    net,
+    process::{Child, Command, Stdio},
+};
 
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
@@ -65,8 +66,8 @@ pub struct LaunchOptions<'a> {
     /// Path for Chrome or Chromium.
     ///
     /// If unspecified, the create will try to automatically detect a suitable binary.
-    #[builder(default = "self.default_executable()?")]
-    path: std::path::PathBuf,
+    #[builder(default = "None")]
+    path: Option<std::path::PathBuf>,
 
     /// A list of Chrome extensions to load.
     ///
@@ -86,40 +87,6 @@ pub struct LaunchOptions<'a> {
 }
 
 impl<'a> LaunchOptionsBuilder<'a> {
-    fn default_executable(&self) -> Result<std::path::PathBuf, String> {
-        // TODO Look at $BROWSER and if it points to a chrome binary
-        // $BROWSER may also provide default arguments, which we may
-        // or may not override later on.
-
-        for app in &["google-chrome-stable", "chromium"] {
-            if let Ok(path) = which(app) {
-                return Ok(path);
-            }
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            let default_paths =
-                &["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"][..];
-            for path in default_paths {
-                if std::path::Path::new(path).exists() {
-                    return Ok(path.into());
-                }
-            }
-        }
-
-        #[cfg(windows)]
-        {
-            if let Some(path) = get_chrome_path_from_registry() {
-                if path.exists() {
-                    return Ok(path);
-                }
-            }
-        }
-
-        Err("Could not auto detect a chrome executable".to_string())
-    }
-
     fn default_revision(&self) -> &'static str {
         fetcher::CUR_REV
     }
@@ -127,10 +94,10 @@ impl<'a> LaunchOptionsBuilder<'a> {
 
 impl Process {
     pub fn new(mut launch_options: LaunchOptions) -> Result<Self, Error> {
-        let fetch = Fetcher::new(launch_options.revision)?;
-        launch_options.path = fetch.run()?;
-
-        info!("Trying to start Chrome: {:#?}", launch_options.path);
+        if launch_options.path.is_none() {
+            let fetch = Fetcher::new(launch_options.revision)?;
+            launch_options.path = Some(fetch.run()?);
+        }
 
         let mut process = Self::start_process(&launch_options)?;
 
@@ -209,8 +176,13 @@ impl Process {
 
         args.extend(extension_args.iter().map(String::as_str));
 
+        let path = launch_options
+            .path
+            .as_ref()
+            .ok_or_else(|| format_err!("Chrome path required"))?;
+
         let process = TemporaryProcess(
-            Command::new(&launch_options.path)
+            Command::new(&path)
                 .args(&args)
                 .stderr(Stdio::piped())
                 .spawn()?,

@@ -81,7 +81,7 @@ impl<'a> Fetcher<'a> {
     }
 
     fn local_revisions(&self) -> Result<Vec<String>, Error> {
-        info!(
+        trace!(
             "Enumerating contents of XDG_DATA_DIR: {}",
             self.dirs.data_dir().display()
         );
@@ -143,12 +143,12 @@ impl<'a> Fetcher<'a> {
         }
 
         let url = dl_url(self.rev)?;
-        info!("Chrome url based on revision: {}", url);
+        info!("Chrome download url: {}", url);
         let total = get_size(&url)?;
         info!("Total size of download: {}", total);
         let path = self.base_path(self.rev).with_extension("zip");
 
-        info!("Creating file for download: {:#?}", &path);
+        info!("Creating file for download: {}", &path.display());
         let file = OpenOptions::new().create(true).write(true).open(&path)?;
 
         let pb = ProgressBar::new(total);
@@ -175,7 +175,14 @@ impl<'a> Fetcher<'a> {
         let mut archive = zip::ZipArchive::new(File::open(path.as_ref())?)?;
         let extract_path = self.base_path(self.rev);
         fs::create_dir_all(&extract_path)?;
-        info!("Extracting: {:#?}", extract_path);
+
+        info!("Extracting: {}", extract_path.display());
+        let pb = ProgressBar::new(archive.len() as u64);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] [{wide_bar}] ({pos}/{len})")
+                .progress_chars("#>-"),
+        );
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
@@ -184,18 +191,18 @@ impl<'a> Fetcher<'a> {
 
             let comment = file.comment();
             if !comment.is_empty() {
-                info!("File {} comment: {}", i, comment);
+                trace!("File {} comment: {}", i, comment);
             }
 
             if (&*file.name()).ends_with('/') {
-                info!(
+                trace!(
                     "File {} extracted to \"{}\"",
                     i,
                     out_path.as_path().display()
                 );
                 fs::create_dir_all(&out_path)?;
             } else {
-                info!(
+                trace!(
                     "File {} extracted to \"{}\" ({} bytes)",
                     i,
                     out_path.as_path().display(),
@@ -208,6 +215,8 @@ impl<'a> Fetcher<'a> {
                 }
                 let mut out_file = File::create(&out_path)?;
                 io::copy(&mut file, &mut out_file)?;
+
+                pb.set_position(i as u64);
             }
             // Get and Set permissions
             #[cfg(unix)]
@@ -220,7 +229,8 @@ impl<'a> Fetcher<'a> {
             }
         }
 
-        info!("Removing zip");
+        pb.finish_with_message("Extracted");
+        info!("Cleaning up");
         fs::remove_file(&path)?;
 
         Ok(())
