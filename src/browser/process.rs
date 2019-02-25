@@ -14,7 +14,7 @@ use which::which;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-use super::fetcher;
+use super::fetcher::{self, Fetcher};
 use super::waiting_helpers::{wait_for_mut, WaitOptions};
 
 pub struct Process {
@@ -126,7 +126,10 @@ impl<'a> LaunchOptionsBuilder<'a> {
 }
 
 impl Process {
-    pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
+    pub fn new(mut launch_options: LaunchOptions) -> Result<Self, Error> {
+        let fetch = Fetcher::new(launch_options.revision)?;
+        launch_options.path = fetch.run()?;
+
         info!("Trying to start Chrome");
 
         let mut process = Self::start_process(&launch_options)?;
