@@ -64,11 +64,6 @@ impl<W: Write, F: FnMut(usize)> Write for DownloadProgress<W, F> {
     }
 }
 
-struct Revision {
-    path: PathBuf,
-    rev: String,
-}
-
 pub struct Fetcher<'a> {
     rev: &'a str,
     dirs: ProjectDirs,
@@ -85,7 +80,7 @@ impl<'a> Fetcher<'a> {
         Ok(Self { rev, dirs })
     }
 
-    fn local_revisions(&self) -> Result<Vec<Revision>, Error> {
+    fn local_revisions(&self) -> Result<Vec<String>, Error> {
         info!(
             "Enumerating contents of XDG_DATA_DIR: {}",
             self.dirs.data_dir().display()
@@ -104,7 +99,7 @@ impl<'a> Fetcher<'a> {
                     .collect::<Vec<_>>();
                 if filename.len() == 2 && filename[0] == PLATFORM {
                     let rev = filename[1].to_string();
-                    revisions.push(Revision { path, rev });
+                    revisions.push(rev)
                 }
             }
         }
@@ -117,9 +112,9 @@ impl<'a> Fetcher<'a> {
         path
     }
 
-    fn chrome_path(&self, rev: &str) -> PathBuf {
+    fn chrome_path(&self, rev: &str) -> Result<PathBuf, Error> {
         let mut path = self.base_path(rev);
-        path.push(archive_name(rev));
+        path.push(archive_name(rev)?);
 
         #[cfg(unix)]
         {
@@ -137,17 +132,17 @@ impl<'a> Fetcher<'a> {
             path.push("chrome.exe");
         }
 
-        path
+        Ok(path)
     }
 
     pub fn run(&self) -> Result<PathBuf, Error> {
         let revisions = self.local_revisions()?;
-        if let Some(revision) = revisions.into_iter().find(|r| r.rev == self.rev) {
+        if let Some(revision) = revisions.into_iter().find(|r| r == self.rev) {
             info!("No need to download, we have the correct revision");
-            return Ok(self.chrome_path(&revision.rev));
+            return Ok(self.chrome_path(&revision)?);
         }
 
-        let url = dl_url(self.rev);
+        let url = dl_url(self.rev)?;
         info!("Chrome url based on revision: {}", url);
         let total = get_size(&url)?;
         info!("Total size of download: {}", total);
@@ -159,7 +154,9 @@ impl<'a> Fetcher<'a> {
         let pb = ProgressBar::new(total);
         pb.set_style(
             ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] [{bar:60}] {bytes}/{total_bytes} ({eta})")
+                .template(
+                    "[{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})",
+                )
                 .progress_chars("#>-"),
         );
         let mut dest = DownloadProgress::new(file, |n| pb.set_position(n as u64));
@@ -171,7 +168,7 @@ impl<'a> Fetcher<'a> {
 
         self.unzip(&path)?;
 
-        Ok(self.chrome_path(self.rev))
+        Ok(self.chrome_path(self.rev)?)
     }
 
     pub fn unzip<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
@@ -257,49 +254,59 @@ fn get_project_dirs() -> Result<ProjectDirs, Error> {
     }
 }
 
-fn dl_url<R>(revision: R) -> String
+fn dl_url<R>(revision: R) -> Result<String, Error>
 where
     R: AsRef<str>,
 {
-    return format!(
-        "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
-        DEFAULT_HOST,
-        revision.as_ref(),
-        archive_name(revision.as_ref())
-    );
+    #[cfg(unix)]
+    {
+        Ok(format!(
+            "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
+            DEFAULT_HOST,
+            revision.as_ref(),
+            archive_name(revision.as_ref())?
+        ))
+    }
 
-    #[cfg(target_os = "macos")]
-    return format!(
-        "{}/chromium-browser-snapshots/Mac/{}/{}.zip",
-        DEFAULT_HOST,
-        revision.as_ref(),
-        archive_name(revision.as_ref())
-    );
-
-    #[cfg(windows)]
-    return format!(
-        "{}/chromium-browser-snapshots/Win_x64/{}/{}.zip",
-        DEFAULT_HOST,
-        revision.as_ref(),
-        archive_name(revision.as_ref())
-    );
-}
-
-fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
     #[cfg(target_os = "macos")]
     {
-        return "chrome-mac";
+        Ok(format!(
+            "{}/chromium-browser-snapshots/Mac/{}/{}.zip",
+            DEFAULT_HOST,
+            revision.as_ref(),
+            archive_name(revision.as_ref())?
+        ))
+    }
+
+    #[cfg(windows)]
+    {
+        Ok(format!(
+            "{}/chromium-browser-snapshots/Win_x64/{}/{}.zip",
+            DEFAULT_HOST,
+            revision.as_ref(),
+            archive_name(revision.as_ref())?
+        ))
+    }
+}
+
+fn archive_name<R: AsRef<str>>(_revision: R) -> Result<&'static str, Error> {
+    #[cfg(unix)]
+    {
+        Ok("chrome-linux")
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Ok("chrome-mac")
     }
 
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
-        return if revision.as_ref().parse::<u32>()? > 591479 {
-            "chrome-win"
+        if revision.as_ref().parse::<u32>()? > 591_479 {
+            Ok("chrome-win")
         } else {
-            "chrome-win32"
-        };
+            Ok("chrome-win32")
+        }
     }
-
-    "chrome-linux"
 }
