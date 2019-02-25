@@ -3,9 +3,10 @@ use failure::{format_err, Error};
 use indicatif::ProgressBar;
 use log::*;
 use reqwest::{self, header::CONTENT_LENGTH};
+use zip;
 
 use std::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
     str::FromStr,
@@ -78,10 +79,19 @@ pub struct Fetcher<'a> {
 impl<'a> Fetcher<'a> {
     pub fn new(rev: &'a str) -> Result<Self, Error> {
         let dirs = get_project_dirs()?;
+        info!(
+            "Creating XDG_DATA_DIR if it doesn't exist: {}",
+            dirs.data_dir().display()
+        );
+        fs::create_dir_all(dirs.data_dir())?;
         Ok(Self { rev, dirs })
     }
 
     fn local_revisions(&self) -> Result<Vec<Revision>, Error> {
+        info!(
+            "Enumerating contents of XDG_DATA_DIR: {}",
+            self.dirs.data_dir().display()
+        );
         let mut revisions = Vec::new();
         for entry in fs::read_dir(self.dirs.data_dir())? {
             let entry = entry?;
@@ -103,9 +113,33 @@ impl<'a> Fetcher<'a> {
         Ok(revisions)
     }
 
-    fn rev_path(&self) -> PathBuf {
+    fn zip_path(&self) -> PathBuf {
+        let mut path = self.dirs.data_dir().to_path_buf();
+        path.push(format!("{}-{}.zip", PLATFORM, self.rev));
+        path
+    }
+
+    fn chrome_path(&self) -> PathBuf {
         let mut path = self.dirs.data_dir().to_path_buf();
         path.push(format!("{}-{}", PLATFORM, self.rev));
+        path.push(archive_name(self.rev));
+
+        #[cfg(unix)]
+        {
+            path.push("chrome");
+        }
+        #[cfg(target_os = "macos")]
+        {
+            path.push("Chromium.app");
+            path.push("Contents");
+            path.push("MacOS");
+            path.push("Chromium");
+        }
+        #[cfg(windows)]
+        {
+            path.push("chrome.exe");
+        }
+
         path
     }
 
@@ -115,10 +149,15 @@ impl<'a> Fetcher<'a> {
             info!("No need to download, we have the correct revision");
             return Ok(revision.path);
         }
+
         let url = dl_url(self.rev);
+        info!("Chrome url based on revision: {}", url);
         let total = get_size(&url)?;
-        let path = self.rev_path();
-        let file = File::create(&path)?;
+        info!("Total size of download: {}", total);
+        let path = self.zip_path();
+        info!("Creating file for download: {:#?}", &path);
+        let file = OpenOptions::new().create(true).write(true).open(&path)?;
+
         let pb = ProgressBar::new(total);
         let mut dest = DownloadProgress::new(file, total, |n| pb.set_position(n as u64));
 
@@ -128,7 +167,51 @@ impl<'a> Fetcher<'a> {
         info!("Copying data into location");
         io::copy(&mut resp, &mut dest)?;
 
-        Ok(path)
+        Fetcher::unzip(&path)?;
+
+        Ok(self.chrome_path())
+    }
+
+    pub fn unzip<P: AsRef<Path>>(path: P) -> Result<(), Error> {
+        info!("Extracting: {}", path.as_ref().display());
+        let mut archive = zip::ZipArchive::new(File::open(path.as_ref())?)?;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i)?;
+            let out_path = file.sanitized_name();
+
+            let comment = file.comment();
+            if !comment.is_empty() {
+                info!("File {} comment: {}", i, comment);
+            }
+
+            if (&*file.name()).ends_with('/') {
+                info!(
+                    "File {} extracted to \"{}\"",
+                    i,
+                    out_path.as_path().display()
+                );
+                fs::create_dir_all(&out_path)?;
+            } else {
+                info!(
+                    "File {} extracted to \"{}\" ({} bytes)",
+                    i,
+                    out_path.as_path().display(),
+                    file.size()
+                );
+                if let Some(p) = out_path.parent() {
+                    if !p.exists() {
+                        fs::create_dir_all(&p).unwrap();
+                    }
+                }
+                let mut out_file = File::create(&out_path)?;
+                io::copy(&mut file, &mut out_file)?;
+            }
+        }
+
+        info!("Removing zip");
+        fs::remove_file(&path)?;
+
+        Ok(())
     }
 }
 
