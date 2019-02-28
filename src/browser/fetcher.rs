@@ -17,14 +17,7 @@ pub const CUR_REV: &str = "634997";
 const APP_NAME: &str = "headless-chrome";
 const DEFAULT_HOST: &str = "https://storage.googleapis.com";
 
-const REV_URL: &str =
-    "https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE";
-#[cfg(target_os = "macos")]
-const REV_URL: &str = "https://storage.googleapis.com/chromium-browser-snapshots/Mac/LAST_CHANGE";
-#[cfg(windows)]
-const REV_URL: &str =
-    "https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/LAST_CHANGE";
-
+#[cfg(target_os = "linux")]
 const PLATFORM: &str = "linux";
 #[cfg(target_os = "macos")]
 const PLATFORM: &str = "mac";
@@ -116,7 +109,7 @@ impl<'a> Fetcher<'a> {
         let mut path = self.base_path(rev);
         path.push(archive_name(rev)?);
 
-        #[cfg(unix)]
+        #[cfg(target_os = "linux")]
         {
             path.push("chrome");
         }
@@ -249,13 +242,6 @@ fn get_size<U: AsRef<str>>(url: U) -> Result<u64, Error> {
     }
 }
 
-fn get_latest_rev() -> Result<String, Error> {
-    info!("Getting latest chrome revision");
-    let rev = reqwest::get(REV_URL)?.text()?;
-    info!("Latest revision is: {}", rev);
-    Ok(rev)
-}
-
 fn get_project_dirs() -> Result<ProjectDirs, Error> {
     info!("Getting project dir");
     match ProjectDirs::from("", "", APP_NAME) {
@@ -268,7 +254,7 @@ fn dl_url<R>(revision: R) -> Result<String, Error>
 where
     R: AsRef<str>,
 {
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     {
         Ok(format!(
             "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
@@ -300,7 +286,7 @@ where
 }
 
 fn archive_name<R: AsRef<str>>(_revision: R) -> Result<&'static str, Error> {
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     {
         Ok("chrome-linux")
     }
