@@ -151,6 +151,45 @@ fn get_box_model() -> Result<(), failure::Error> {
 }
 
 #[test]
+fn box_model_geometry() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("simple.html"));
+    let center = tab.wait_for_element("div#position-test")?.get_box_model()?;
+    let above = tab
+        .wait_for_element("div#strictly-above")?
+        .get_box_model()?;
+    let below = tab
+        .wait_for_element("div#strictly-below")?
+        .get_box_model()?;
+    let left = tab.wait_for_element("div#strictly-left")?.get_box_model()?;
+    let right = tab
+        .wait_for_element("div#strictly-right")?
+        .get_box_model()?;
+
+    assert!(above.content.is_strictly_above(&center.content));
+    assert!(above.content.is_above(&center.content));
+    assert!(above.margin.is_above(&center.content));
+    assert!(!above.margin.is_strictly_above(&center.content));
+
+    assert!(below.content.is_strictly_below(&center.content));
+    assert!(below.content.is_below(&center.content));
+    assert!(below.margin.is_below(&center.content));
+    assert!(!below.margin.is_strictly_below(&center.content));
+
+    assert!(left.content.is_strictly_left_of(&center.content));
+    assert!(left.content.is_left_of(&center.content));
+    assert!(left.margin.is_left_of(&center.content));
+    assert!(!left.margin.is_strictly_left_of(&center.content));
+
+    assert!(right.content.is_strictly_right_of(&center.content));
+    assert!(right.content.is_right_of(&center.content));
+    assert!(right.margin.is_right_of(&center.content));
+    assert!(!right.margin.is_strictly_right_of(&center.content));
+
+    Ok(())
+}
+
+#[test]
 fn reload() -> Result<(), failure::Error> {
     logging::enable_logging();
     let mut counter = 0;
