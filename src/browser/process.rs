@@ -5,6 +5,7 @@ use rand::thread_rng;
 use regex::Regex;
 use std::borrow::BorrowMut;
 use std::ffi::OsStr;
+use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 use std::net;
 use std::process::{Child, Command, Stdio};
@@ -131,6 +132,7 @@ impl Process {
             match Self::ws_url_from_output(process.0.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
+                    debug!("Found debugging WS URL: {:?}", url);
                     break;
                 }
                 Err(error) => {
@@ -202,8 +204,11 @@ impl Process {
         Ok(process)
     }
 
-    fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
-        let port_taken = "Address already in use";
+    fn ws_url_from_reader<R>(reader: BufReader<R>) -> Result<Option<String>, Error>
+    where
+        R: Read,
+    {
+        let port_taken_re = Regex::new(r"ERROR.*bind").unwrap();
 
         let re = Regex::new(r"listening on (.*/devtools/browser/.*)$").unwrap();
 
@@ -213,24 +218,36 @@ impl Process {
             Some(cap.into())
         };
 
+        for line in reader.lines() {
+            let chrome_output = line?;
+            trace!("Chrome output: {}", chrome_output);
+
+            if port_taken_re.is_match(&chrome_output) {
+                return Err(ChromeLaunchError::DebugPortInUse {}.into());
+            }
+
+            if let Some(answer) = extract(&chrome_output) {
+                return Ok(Some(answer));
+            }
+        }
+
+        Ok(None)
+    }
+
+    fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
         let chrome_output_result = wait_for_mut(
             || {
                 let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
-                for line in my_stderr.lines() {
-                    let chrome_output = line.ok()?;
-                    trace!("Chrome output: {}", chrome_output);
-
-                    if chrome_output.contains(port_taken) {
-                        return None;
+                match Self::ws_url_from_reader(my_stderr) {
+                    Ok(output_option) => {
+                        if let Some(output) = output_option {
+                            Some(Ok(output))
+                        } else {
+                            None
+                        }
                     }
-
-                    let answer = extract(&chrome_output);
-                    if answer.is_some() {
-                        return answer;
-                    }
+                    Err(err) => Some(Err(err)),
                 }
-
-                None
             },
             WaitOptions {
                 timeout_ms: 5000,
@@ -238,16 +255,8 @@ impl Process {
             },
         );
 
-        if let Ok(output) = chrome_output_result {
-            if output.contains(port_taken) {
-                trace!(
-                    "Chrome is complaining about the debugging port already being in use: {}",
-                    output
-                );
-                Err(ChromeLaunchError::DebugPortInUse {}.into())
-            } else {
-                Ok(output)
-            }
+        if let Ok(output_result) = chrome_output_result {
+            output_result
         } else {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
         }
@@ -268,6 +277,22 @@ fn port_is_available(port: u16) -> bool {
 mod tests {
     use super::*;
     use std::thread;
+
+    #[test]
+    fn can_launch_chrome_and_get_ws_url() {
+        env_logger::try_init().unwrap_or(());
+        let chrome = super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+        info!("{:?}", chrome.debug_ws_url);
+    }
+
+    #[test]
+    fn handle_errors_in_chrome_output() {
+        env_logger::try_init().unwrap_or(());
+        let lines = "[0228/194641.093619:ERROR:socket_posix.cc(144)] bind() returned an error, errno=0: Cannot assign requested address (99)";
+        let reader = BufReader::new(lines.as_bytes());
+        let ws_url_result = Process::ws_url_from_reader(reader);
+        assert_eq!(true, ws_url_result.is_err());
+    }
 
     #[cfg(target_os = "linux")]
     fn current_child_pids() -> Vec<i32> {

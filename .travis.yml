@@ -9,6 +9,7 @@ before_install:
   - export RUSTFLAGS="-D warnings"
   - rustup self update
   - rustup component add rustfmt-preview clippy-preview
+  - cargo clippy --version
 
 addons:
   chrome: stable
