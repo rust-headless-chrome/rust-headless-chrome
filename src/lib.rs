@@ -3,7 +3,6 @@
 #![warn(renamed_and_removed_lints)]
 #![allow(
     clippy::unknown_clippy_lints,
-    clippy::stutter,
     clippy::module_name_repetitions,
     clippy::doc_markdown, // a number of false positives here
     clippy::default_trait_access, // fails on output of derive_builder
