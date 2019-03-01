@@ -14,8 +14,9 @@ before_install:
   - rustup component add rustfmt-preview clippy-preview
   - cargo clippy --version
 
-addons:
-  chrome: stable
+cache:
+  directories:
+    - /home/travis/.local/share/
 
 script:
   - cargo fmt --all -- --check
