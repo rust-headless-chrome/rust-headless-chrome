@@ -231,7 +231,10 @@ impl<'a> Fetcher<'a> {
 
         pb.finish();
         info!("Cleaning up");
-        fs::remove_file(&path)?;
+        if fs::remove_file(&path).is_err() {
+            info!("Failed to delete zip");
+            return Ok(());
+        }
 
         Ok(())
     }
