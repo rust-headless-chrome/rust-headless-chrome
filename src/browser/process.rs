@@ -5,8 +5,8 @@ use rand::thread_rng;
 use regex::Regex;
 use std::borrow::BorrowMut;
 use std::ffi::OsStr;
-use std::io::{BufRead, BufReader};
 use std::io::prelude::*;
+use std::io::{BufRead, BufReader};
 use std::net;
 use std::process::{Child, Command, Stdio};
 use which::which;
@@ -205,7 +205,8 @@ impl Process {
     }
 
     fn ws_url_from_reader<R>(reader: BufReader<R>) -> Result<Option<String>, Error>
-        where R: Read
+    where
+        R: Read,
     {
         let port_taken_re = Regex::new(r"ERROR.*bind").unwrap();
 
@@ -244,10 +245,8 @@ impl Process {
                         } else {
                             None
                         }
-                    },
-                    Err(err) => {
-                       Some(Err(err))
-                    },
+                    }
+                    Err(err) => Some(Err(err)),
                 }
             },
             WaitOptions {
@@ -282,8 +281,7 @@ mod tests {
     #[test]
     fn can_launch_chrome_and_get_ws_url() {
         env_logger::try_init().unwrap_or(());
-        let chrome =
-            super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+        let chrome = super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
         info!("{:?}", chrome.debug_ws_url);
     }
 
@@ -305,7 +303,7 @@ mod tests {
             "/proc/{}/task/{}/children",
             current_pid, current_pid
         ))
-            .unwrap();
+        .unwrap();
         let mut child_pids = String::new();
         current_process_children_file
             .read_to_string(&mut child_pids)
@@ -365,7 +363,7 @@ mod tests {
                     .build()
                     .unwrap(),
             )
-                .unwrap();
+            .unwrap();
             handles.push(chrome);
         }
     }
