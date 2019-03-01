@@ -6,8 +6,9 @@ use reqwest::{self, header::CONTENT_LENGTH};
 use zip;
 
 use std::{
+    env,
     fs::{self, File, OpenOptions},
-    io::{self, Write},
+    io::{self, BufWriter, Write},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -152,12 +153,16 @@ impl<'a> Fetcher<'a> {
                 )
                 .progress_chars("#>-"),
         );
-        let mut dest = DownloadProgress::new(file, |n| pb.set_position(n as u64));
+        let mut dest = DownloadProgress::new(file, |n| {
+            if !in_ci() {
+                pb.set_position(n as u64);
+            }
+        });
 
         let mut resp = reqwest::get(&url)?;
         io::copy(&mut resp, &mut dest)?;
 
-        pb.finish_with_message("Downloaded");
+        pb.finish();
 
         self.unzip(&path)?;
 
@@ -206,10 +211,12 @@ impl<'a> Fetcher<'a> {
                         fs::create_dir_all(&p).unwrap();
                     }
                 }
-                let mut out_file = File::create(&out_path)?;
+                let mut out_file = BufWriter::new(File::create(&out_path)?);
                 io::copy(&mut file, &mut out_file)?;
 
-                pb.set_position(i as u64);
+                if !in_ci() {
+                    pb.set_position(i as u64);
+                }
             }
             // Get and Set permissions
             #[cfg(unix)]
@@ -222,7 +229,7 @@ impl<'a> Fetcher<'a> {
             }
         }
 
-        pb.finish_with_message("Extracted");
+        pb.finish();
         info!("Cleaning up");
         fs::remove_file(&path)?;
 
@@ -304,5 +311,12 @@ fn archive_name<R: AsRef<str>>(_revision: R) -> Result<&'static str, Error> {
         } else {
             Ok("chrome-win32")
         }
+    }
+}
+
+fn in_ci() -> bool {
+    match env::var("IN_CI") {
+        Ok(s) => s == "true",
+        _ => false,
     }
 }

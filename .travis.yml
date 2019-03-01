@@ -1,5 +1,8 @@
 language: rust
 
+env:
+  - IN_CI=true
+
 os:
   - linux
   - osx
