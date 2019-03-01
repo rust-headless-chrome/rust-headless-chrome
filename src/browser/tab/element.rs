@@ -49,6 +49,130 @@ impl ElementQuad {
     pub fn aspect_ratio(&self) -> f64 {
         self.width() / self.height()
     }
+
+    /// If the most bottom point of `self` is above the most top point of `other`
+    pub fn is_strictly_above(&self, other: &Self) -> bool {
+        self.top_right
+            .y
+            .max(self.top_left.y)
+            .max(self.bottom_right.y)
+            .max(self.bottom_left.y)
+            < other
+                .top_right
+                .y
+                .min(other.top_left.y)
+                .min(other.bottom_right.y)
+                .min(other.bottom_left.y)
+    }
+
+    /// If the most bottom point of `self` is above or on the same line as the
+    /// most top point of `other`
+    pub fn is_above(&self, other: &Self) -> bool {
+        self.top_right
+            .y
+            .max(self.top_left.y)
+            .max(self.bottom_right.y)
+            .max(self.bottom_left.y)
+            <= other
+                .top_right
+                .y
+                .min(other.top_left.y)
+                .min(other.bottom_right.y)
+                .min(other.bottom_left.y)
+    }
+
+    /// If the most top point of `self` is below the most bottom point of `other`
+    pub fn is_strictly_below(&self, other: &Self) -> bool {
+        self.top_right
+            .y
+            .min(self.top_left.y)
+            .min(self.bottom_right.y)
+            .min(self.bottom_left.y)
+            > other
+                .top_right
+                .y
+                .max(other.top_left.y)
+                .max(other.bottom_right.y)
+                .max(other.bottom_left.y)
+    }
+
+    /// If the most top point of `self` is below or on the same line as the
+    /// most bottom point of `other`
+    pub fn is_below(&self, other: &Self) -> bool {
+        self.top_right
+            .y
+            .min(self.top_left.y)
+            .min(self.bottom_right.y)
+            .min(self.bottom_left.y)
+            >= other
+                .top_right
+                .y
+                .max(other.top_left.y)
+                .max(other.bottom_right.y)
+                .max(other.bottom_left.y)
+    }
+
+    /// If the most right point of `self` is left of the most left point of `other`
+    pub fn is_strictly_left_of(&self, other: &Self) -> bool {
+        self.top_right
+            .x
+            .max(self.top_left.x)
+            .max(self.bottom_right.x)
+            .max(self.bottom_left.x)
+            < other
+                .top_right
+                .x
+                .min(other.top_left.x)
+                .min(other.bottom_right.x)
+                .min(other.bottom_left.x)
+    }
+
+    /// If the most right point of `self` is left or on the same line as the
+    /// most left point of `other`
+    pub fn is_left_of(&self, other: &Self) -> bool {
+        self.top_right
+            .x
+            .max(self.top_left.x)
+            .max(self.bottom_right.x)
+            .max(self.bottom_left.x)
+            <= other
+                .top_right
+                .x
+                .min(other.top_left.x)
+                .min(other.bottom_right.x)
+                .min(other.bottom_left.x)
+    }
+
+    /// If the most left point of `self` is right of the most right point of `other`
+    pub fn is_strictly_right_of(&self, other: &Self) -> bool {
+        self.top_right
+            .x
+            .min(self.top_left.x)
+            .min(self.bottom_right.x)
+            .min(self.bottom_left.x)
+            > other
+                .top_right
+                .x
+                .max(other.top_left.x)
+                .max(other.bottom_right.x)
+                .max(other.bottom_left.x)
+    }
+
+    /// If the most left point of `self` is right or on the same line as the
+    /// most right point of `other`
+    pub fn is_right_of(&self, other: &Self) -> bool {
+        self.top_right
+            .x
+            .min(self.top_left.x)
+            .min(self.bottom_right.x)
+            .min(self.bottom_left.x)
+            >= other
+                .top_right
+                .x
+                .max(other.top_left.x)
+                .max(other.bottom_right.x)
+                .max(other.bottom_left.x)
+    }
 }
 
 #[derive(Debug, Clone)]

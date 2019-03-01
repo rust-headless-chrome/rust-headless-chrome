@@ -12,11 +12,69 @@ div#foobar {
     border: 3px solid #221133;
     background: #332211;
 }
+
+div#position-test {
+    position: relative;
+    background: red;
+    right: -50px;
+    top: 50px;
+    width: 50px;
+    height: 50px;
+}
+
+div#strictly-above {
+    margin-bottom: 10px;
+    position: absolute;
+    bottom: 50px;
+    height: 50px;
+    width: 50px;
+    background: green;
+}
+div#strictly-below {
+    margin-top: 10px;
+    position: absolute;
+    top: 50px;
+    height: 50px;
+    width: 50px;
+    background: green;
+}
+div#strictly-left {
+    margin-right: 10px;
+    position: absolute;
+    right: 50px;
+    height: 50px;
+    width: 50px;
+    background: green;
+}
+div#strictly-right {
+    margin-left: 10px;
+    position: absolute;
+    left: 50px;
+    height: 50px;
+    width: 50px;
+    background: green;
+}
+div#within {
+    margin: 5px;
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    height: 30px;
+    width: 30px;
+    background: yellow;
+}
 </style>
     </head>
     <body>
         <div>
         <div id="foobar"></div>
+        </div>
+        <div id="position-test">
+            <div id="within"></div>
+            <div id="strictly-above"></div>
+            <div id="strictly-below"></div>
+            <div id="strictly-left"></div>
+            <div id="strictly-right"></div>
         </div>
     </body>
 </html>
