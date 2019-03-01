@@ -1,5 +1,9 @@
 language: rust
 
+addons:
+  apt:
+    packages:
+      - libnss3
 env:
   - IN_CI=true
 
@@ -8,6 +12,9 @@ os:
   - osx
 
 before_install:
+  - "sysctl kernel.unprivileged_userns_clone=1"
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
   - set -e
   - export RUSTFLAGS="-D warnings"
   - rustup self update
@@ -15,8 +22,9 @@ before_install:
   - cargo clippy --version
 
 cache:
+  cargo: true
   directories:
-    - /home/travis/.local/share/
+    - $HOME/.local/share/
 
 script:
   - cargo fmt --all -- --check
