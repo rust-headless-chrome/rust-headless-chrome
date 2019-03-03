@@ -1,18 +1,30 @@
 language: rust
 
+addons:
+  apt:
+    packages:
+      - libnss3
+env:
+  - IN_CI=true
+
 os:
   - linux
   - osx
 
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sysctl kernel.unprivileged_userns_clone=1    ; fi
+  - "export DISPLAY=:99.0"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh -e /etc/init.d/xvfb start    ; fi
   - set -e
   - export RUSTFLAGS="-D warnings"
   - rustup self update
   - rustup component add rustfmt-preview clippy-preview
   - cargo clippy --version
 
-addons:
-  chrome: stable
+cache:
+  cargo: true
+  directories:
+    - $HOME/.local/share/
 
 script:
   - cargo fmt --all -- --check

@@ -5,12 +5,14 @@ use failure::Error;
 use log::*;
 use toml;
 
+use env_logger;
 use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use rand::distributions::Alphanumeric;
 use rand::{self, Rng};
 use std::sync::Arc;
 
 fn main() {
+    env_logger::init();
     wikipedia();
     fastmail();
     digital_pigeon();

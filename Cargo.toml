@@ -22,9 +22,12 @@ rand = "0.6"
 tempfile = "3"
 toml = "0.4"
 chrono = "0.4"
-which = "2.0"
 base64 = "0.10"
 derive_builder = "0.7.1"
+reqwest = "0.9"
+directories = "1.0"
+indicatif = "0.11"
+zip = "0.5"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"

@@ -19,6 +19,7 @@ pub use tab::Tab;
 use transport::Transport;
 use waiting_helpers::{wait_for, WaitOptions};
 
+mod fetcher;
 mod process;
 pub mod tab;
 mod transport;
