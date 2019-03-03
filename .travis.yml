@@ -11,6 +11,8 @@ os:
   - linux
   - osx
 
+osx_image: xcode10.1
+
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sysctl kernel.unprivileged_userns_clone=1    ; fi
   - "export DISPLAY=:99.0"
