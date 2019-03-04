@@ -1,6 +1,7 @@
 language: rust
 
 addons:
+  chrome: stable
   apt:
     packages:
       - libnss3

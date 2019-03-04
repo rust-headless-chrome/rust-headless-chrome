@@ -28,6 +28,7 @@ reqwest = "0.9"
 directories = "1.0"
 indicatif = "0.11"
 zip = "0.5"
+which = "2.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"

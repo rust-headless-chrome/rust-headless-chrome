@@ -3,6 +3,7 @@ use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
+use which::which;
 
 use std::{
     borrow::BorrowMut,
@@ -253,6 +254,42 @@ fn port_is_available(port: u16) -> bool {
     net::TcpListener::bind(("127.0.0.1", port)).is_ok()
 }
 
+// Remove this after we can pass arguments to chrome, pass `--no-sandbox` to the tests and use the
+// default executable path. Add `super::Process::new()` to `setup`
+#[allow(dead_code)]
+fn default_executable() -> Result<std::path::PathBuf, String> {
+    // TODO Look at $BROWSER and if it points to a chrome binary
+    // $BROWSER may also provide default arguments, which we may
+    // or may not override later on.
+
+    for app in &["google-chrome-stable", "chromium"] {
+        if let Ok(path) = which(app) {
+            return Ok(path);
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let default_paths = &["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"][..];
+        for path in default_paths {
+            if std::path::Path::new(path).exists() {
+                return Ok(path.into());
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        if let Some(path) = get_chrome_path_from_registry() {
+            if path.exists() {
+                return Ok(path);
+            }
+        }
+    }
+
+    Err("Could not auto detect a chrome executable".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -263,14 +300,19 @@ mod tests {
     fn setup() {
         INIT.call_once(|| {
             env_logger::try_init().unwrap_or(());
-            let _ = super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
         });
     }
 
     #[test]
     fn can_launch_chrome_and_get_ws_url() {
         setup();
-        let chrome = super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+        let chrome = super::Process::new(
+            LaunchOptionsBuilder::default()
+                .path(Some(default_executable().unwrap()))
+                .build()
+                .unwrap(),
+        )
+        .unwrap();
         info!("{:?}", chrome.debug_ws_url);
     }
 
@@ -308,8 +350,13 @@ mod tests {
     fn kills_process_on_drop() {
         setup();
         {
-            let _chrome =
-                &mut super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+            let _chrome = &mut super::Process::new(
+                LaunchOptionsBuilder::default()
+                    .path(Some(default_executable().unwrap()))
+                    .build()
+                    .unwrap(),
+            )
+            .unwrap();
         }
 
         let child_pids = current_child_pids();
@@ -325,8 +372,13 @@ mod tests {
             let handle = thread::spawn(|| {
                 // these sleeps are to make it more likely the chrome startups will overlap
                 std::thread::sleep(std::time::Duration::from_millis(10));
-                let chrome =
-                    super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+                let chrome = super::Process::new(
+                    LaunchOptionsBuilder::default()
+                        .path(Some(default_executable().unwrap()))
+                        .build()
+                        .unwrap(),
+                )
+                .unwrap();
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 chrome.debug_ws_url.clone()
             });
@@ -346,7 +398,8 @@ mod tests {
 
         for _ in 0..10 {
             let chrome = super::Process::new(
-                super::LaunchOptionsBuilder::default()
+                LaunchOptionsBuilder::default()
+                    .path(Some(default_executable().unwrap()))
                     .headless(true)
                     .build()
                     .unwrap(),
