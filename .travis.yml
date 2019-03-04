@@ -25,6 +25,7 @@ cache:
   cargo: true
   directories:
     - $HOME/.local/share/
+    - $HOME/Library/Application Support/
 
 script:
   - cargo fmt --all -- --check

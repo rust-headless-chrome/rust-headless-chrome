@@ -256,18 +256,27 @@ fn port_is_available(port: u16) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Once, ONCE_INIT};
     use std::thread;
+
+    static INIT: Once = ONCE_INIT;
+    fn setup() {
+        INIT.call_once(|| {
+            env_logger::try_init().unwrap_or(());
+            let _ = super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+        });
+    }
 
     #[test]
     fn can_launch_chrome_and_get_ws_url() {
-        env_logger::try_init().unwrap_or(());
+        setup();
         let chrome = super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
         info!("{:?}", chrome.debug_ws_url);
     }
 
     #[test]
     fn handle_errors_in_chrome_output() {
-        env_logger::try_init().unwrap_or(());
+        setup();
         let lines = "[0228/194641.093619:ERROR:socket_posix.cc(144)] bind() returned an error, errno=0: Cannot assign requested address (99)";
         let reader = BufReader::new(lines.as_bytes());
         let ws_url_result = Process::ws_url_from_reader(reader);
@@ -297,7 +306,7 @@ mod tests {
     #[test]
     #[cfg(target_os = "linux")]
     fn kills_process_on_drop() {
-        env_logger::try_init().unwrap_or(());
+        setup();
         {
             let _chrome =
                 &mut super::Process::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
@@ -309,8 +318,7 @@ mod tests {
 
     #[test]
     fn launch_multiple_non_headless_instances() {
-        env_logger::try_init().unwrap_or(());
-
+        setup();
         let mut handles = Vec::new();
 
         for _ in 0..10 {
@@ -332,7 +340,7 @@ mod tests {
 
     #[test]
     fn no_instance_sharing() {
-        env_logger::try_init().unwrap_or(());
+        setup();
 
         let mut handles = Vec::new();
 
