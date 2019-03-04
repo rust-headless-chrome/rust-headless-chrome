@@ -3,7 +3,6 @@ use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
-use which::which;
 
 use std::{
     borrow::BorrowMut,
@@ -254,45 +253,10 @@ fn port_is_available(port: u16) -> bool {
     net::TcpListener::bind(("127.0.0.1", port)).is_ok()
 }
 
-// Remove this after we can pass arguments to chrome, pass `--no-sandbox` to the tests and use the
-// default executable path. Add `super::Process::new()` to `setup`
-#[allow(dead_code)]
-fn default_executable() -> Result<std::path::PathBuf, String> {
-    // TODO Look at $BROWSER and if it points to a chrome binary
-    // $BROWSER may also provide default arguments, which we may
-    // or may not override later on.
-
-    for app in &["google-chrome-stable", "chromium"] {
-        if let Ok(path) = which(app) {
-            return Ok(path);
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        let default_paths = &["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"][..];
-        for path in default_paths {
-            if std::path::Path::new(path).exists() {
-                return Ok(path.into());
-            }
-        }
-    }
-
-    #[cfg(windows)]
-    {
-        if let Some(path) = get_chrome_path_from_registry() {
-            if path.exists() {
-                return Ok(path);
-            }
-        }
-    }
-
-    Err("Could not auto detect a chrome executable".to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::browser::default_executable;
     use std::sync::{Once, ONCE_INIT};
     use std::thread;
 
