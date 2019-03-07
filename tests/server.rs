@@ -35,6 +35,7 @@ impl Server {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_dumb_html(data: &'static str) -> Self {
         let responder = move |r: tiny_http::Request| {
             let response = tiny_http::Response::new(

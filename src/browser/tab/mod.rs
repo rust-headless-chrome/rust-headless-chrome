@@ -1,27 +1,24 @@
-use failure::{Error, Fail};
-use log::*;
-
-use serde;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use super::transport::SessionId;
-use crate::browser::Transport;
-use crate::protocol;
-use crate::protocol::dom;
-use crate::protocol::input;
-use crate::protocol::page;
-use crate::protocol::page::methods::Navigate;
-use crate::protocol::target;
-use crate::protocol::target::TargetId;
-use crate::protocol::target::TargetInfo;
-use crate::protocol::Event;
-
-use super::waiting_helpers::{wait_for, WaitOptions};
+use failure::{Error, Fail};
+use log::*;
+use serde;
 
 use element::Element;
 use point::Point;
+
+use crate::browser::Transport;
+use crate::protocol;
+use crate::protocol::page::methods::Navigate;
+use crate::protocol::target::TargetId;
+use crate::protocol::target::TargetInfo;
+use crate::protocol::Event;
+use crate::protocol::{dom, input, page, profiler, target};
+
+use super::transport::SessionId;
+use super::waiting_helpers::{wait_for, WaitOptions};
 
 pub mod element;
 mod keys;
@@ -379,5 +376,35 @@ impl<'a> Tab {
             script_to_evaluate,
         })?;
         Ok(self)
+    }
+
+    /// Tells Chrome to start tracking which lines of JS have been executed.
+    ///
+    /// Equivalent to hitting the record button in the "coverage" tab in Chrome DevTools.
+    /// See the file `tests/coverage.rs` for an example.
+    pub fn start_js_coverage(&self) -> Result<&Self, Error> {
+        self.call_method(profiler::methods::Enable {})?;
+
+        self.call_method(profiler::methods::StartPreciseCoverage {
+            call_count: None,
+            detailed: Some(true),
+        })?;
+        Ok(self)
+    }
+
+    /// Tells Chrome to stop tracking which lines of JS have been executed.
+    pub fn stop_js_coverage(&self) -> Result<&Self, Error> {
+        self.call_method(profiler::methods::StopPreciseCoverage {})?;
+        Ok(self)
+    }
+
+    /// Returns info about which lines of JS have been executed since you last called this method
+    /// The format of the data is a little unintuitive, see here for details:
+    /// https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
+    pub fn take_precise_js_coverage(&self) -> Result<Vec<profiler::ScriptCoverage>, Error> {
+        let script_coverages = self
+            .call_method(profiler::methods::TakePreciseCoverage {})?
+            .result;
+        Ok(script_coverages)
     }
 }
