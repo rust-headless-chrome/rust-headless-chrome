@@ -155,6 +155,7 @@ fn box_model_geometry() -> Result<(), failure::Error> {
     logging::enable_logging();
     let (_, browser, tab) = dumb_server(include_str!("simple.html"));
     let center = tab.wait_for_element("div#position-test")?.get_box_model()?;
+    let within = tab.wait_for_element("div#within")?.get_box_model()?;
     let above = tab
         .wait_for_element("div#strictly-above")?
         .get_box_model()?;
@@ -166,25 +167,32 @@ fn box_model_geometry() -> Result<(), failure::Error> {
         .wait_for_element("div#strictly-right")?
         .get_box_model()?;
 
-    assert!(above.content.is_strictly_above(&center.content));
-    assert!(above.content.is_above(&center.content));
-    assert!(above.margin.is_above(&center.content));
-    assert!(!above.margin.is_strictly_above(&center.content));
+    assert!(above.content.strictly_above(&center.content));
+    assert!(above.content.above(&center.content));
+    assert!(above.margin.above(&center.content));
+    assert!(!above.margin.strictly_above(&center.content));
+    assert!(above.content.within_horizontal_bounds_of(&center.content));
+    assert!(!above.content.within_vertical_bounds_of(&center.content));
 
-    assert!(below.content.is_strictly_below(&center.content));
-    assert!(below.content.is_below(&center.content));
-    assert!(below.margin.is_below(&center.content));
-    assert!(!below.margin.is_strictly_below(&center.content));
+    assert!(below.content.strictly_below(&center.content));
+    assert!(below.content.below(&center.content));
+    assert!(below.margin.below(&center.content));
+    assert!(!below.margin.strictly_below(&center.content));
 
-    assert!(left.content.is_strictly_left_of(&center.content));
-    assert!(left.content.is_left_of(&center.content));
-    assert!(left.margin.is_left_of(&center.content));
-    assert!(!left.margin.is_strictly_left_of(&center.content));
+    assert!(left.content.strictly_left_of(&center.content));
+    assert!(left.content.left_of(&center.content));
+    assert!(left.margin.left_of(&center.content));
+    assert!(!left.margin.strictly_left_of(&center.content));
+    assert!(!left.content.within_horizontal_bounds_of(&center.content));
+    assert!(left.content.within_vertical_bounds_of(&center.content));
 
-    assert!(right.content.is_strictly_right_of(&center.content));
-    assert!(right.content.is_right_of(&center.content));
-    assert!(right.margin.is_right_of(&center.content));
-    assert!(!right.margin.is_strictly_right_of(&center.content));
+    assert!(right.content.strictly_right_of(&center.content));
+    assert!(right.content.right_of(&center.content));
+    assert!(right.margin.right_of(&center.content));
+    assert!(!right.margin.strictly_right_of(&center.content));
+
+    assert!(within.content.within_bounds_of(&center.content));
+    assert!(!center.content.within_bounds_of(&within.content));
 
     Ok(())
 }
