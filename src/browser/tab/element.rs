@@ -50,128 +50,99 @@ impl ElementQuad {
         self.width() / self.height()
     }
 
-    /// If the most bottom point of `self` is above the most top point of `other`
-    pub fn is_strictly_above(&self, other: &Self) -> bool {
+    /// The most left (smallest) x-coordinate
+    pub fn most_left(&self) -> f64 {
+        self.top_right
+            .x
+            .min(self.top_left.x)
+            .min(self.bottom_right.x)
+            .min(self.bottom_left.x)
+    }
+
+    /// The most right (largest) x-coordinate
+    pub fn most_right(&self) -> f64 {
+        self.top_right
+            .x
+            .max(self.top_left.x)
+            .max(self.bottom_right.x)
+            .max(self.bottom_left.x)
+    }
+
+    /// The most top (smallest) y-coordinate
+    pub fn most_top(&self) -> f64 {
+        self.top_right
+            .y
+            .min(self.top_left.y)
+            .min(self.bottom_right.y)
+            .min(self.bottom_left.y)
+    }
+
+    /// The most bottom (largest) y-coordinate
+    fn most_bottom(&self) -> f64 {
         self.top_right
             .y
             .max(self.top_left.y)
             .max(self.bottom_right.y)
             .max(self.bottom_left.y)
-            < other
-                .top_right
-                .y
-                .min(other.top_left.y)
-                .min(other.bottom_right.y)
-                .min(other.bottom_left.y)
+    }
+
+    /// If the most bottom point of `self` is above the most top point of `other`
+    pub fn strictly_above(&self, other: &Self) -> bool {
+        self.most_bottom() < other.most_top()
     }
 
     /// If the most bottom point of `self` is above or on the same line as the
     /// most top point of `other`
-    pub fn is_above(&self, other: &Self) -> bool {
-        self.top_right
-            .y
-            .max(self.top_left.y)
-            .max(self.bottom_right.y)
-            .max(self.bottom_left.y)
-            <= other
-                .top_right
-                .y
-                .min(other.top_left.y)
-                .min(other.bottom_right.y)
-                .min(other.bottom_left.y)
+    pub fn above(&self, other: &Self) -> bool {
+        self.most_bottom() <= other.most_top()
     }
 
     /// If the most top point of `self` is below the most bottom point of `other`
-    pub fn is_strictly_below(&self, other: &Self) -> bool {
-        self.top_right
-            .y
-            .min(self.top_left.y)
-            .min(self.bottom_right.y)
-            .min(self.bottom_left.y)
-            > other
-                .top_right
-                .y
-                .max(other.top_left.y)
-                .max(other.bottom_right.y)
-                .max(other.bottom_left.y)
+    pub fn strictly_below(&self, other: &Self) -> bool {
+        self.most_top() > other.most_bottom()
     }
 
     /// If the most top point of `self` is below or on the same line as the
     /// most bottom point of `other`
-    pub fn is_below(&self, other: &Self) -> bool {
-        self.top_right
-            .y
-            .min(self.top_left.y)
-            .min(self.bottom_right.y)
-            .min(self.bottom_left.y)
-            >= other
-                .top_right
-                .y
-                .max(other.top_left.y)
-                .max(other.bottom_right.y)
-                .max(other.bottom_left.y)
+    pub fn below(&self, other: &Self) -> bool {
+        self.most_top() >= other.most_bottom()
     }
 
     /// If the most right point of `self` is left of the most left point of `other`
-    pub fn is_strictly_left_of(&self, other: &Self) -> bool {
-        self.top_right
-            .x
-            .max(self.top_left.x)
-            .max(self.bottom_right.x)
-            .max(self.bottom_left.x)
-            < other
-                .top_right
-                .x
-                .min(other.top_left.x)
-                .min(other.bottom_right.x)
-                .min(other.bottom_left.x)
+    pub fn strictly_left_of(&self, other: &Self) -> bool {
+        self.most_right() < other.most_left()
     }
 
     /// If the most right point of `self` is left or on the same line as the
     /// most left point of `other`
-    pub fn is_left_of(&self, other: &Self) -> bool {
-        self.top_right
-            .x
-            .max(self.top_left.x)
-            .max(self.bottom_right.x)
-            .max(self.bottom_left.x)
-            <= other
-                .top_right
-                .x
-                .min(other.top_left.x)
-                .min(other.bottom_right.x)
-                .min(other.bottom_left.x)
+    pub fn left_of(&self, other: &Self) -> bool {
+        self.most_right() <= other.most_left()
     }
 
     /// If the most left point of `self` is right of the most right point of `other`
-    pub fn is_strictly_right_of(&self, other: &Self) -> bool {
-        self.top_right
-            .x
-            .min(self.top_left.x)
-            .min(self.bottom_right.x)
-            .min(self.bottom_left.x)
-            > other
-                .top_right
-                .x
-                .max(other.top_left.x)
-                .max(other.bottom_right.x)
-                .max(other.bottom_left.x)
+    pub fn strictly_right_of(&self, other: &Self) -> bool {
+        self.most_left() > other.most_right()
     }
 
     /// If the most left point of `self` is right or on the same line as the
     /// most right point of `other`
-    pub fn is_right_of(&self, other: &Self) -> bool {
-        self.top_right
-            .x
-            .min(self.top_left.x)
-            .min(self.bottom_right.x)
-            .min(self.bottom_left.x)
-            >= other
-                .top_right
-                .x
-                .max(other.top_left.x)
-                .max(other.bottom_right.x)
-                .max(other.bottom_left.x)
+    pub fn right_of(&self, other: &Self) -> bool {
+        self.most_left() >= other.most_right()
+    }
+
+    /// If `self` is within the left/right boundaries defined by `other`.
+    pub fn within_horizontal_bounds_of(&self, other: &Self) -> bool {
+        self.most_left() >= other.most_left() && self.most_right() <= other.most_right()
+    }
+
+    /// If `self` is within the top/bottom boundaries defined by `other`.
+    pub fn within_vertical_bounds_of(&self, other: &Self) -> bool {
+        self.most_top() >= other.most_top() && self.most_bottom() <= other.most_bottom()
+    }
+
+    /// If `self` is within the boundaries defined by `other`.
+    pub fn within_bounds_of(&self, other: &Self) -> bool {
+        self.within_horizontal_bounds_of(&other) && self.within_vertical_bounds_of(&other)
     }
 }
 
