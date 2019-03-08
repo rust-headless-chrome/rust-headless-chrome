@@ -378,27 +378,54 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    /// Tells Chrome to start tracking which lines of JS have been executed.
+    /// Enables the profiler
+    pub fn enable_profiler(&self) -> Result<&Self, Error> {
+        self.call_method(profiler::methods::Enable {})?;
+
+        Ok(self)
+    }
+
+    /// Disables the profiler
+    pub fn disable_profiler(&self) -> Result<&Self, Error> {
+        self.call_method(profiler::methods::Disable {})?;
+
+        Ok(self)
+    }
+
+    /// Starts tracking which lines of JS have been executed
+    ///
+    /// Will return error unless `enable_profiler` has been called.
     ///
     /// Equivalent to hitting the record button in the "coverage" tab in Chrome DevTools.
     /// See the file `tests/coverage.rs` for an example.
+    ///
+    /// By default we enable the 'detailed' flag on StartPreciseCoverage, which enables block-level
+    /// granularity, and also enable 'call_count' (which when disabled always sets count to 1 or 0).
+    ///
     pub fn start_js_coverage(&self) -> Result<&Self, Error> {
-        self.call_method(profiler::methods::Enable {})?;
-
         self.call_method(profiler::methods::StartPreciseCoverage {
-            call_count: None,
+            call_count: Some(true),
             detailed: Some(true),
         })?;
         Ok(self)
     }
 
-    /// Tells Chrome to stop tracking which lines of JS have been executed.
+    /// Stops tracking which lines of JS have been executed
+    /// If you're finished with the profiler, don't forget to call `disable_profiler`.
     pub fn stop_js_coverage(&self) -> Result<&Self, Error> {
         self.call_method(profiler::methods::StopPreciseCoverage {})?;
         Ok(self)
     }
 
-    /// Returns info about which lines of JS have been executed since you last called this method
+    /// Collect coverage data for the current isolate, and resets execution counters.
+    ///
+    /// Precise code coverage needs to have started (see `start_js_coverage`).
+    ///
+    /// Will only send information about code that's been executed since this method was last
+    /// called, or (if this is the first time) since calling `start_js_coverage`.
+    /// Another way of thinking about it is: every time you call this, the call counts for
+    /// FunctionRanges are reset after returning.
+    ///
     /// The format of the data is a little unintuitive, see here for details:
     /// https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
     pub fn take_precise_js_coverage(&self) -> Result<Vec<profiler::ScriptCoverage>, Error> {

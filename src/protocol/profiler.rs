@@ -1,12 +1,22 @@
 use serde::Deserialize;
 
+// TODO: use these aliases in other parts of the protocol module
+// From experimentation, it seems the protocol's integers are i32s.
+#[allow(dead_code)]
+type JsInt = i32;
+// For when we specifically want to guard against negative numbers.
+type JsUInt = u32;
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Coverage data for a source range.
 pub struct CoverageRange {
-    pub start_offset: u16,
-    pub end_offset: u16,
-    pub count: u16,
+    /// JavaScript script source offset for the range start.
+    pub start_offset: JsUInt,
+    /// JavaScript script source offset for the range end.
+    pub end_offset: JsUInt,
+    /// Collected execution count of the source range.
+    pub count: JsUInt,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -43,6 +53,17 @@ pub mod methods {
     impl Method for Enable {
         const NAME: &'static str = "Profiler.enable";
         type ReturnObject = EnableReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Disable {}
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DisableReturnObject {}
+    impl Method for Disable {
+        const NAME: &'static str = "Profiler.disable";
+        type ReturnObject = DisableReturnObject;
     }
 
     #[derive(Serialize, Debug)]

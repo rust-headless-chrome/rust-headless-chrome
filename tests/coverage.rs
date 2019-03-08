@@ -57,6 +57,7 @@ fn returns_actual_coverage() -> Result<(), Error> {
     .unwrap();
     let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
 
+    tab.enable_profiler()?;
     tab.start_js_coverage()?;
 
     let url = format!("http://127.0.0.1:{}", server.port());
