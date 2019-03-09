@@ -219,6 +219,22 @@ pub mod methods {
         type ReturnObject = QuerySelectorReturnObject;
     }
 
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct QuerySelectorAll<'a> {
+        pub node_id: super::NodeId,
+        pub selector: &'a str,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct QuerySelectorAllReturnObject {
+        pub node_ids: Vec<super::NodeId>,
+    }
+    impl<'a> Method for QuerySelectorAll<'a> {
+        const NAME: &'static str = "DOM.querySelectorAll";
+        type ReturnObject = QuerySelectorAllReturnObject;
+    }
+
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct RemoteObject {

@@ -18,6 +18,7 @@ use crate::protocol::{dom, input, page, profiler, target};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
+use crate::protocol::dom::Node;
 
 pub mod element;
 mod keys;
@@ -185,16 +186,29 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
+    pub fn wait_for_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+        debug!("Waiting for element with selector: {}", selector);
+        util::Wait::default()
+            .until(|| {
+                if let Ok(elements) = self.find_elements(selector) {
+                    if elements.iter().all(|element| element.get_midpoint().is_ok()) {
+                        Some(elements)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .map_err(|e| e.into())
+    }
+
     pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
             let root_node_id = self
-                .call_method(dom::methods::GetDocument {
-                    depth: Some(0),
-                    pierce: Some(false),
-                })?
-                .root
+                .get_document()?
                 .node_id;
 
             self.call_method(dom::methods::QuerySelector {
@@ -204,29 +218,46 @@ impl<'a> Tab {
             .node_id
         };
 
-        if node_id == 0 {
+
+        Element::new(&self, node_id, selector)
+    }
+
+    pub fn get_document(&self) -> Result<Node, Error> {
+        Ok(self
+            .call_method(dom::methods::GetDocument {
+                depth: Some(0),
+                pierce: Some(false),
+            })?
+            .root)
+    }
+
+    pub fn find_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+        trace!("Looking up elements via selector: {}", selector);
+
+        let node_ids = {
+            let root_node_id = self.get_document()?.node_id;
+
+            self.call_method(dom::methods::QuerySelectorAll {
+                node_id: root_node_id,
+                selector,
+            })?
+            .node_ids
+        };
+
+        if node_ids.is_empty() {
             return Err(NoElementFound {
                 selector: selector.to_string(),
             }
             .into());
         }
 
-        let backend_node_id = self.describe_node(node_id)?.backend_node_id;
+        let mut elements = vec![];
 
-        let remote_object_id = {
-            let object = self
-                .call_method(dom::methods::ResolveNode {
-                    backend_node_id: Some(backend_node_id),
-                })?
-                .object;
-            object.object_id.expect("couldn't find object ID")
-        };
-        Ok(Element {
-            remote_object_id,
-            backend_node_id,
-            parent: &self,
-            found_via_selector: selector,
-        })
+        for node_id in node_ids.iter() {
+            elements.push(Element::new(&self, *node_id, selector)?)
+        }
+
+        Ok(elements)
     }
 
     pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node, Error> {

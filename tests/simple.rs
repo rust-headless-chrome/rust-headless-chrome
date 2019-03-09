@@ -229,3 +229,12 @@ fn reload() -> Result<(), failure::Error> {
     // TODO test effect of scriptEvaluateOnLoad
     Ok(())
 }
+
+#[test]
+fn find_elements() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let divs = tab.wait_for_elements("div")?;
+    assert_eq!(8, divs.len());
+    Ok(())
+}
