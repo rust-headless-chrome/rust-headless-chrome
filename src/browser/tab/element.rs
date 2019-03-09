@@ -223,7 +223,7 @@ impl<'a> Element<'a> {
             return Err(super::NoElementFound {
                 selector: found_via_selector.to_string(),
             }
-                .into());
+            .into());
         }
 
         let backend_node_id = parent.describe_node(node_id)?.backend_node_id;

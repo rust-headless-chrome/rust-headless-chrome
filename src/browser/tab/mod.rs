@@ -192,7 +192,10 @@ impl<'a> Tab {
         util::Wait::with_timeout(Duration::from_secs(15))
             .until(|| {
                 if let Ok(elements) = self.find_elements(selector) {
-                    if elements.iter().all(|element| element.get_midpoint().is_ok()) {
+                    if elements
+                        .iter()
+                        .all(|element| element.get_midpoint().is_ok())
+                    {
                         Some(elements)
                     } else {
                         None
@@ -208,9 +211,7 @@ impl<'a> Tab {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
-            let root_node_id = self
-                .get_document()?
-                .node_id;
+            let root_node_id = self.get_document()?.node_id;
 
             self.call_method(dom::methods::QuerySelector {
                 node_id: root_node_id,
@@ -218,7 +219,6 @@ impl<'a> Tab {
             })?
             .node_id
         };
-
 
         Element::new(&self, node_id, selector)
     }
