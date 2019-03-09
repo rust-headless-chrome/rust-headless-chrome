@@ -19,6 +19,7 @@ use crate::{protocol, util};
 
 use super::transport::SessionId;
 use crate::protocol::dom::Node;
+use std::time::Duration;
 
 pub mod element;
 mod keys;
@@ -188,7 +189,7 @@ impl<'a> Tab {
 
     pub fn wait_for_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        util::Wait::default()
+        util::Wait::with_timeout(Duration::from_secs(15))
             .until(|| {
                 if let Ok(elements) = self.find_elements(selector) {
                     if elements.iter().all(|element| element.get_midpoint().is_ok()) {
