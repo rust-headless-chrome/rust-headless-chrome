@@ -10,15 +10,14 @@ use element::Element;
 use point::Point;
 
 use crate::browser::Transport;
-use crate::protocol;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
 use crate::protocol::Event;
 use crate::protocol::{dom, input, page, profiler, target};
+use crate::{protocol, util};
 
 use super::transport::SessionId;
-use super::waiting_helpers::{wait_for, WaitOptions};
 
 pub mod element;
 mod keys;
@@ -129,34 +128,22 @@ impl<'a> Tab {
         trace!("waiting to start navigating");
         // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        wait_for(
-            || {
-                if navigating.load(Ordering::SeqCst) {
-                    Some(true)
-                } else {
-                    None
-                }
-            },
-            WaitOptions {
-                timeout_ms: 15_000,
-                sleep_ms: 100,
-            },
-        )?;
+        util::Wait::default().until(|| {
+            if navigating.load(Ordering::SeqCst) {
+                Some(true)
+            } else {
+                None
+            }
+        })?;
         debug!("A tab started navigating");
 
-        wait_for(
-            || {
-                if navigating.load(Ordering::SeqCst) {
-                    None
-                } else {
-                    Some(true)
-                }
-            },
-            WaitOptions {
-                timeout_ms: 15_000,
-                sleep_ms: 100,
-            },
-        )?;
+        util::Wait::default().until(|| {
+            if navigating.load(Ordering::SeqCst) {
+                None
+            } else {
+                Some(true)
+            }
+        })?;
         debug!("A tab finished navigating");
 
         Ok(self)
@@ -174,17 +161,17 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
-        self.wait_for_element_with_custom_timeout(selector, 15_000)
+        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(15))
     }
 
     pub fn wait_for_element_with_custom_timeout(
         &'a self,
         selector: &'a str,
-        timeout_ms: u64,
+        timeout: std::time::Duration,
     ) -> Result<Element<'a>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        wait_for(
-            || {
+        util::Wait::with_timeout(timeout)
+            .until(|| {
                 if let Ok(element) = self.find_element(selector) {
                     if element.get_midpoint().is_ok() {
                         Some(element)
@@ -194,12 +181,8 @@ impl<'a> Tab {
                 } else {
                     None
                 }
-            },
-            WaitOptions {
-                timeout_ms,
-                sleep_ms: 1000,
-            },
-        )
+            })
+            .map_err(|e| e.into())
     }
 
     pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
