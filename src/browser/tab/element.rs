@@ -3,7 +3,6 @@ use log::*;
 
 use super::point::Point;
 use crate::protocol::dom;
-use crate::protocol::dom::NodeId;
 use crate::protocol::page;
 use crate::protocol::runtime;
 use std::collections::HashMap;
