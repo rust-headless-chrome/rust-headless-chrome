@@ -11,18 +11,17 @@ use crate::protocol::browser::methods::GetVersion;
 pub use crate::protocol::browser::methods::VersionInformationReturnObject;
 use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::protocol::{self, Event};
+use crate::util;
 
 pub use process::LaunchOptionsBuilder;
 use process::{LaunchOptions, Process};
 use std::time::Duration;
 pub use tab::Tab;
 use transport::Transport;
-use waiting_helpers::{wait_for, WaitOptions};
 
 mod process;
 pub mod tab;
 mod transport;
-mod waiting_helpers;
 
 /// A handle to an instance of Chrome / Chromium, which wraps a WebSocket connection to its debugging port.
 ///
@@ -98,13 +97,9 @@ impl Browser {
     /// about that tab isn't available *immediately* after starting the process. Tabs are behind `Arc`s
     /// because they each have their own thread which handles events and method responses directed to them.
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>, Error> {
-        wait_for(
-            || self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)),
-            WaitOptions {
-                timeout_ms: 5000,
-                sleep_ms: 10,
-            },
-        )
+        util::Wait::default()
+            .until(|| self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)))
+            .map_err(|e| e.into())
     }
 
     /// Create a new tab and return a handle to it.
@@ -137,18 +132,14 @@ impl Browser {
 
         let target_id = self.call_method(create_target)?.target_id;
 
-        wait_for(
-            || {
+        util::Wait::default()
+            .until(|| {
                 let tabs = self.tabs.lock().unwrap();
                 tabs.iter()
                     .find(|tab| *tab.get_target_id() == target_id)
                     .map(|tab_ref| Arc::clone(tab_ref))
-            },
-            WaitOptions {
-                timeout_ms: 5000,
-                sleep_ms: 10,
-            },
-        )
+            })
+            .map_err(|e| e.into())
     }
 
     /// Get version information

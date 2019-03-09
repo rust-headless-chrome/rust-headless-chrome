@@ -16,6 +16,7 @@ extern crate derive_builder;
 
 pub mod browser;
 pub mod protocol;
+pub mod util;
 
 pub use browser::{Browser, LaunchOptionsBuilder, Tab};
 

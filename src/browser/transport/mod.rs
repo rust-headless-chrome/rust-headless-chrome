@@ -11,13 +11,11 @@ use log::*;
 
 use serde;
 
-use crate::protocol;
 use crate::protocol::target;
 use crate::protocol::Event;
 use crate::protocol::Message;
+use crate::{protocol, util};
 
-use crate::browser::waiting_helpers::wait_for;
-use crate::browser::waiting_helpers::WaitOptions;
 use crate::protocol::CallId;
 use std::time::Duration;
 use waiting_call_registry::WaitingCallRegistry;
@@ -144,13 +142,7 @@ impl Transport {
         }
 
         trace!("waiting for response from call registry");
-        let response_result = wait_for(
-            || response_rx.try_recv().ok(),
-            WaitOptions {
-                timeout_ms: 5000,
-                sleep_ms: 10,
-            },
-        );
+        let response_result = util::Wait::default().until(|| response_rx.try_recv().ok());
         protocol::parse_response::<C::ReturnObject>((response_result?)?)
     }
 

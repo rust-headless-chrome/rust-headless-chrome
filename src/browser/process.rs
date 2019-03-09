@@ -14,7 +14,7 @@ use which::which;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-use super::waiting_helpers::{wait_for_mut, WaitOptions};
+use crate::util;
 
 pub struct Process {
     _child_process: TemporaryProcess,
@@ -235,25 +235,19 @@ impl Process {
     }
 
     fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
-        let chrome_output_result = wait_for_mut(
-            || {
-                let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
-                match Self::ws_url_from_reader(my_stderr) {
-                    Ok(output_option) => {
-                        if let Some(output) = output_option {
-                            Some(Ok(output))
-                        } else {
-                            None
-                        }
+        let chrome_output_result = util::Wait::default().until(|| {
+            let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
+            match Self::ws_url_from_reader(my_stderr) {
+                Ok(output_option) => {
+                    if let Some(output) = output_option {
+                        Some(Ok(output))
+                    } else {
+                        None
                     }
-                    Err(err) => Some(Err(err)),
                 }
-            },
-            WaitOptions {
-                timeout_ms: 5000,
-                sleep_ms: 10,
-            },
-        );
+                Err(err) => Some(Err(err)),
+            }
+        });
 
         if let Ok(output_result) = chrome_output_result {
             output_result
