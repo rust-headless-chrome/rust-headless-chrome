@@ -254,7 +254,7 @@ impl<'a> Tab {
 
         let mut elements = vec![];
 
-        for node_id in node_ids.iter() {
+        for node_id in &node_ids {
             elements.push(Element::new(&self, *node_id, selector)?)
         }
 
