@@ -1,6 +1,9 @@
 #![allow(unused_variables)]
 
-use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder, Tab};
+use headless_chrome::{
+    browser::default_executable, protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder,
+    Tab,
+};
 use log::*;
 use rand::prelude::*;
 use std::sync::Arc;
@@ -20,7 +23,13 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
-    let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap()).unwrap();
+    let browser = Browser::new(
+        LaunchOptionsBuilder::default()
+            .path(Some(default_executable().unwrap()))
+            .build()
+            .unwrap(),
+    )
+    .unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();

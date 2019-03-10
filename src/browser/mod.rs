@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 use failure::Error;
 use log::*;
+use which::which;
 
 use serde;
 
@@ -19,6 +20,7 @@ use std::time::Duration;
 pub use tab::Tab;
 use transport::Transport;
 
+mod fetcher;
 mod process;
 pub mod tab;
 mod transport;
@@ -28,16 +30,17 @@ mod transport;
 ///
 /// Most of your actual "driving" (e.g. clicking, typing, navigating) will be via instances of [Tab](../tab/struct.Tab.html), which are accessible via methods such as `get_tabs`.
 ///
-/// With the default [LaunchOptions](../process/LaunchOptions.struct.html), your locally
-/// installed copy of Chrome launches in headless mode. You can provide your own binary
-/// by creating LaunchOptions with a custom `path` field.
+/// With the default [LaunchOptions](../process/LaunchOptions.struct.html), we will automatically
+/// download a revision of Chromium that has a compatible API into your `$XDG_DATA_DIR`. Alternatively,
+/// you can specify your own path to a binary, or make use of the `default_executable` function to use
+///  your already-installed copy of Chrome.
 ///
 /// ```rust
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
 /// #
-/// use headless_chrome::{Browser, LaunchOptionsBuilder};
-/// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
+/// use headless_chrome::{Browser, browser::default_executable, LaunchOptionsBuilder};
+/// let browser = Browser::new(LaunchOptionsBuilder::default().path(Some(default_executable().unwrap())).build().unwrap())?;
 /// let first_tab = browser.wait_for_initial_tab()?;
 /// assert_eq!("about:blank", first_tab.get_url());
 /// #
@@ -108,8 +111,8 @@ impl Browser {
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
     /// #
-    /// # use headless_chrome::{Browser, LaunchOptionsBuilder};
-    /// # let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
+    /// # use headless_chrome::{Browser, browser::default_executable, LaunchOptionsBuilder};
+    /// # let browser = Browser::new(LaunchOptionsBuilder::default().path(Some(default_executable().unwrap())).build().unwrap())?;
     /// let first_tab = browser.wait_for_initial_tab()?;
     /// let new_tab = browser.new_tab()?;
     /// let num_tabs = browser.get_tabs().lock().unwrap().len();
@@ -148,8 +151,8 @@ impl Browser {
     /// # use failure::Error;
     /// # fn main() -> Result<(), Error> {
     /// #
-    /// # use headless_chrome::{Browser, LaunchOptionsBuilder};
-    /// # let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
+    /// # use headless_chrome::{Browser, browser::default_executable, LaunchOptionsBuilder};
+    /// # let browser = Browser::new(LaunchOptionsBuilder::default().path(Some(default_executable().unwrap())).build().unwrap())?;
     /// let version_info = browser.get_version()?;
     /// println!("User-Agent is `{}`", version_info.user_agent);
     /// #
@@ -228,4 +231,37 @@ impl Browser {
         #[allow(clippy::used_underscore_binding)]
         &self._process
     }
+}
+
+pub fn default_executable() -> Result<std::path::PathBuf, String> {
+    // TODO Look at $BROWSER and if it points to a chrome binary
+    // $BROWSER may also provide default arguments, which we may
+    // or may not override later on.
+
+    for app in &["google-chrome-stable", "chromium"] {
+        if let Ok(path) = which(app) {
+            return Ok(path);
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let default_paths = &["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"][..];
+        for path in default_paths {
+            if std::path::Path::new(path).exists() {
+                return Ok(path.into());
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        if let Some(path) = get_chrome_path_from_registry() {
+            if path.exists() {
+                return Ok(path);
+            }
+        }
+    }
+
+    Err("Could not auto detect a chrome executable".to_string())
 }

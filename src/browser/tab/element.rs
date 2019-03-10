@@ -202,6 +202,7 @@ impl BoxModel {
     }
 }
 
+#[derive(Debug)]
 pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,

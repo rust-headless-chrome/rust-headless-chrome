@@ -25,6 +25,7 @@ mod point;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
+#[derive(Debug)]
 pub struct Tab {
     target_id: TargetId,
     transport: Arc<Transport>,
