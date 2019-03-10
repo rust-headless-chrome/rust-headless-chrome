@@ -17,6 +17,7 @@ use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
 use super::fetcher::{self, Fetcher};
 use crate::util;
+use std::time::Duration;
 
 pub struct Process {
     _child_process: TemporaryProcess,
@@ -221,7 +222,7 @@ impl Process {
     }
 
     fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
-        let chrome_output_result = util::Wait::default().until(|| {
+        let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(10)).until(|| {
             let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
             match Self::ws_url_from_reader(my_stderr) {
                 Ok(output_option) => {
