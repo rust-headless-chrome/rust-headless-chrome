@@ -211,6 +211,40 @@ pub struct Element<'a> {
 }
 
 impl<'a> Element<'a> {
+    /// Using a 'node_id', of the type returned by QuerySelector and QuerySelectorAll, this finds
+    /// the 'backend_node_id' and 'remote_object_id' which are stable identifiers, unlike node_id.
+    /// We use these two when making various calls to the API because of that.
+    pub fn new(
+        parent: &'a super::Tab,
+        node_id: dom::NodeId,
+        found_via_selector: &'a str,
+    ) -> Result<Self, Error> {
+        if node_id == 0 {
+            return Err(super::NoElementFound {
+                selector: found_via_selector.to_string(),
+            }
+            .into());
+        }
+
+        let backend_node_id = parent.describe_node(node_id)?.backend_node_id;
+
+        let remote_object_id = {
+            let object = parent
+                .call_method(dom::methods::ResolveNode {
+                    backend_node_id: Some(backend_node_id),
+                })?
+                .object;
+            object.object_id.expect("couldn't find object ID")
+        };
+
+        Ok(Element {
+            remote_object_id,
+            backend_node_id,
+            parent,
+            found_via_selector,
+        })
+    }
+
     pub fn click(&self) -> Result<&Self, Error> {
         debug!("Clicking element found via {}", self.found_via_selector);
 

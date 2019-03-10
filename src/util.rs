@@ -34,6 +34,13 @@ impl Wait {
         }
     }
 
+    pub fn with_sleep(sleep: Duration) -> Self {
+        Self {
+            sleep,
+            ..Self::default()
+        }
+    }
+
     pub fn forever() -> Self {
         Self {
             timeout: Duration::from_secs(u64::max_value()),
