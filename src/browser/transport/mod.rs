@@ -142,7 +142,8 @@ impl Transport {
         }
 
         trace!("waiting for response from call registry");
-        let response_result = util::Wait::default().until(|| response_rx.try_recv().ok());
+        let response_result =
+            util::Wait::with_sleep(Duration::from_millis(5)).until(|| response_rx.try_recv().ok());
         protocol::parse_response::<C::ReturnObject>((response_result?)?)
     }
 
