@@ -122,8 +122,14 @@ impl<'a> Tab {
     where
         C: protocol::Method + serde::Serialize + std::fmt::Debug,
     {
-        self.transport
-            .call_method_on_target(self.session_id.clone(), method)
+        debug!("Calling method: {:?}", method);
+        let result = self
+            .transport
+            .call_method_on_target(self.session_id.clone(), method);
+        let mut result_string = format!("{:?}", result);
+        result_string.truncate(70);
+        debug!("Got result: {:?}", result_string);
+        result
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
@@ -175,11 +181,7 @@ impl<'a> Tab {
         util::Wait::with_timeout(timeout)
             .until(|| {
                 if let Ok(element) = self.find_element(selector) {
-                    if element.get_midpoint().is_ok() {
-                        Some(element)
-                    } else {
-                        None
-                    }
+                    Some(element)
                 } else {
                     None
                 }
@@ -192,14 +194,7 @@ impl<'a> Tab {
         util::Wait::with_timeout(Duration::from_secs(15))
             .until(|| {
                 if let Ok(elements) = self.find_elements(selector) {
-                    if elements
-                        .iter()
-                        .all(|element| element.get_midpoint().is_ok())
-                    {
-                        Some(elements)
-                    } else {
-                        None
-                    }
+                    Some(elements)
                 } else {
                     None
                 }
