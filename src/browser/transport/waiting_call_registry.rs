@@ -11,6 +11,7 @@ trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
+#[derive(Debug)]
 pub struct WaitingCallRegistry {
     calls: Mutex<HashMap<CallId, mpsc::Sender<Result<Response, Error>>>>,
 }

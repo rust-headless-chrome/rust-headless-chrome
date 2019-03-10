@@ -44,7 +44,7 @@ impl From<String> for SessionId {
     }
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 enum ListenerId {
     SessionId(SessionId),
     Browser,
@@ -52,6 +52,7 @@ enum ListenerId {
 
 type Listeners = Arc<Mutex<HashMap<ListenerId, Sender<Event>>>>;
 
+#[derive(Debug)]
 pub struct Transport {
     web_socket_connection: Arc<WebSocketConnection>,
     waiting_call_registry: Arc<WaitingCallRegistry>,

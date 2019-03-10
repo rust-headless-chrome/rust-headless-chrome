@@ -15,6 +15,13 @@ pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
 }
 
+// TODO websocket::sender::Writer is not :Debug...
+impl std::fmt::Debug for WebSocketConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "WebSocketConnection {{}}")
+    }
+}
+
 impl WebSocketConnection {
     pub fn new(
         ws_url: &str,
