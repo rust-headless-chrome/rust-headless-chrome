@@ -4,10 +4,10 @@ mod server;
 use failure::Error;
 use headless_chrome::{Browser, LaunchOptionsBuilder};
 
+use headless_chrome::browser::default_executable;
 use headless_chrome::browser::tab::Tab;
 use server::Server;
 use std::sync::Arc;
-use headless_chrome::browser::default_executable;
 
 fn basic_http_response(
     body: &'static str,
