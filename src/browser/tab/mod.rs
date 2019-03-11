@@ -281,17 +281,41 @@ impl<'a> Tab {
 
     pub fn press_key(&self, key: &str) -> Result<&Self, Error> {
         let definition = keys::get_key_definition(key)?;
-        let text = definition.text.or(Some(definition.key));
+
+        // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
+        let text = definition.text.or_else(|| {
+            if definition.key.len() == 1 {
+                Some(definition.key)
+            } else {
+                None
+            }
+        });
+
+        // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L52
+        let key_down_event_type = if text.is_some() {
+            "keyDown"
+        } else {
+            "rawKeyDown"
+        };
+
+        let key = Some(definition.key);
+        let code = Some(definition.code);
 
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyDown",
-            key: definition.key,
+            key,
             text,
+            code: Some(definition.code),
+            windows_virtual_key_code: definition.key_code,
+            native_virtual_key_code: definition.key_code,
         })?;
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyUp",
-            key: definition.key,
+            key,
             text,
+            code,
+            windows_virtual_key_code: definition.key_code,
+            native_virtual_key_code: definition.key_code,
         })?;
         Ok(self)
     }
