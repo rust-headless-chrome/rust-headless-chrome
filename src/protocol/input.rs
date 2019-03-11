@@ -45,7 +45,7 @@ pub mod methods {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub code: Option<&'a str>,
         pub windows_virtual_key_code: u8,
-        pub native_virtual_key_code: u8
+        pub native_virtual_key_code: u8,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]

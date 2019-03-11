@@ -302,7 +302,7 @@ impl<'a> Tab {
         let code = Some(definition.code);
 
         self.call_method(input::methods::DispatchKeyEvent {
-            event_type: "keyDown",
+            event_type: key_down_event_type,
             key,
             text,
             code: Some(definition.code),
