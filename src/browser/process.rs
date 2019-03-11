@@ -182,6 +182,8 @@ impl Process {
             .as_ref()
             .ok_or_else(|| format_err!("Chrome path required"))?;
 
+        info!("Launching Chrome binary at {:?}", &path);
+
         let process = TemporaryProcess(
             Command::new(&path)
                 .args(&args)

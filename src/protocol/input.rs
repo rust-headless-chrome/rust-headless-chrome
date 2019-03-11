@@ -39,7 +39,8 @@ pub mod methods {
         #[serde(rename = "type")]
         pub event_type: &'a str,
         pub key: &'a str,
-        pub text: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub text: Option<&'a str>,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]

@@ -281,16 +281,17 @@ impl<'a> Tab {
 
     pub fn press_key(&self, key: &str) -> Result<&Self, Error> {
         let definition = keys::get_key_definition(key)?;
+        let text = definition.text.or(Some(definition.key));
 
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyDown",
             key: definition.key,
-            text: definition.text,
+            text,
         })?;
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: "keyUp",
             key: definition.key,
-            text: definition.text,
+            text,
         })?;
         Ok(self)
     }
