@@ -7,6 +7,7 @@ use headless_chrome::{Browser, LaunchOptionsBuilder};
 use headless_chrome::browser::tab::Tab;
 use server::Server;
 use std::sync::Arc;
+use headless_chrome::browser::default_executable;
 
 fn basic_http_response(
     body: &'static str,
@@ -51,6 +52,7 @@ fn returns_actual_coverage() -> Result<(), Error> {
     let browser = Browser::new(
         LaunchOptionsBuilder::default()
             .headless(true)
+            .path(Some(default_executable().unwrap()))
             .build()
             .unwrap(),
     )
