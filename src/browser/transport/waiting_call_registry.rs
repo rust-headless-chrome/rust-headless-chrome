@@ -5,12 +5,13 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 
 use super::ConnectionClosed;
-use crate::cdtp::{CallId, Response};
+use crate::protocol::{CallId, Response};
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
 }
 
+#[derive(Debug)]
 pub struct WaitingCallRegistry {
     calls: Mutex<HashMap<CallId, mpsc::Sender<Result<Response, Error>>>>,
 }
@@ -35,6 +36,7 @@ impl WaitingCallRegistry {
     }
 
     pub fn resolve_call(&self, response: Response) -> Result<(), Error> {
+        trace!("Resolving call");
         let waiting_call_tx: mpsc::Sender<Result<Response, Error>> = {
             let mut waiting_calls = self.calls.lock().unwrap();
             waiting_calls.remove(&response.call_id()).unwrap()
@@ -52,6 +54,7 @@ impl WaitingCallRegistry {
     }
 
     pub fn unregister_call(&self, call_id: CallId) {
+        trace!("Deregistering call");
         let mut calls = self.calls.lock().unwrap();
         calls.remove(&call_id).unwrap();
     }
@@ -59,6 +62,7 @@ impl WaitingCallRegistry {
     // TODO: make it so we can pass in whatever error we want here
     // to make it less dependent on browser::transport
     pub fn cancel_outstanding_method_calls(&self) {
+        trace!("Cancelling outstanding method calls");
         let calls = self.calls.lock().unwrap();
         for (call_id, sender) in calls.iter() {
             trace!(

@@ -8,14 +8,15 @@ use std::sync::Mutex;
 
 use failure::{Error, Fail};
 use log::*;
+
 use serde;
 
-use crate::cdtp;
-use crate::cdtp::target;
-use crate::cdtp::Event;
-use crate::cdtp::Message;
+use crate::protocol::target;
+use crate::protocol::Event;
+use crate::protocol::Message;
+use crate::{protocol, util};
 
-use crate::cdtp::CallId;
+use crate::protocol::CallId;
 use std::time::Duration;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
@@ -43,7 +44,7 @@ impl From<String> for SessionId {
     }
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 enum ListenerId {
     SessionId(SessionId),
     Browser,
@@ -51,8 +52,9 @@ enum ListenerId {
 
 type Listeners = Arc<Mutex<HashMap<ListenerId, Sender<Event>>>>;
 
+#[derive(Debug)]
 pub struct Transport {
-    web_socket_connection: WebSocketConnection,
+    web_socket_connection: Arc<WebSocketConnection>,
     waiting_call_registry: Arc<WaitingCallRegistry>,
     listeners: Listeners,
     open: Arc<AtomicBool>,
@@ -66,7 +68,7 @@ pub struct ConnectionClosed {}
 impl Transport {
     pub fn new(ws_url: String) -> Result<Self, Error> {
         let (messages_tx, messages_rx) = mpsc::channel();
-        let web_socket_connection = WebSocketConnection::new(&ws_url, messages_tx)?;
+        let web_socket_connection = Arc::new(WebSocketConnection::new(&ws_url, messages_tx)?);
 
         let waiting_call_registry = Arc::new(WaitingCallRegistry::new());
 
@@ -79,9 +81,10 @@ impl Transport {
             Arc::clone(&waiting_call_registry),
             Arc::clone(&listeners),
             Arc::clone(&open),
+            Arc::clone(&web_socket_connection),
         );
 
-        Ok(Transport {
+        Ok(Self {
             web_socket_connection,
             waiting_call_registry,
             listeners,
@@ -102,7 +105,7 @@ impl Transport {
         destination: MethodDestination,
     ) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         // TODO: use get_mut to get exclusive access for entire block... maybe.
         if !self.open.load(Ordering::SeqCst) {
@@ -123,7 +126,9 @@ impl Transport {
                     message: &message_text,
                 };
                 if let Err(e) = self.call_method_on_browser(target_method) {
+                    error!("Failed to call method on browser");
                     self.waiting_call_registry.unregister_call(call.id);
+                    trace!("Unregistered callback: {:?}", call.id);
                     return Err(e);
                 }
             }
@@ -131,12 +136,16 @@ impl Transport {
                 if let Err(e) = self.web_socket_connection.send_message(&message_text) {
                     self.waiting_call_registry.unregister_call(call.id);
                     return Err(e);
+                } else {
+                    trace!("sent method call to browser via websocket");
                 }
             }
         }
 
-        let response_result = response_rx.recv_timeout(Duration::from_millis(1000))?;
-        cdtp::parse_response::<C::ReturnObject>(response_result?)
+        trace!("waiting for response from call registry");
+        let response_result =
+            util::Wait::with_sleep(Duration::from_millis(5)).until(|| response_rx.try_recv().ok());
+        protocol::parse_response::<C::ReturnObject>((response_result?)?)
     }
 
     pub fn call_method_on_target<C>(
@@ -145,7 +154,7 @@ impl Transport {
         method: C,
     ) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         // TODO: remove clone
         self.call_method(method, MethodDestination::Target(session_id))
@@ -153,7 +162,7 @@ impl Transport {
 
     pub fn call_method_on_browser<C>(&self, method: C) -> Result<C::ReturnObject, Error>
     where
-        C: cdtp::Method + serde::Serialize,
+        C: protocol::Method + serde::Serialize,
     {
         self.call_method(method, MethodDestination::Browser)
     }
@@ -177,70 +186,102 @@ impl Transport {
     }
 
     fn handle_incoming_messages(
-        messages_rx: Receiver<cdtp::Message>,
+        messages_rx: Receiver<protocol::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
         listeners: Listeners,
         open: Arc<AtomicBool>,
+        conn: Arc<WebSocketConnection>,
     ) {
+        trace!("Starting handle_incoming_messages");
         std::thread::spawn(move || {
-            for message in messages_rx {
-                match message {
-                    Message::Response(response_to_browser_method_call) => {
-                        if waiting_call_registry
-                            .resolve_call(response_to_browser_method_call)
-                            .is_err()
-                        {
-                            warn!("The browser registered a call but then closed its receiving channel");
-                            break;
-                        }
+            trace!("Inside handle_incoming_messages thread");
+            // this iterator calls .recv() under the hood, so can block thread forever
+            // hence need for Connection Shutdown
+            loop {
+                match messages_rx.recv_timeout(Duration::from_millis(20_000)) {
+                    Err(_) => {
+                        break;
                     }
+                    Ok(message) => {
+                        trace!("{:?}", message);
+                        match message {
+                            Message::ConnectionShutdown => {
+                                trace!("Received shutdown message");
+                                break;
+                            }
+                            Message::Response(response_to_browser_method_call) => {
+                                if waiting_call_registry
+                                    .resolve_call(response_to_browser_method_call)
+                                    .is_err()
+                                {
+                                    warn!("The browser registered a call but then closed its receiving channel");
+                                    break;
+                                }
+                            }
 
-                    Message::Event(browser_event) => match browser_event {
-                        Event::ReceivedMessageFromTarget(target_message_event) => {
-                            let session_id = target_message_event.params.session_id.into();
-                            let raw_message = target_message_event.params.message;
+                            Message::Event(browser_event) => match browser_event {
+                                Event::ReceivedMessageFromTarget(target_message_event) => {
+                                    let session_id = target_message_event.params.session_id.into();
+                                    let raw_message = target_message_event.params.message;
 
-                            if let Ok(target_message) = cdtp::parse_raw_message(&raw_message) {
-                                match target_message {
-                                    Message::Event(target_event) => {
-                                        if let Some(tx) = listeners
-                                            .lock()
-                                            .unwrap()
-                                            .get(&ListenerId::SessionId(session_id))
-                                        {
-                                            tx.send(target_event)
-                                                .expect("Couldn't send event to listener");
+                                    if let Ok(target_message) =
+                                        protocol::parse_raw_message(&raw_message)
+                                    {
+                                        match target_message {
+                                            Message::Event(target_event) => {
+                                                if let Some(tx) = listeners
+                                                    .lock()
+                                                    .unwrap()
+                                                    .get(&ListenerId::SessionId(session_id))
+                                                {
+                                                    tx.send(target_event)
+                                                        .expect("Couldn't send event to listener");
+                                                }
+                                            }
+
+                                            Message::Response(resp) => {
+                                                if waiting_call_registry.resolve_call(resp).is_err()
+                                                {
+                                                    warn!("The browser registered a call but then closed its receiving channel");
+                                                    break;
+                                                }
+                                            }
+                                            Message::ConnectionShutdown => {}
                                         }
+                                    } else {
+                                        trace!(
+                                            "Message from target isn't recognised: {:?}",
+                                            &raw_message[..30]
+                                        );
                                     }
+                                }
 
-                                    Message::Response(resp) => {
-                                        if waiting_call_registry.resolve_call(resp).is_err() {
-                                            warn!("The browser registered a call but then closed its receiving channel");
+                                _ => {
+                                    if let Some(tx) =
+                                        listeners.lock().unwrap().get(&ListenerId::Browser)
+                                    {
+                                        if tx.send(browser_event).is_err() {
+                                            trace!("Couldn't send browser an event");
                                             break;
                                         }
                                     }
                                 }
-                            } else {
-                                trace!(
-                                    "Message from target isn't recognised: {:?}",
-                                    &raw_message[..30]
-                                );
-                            }
+                            },
                         }
-
-                        _ => {
-                            if let Some(tx) = listeners.lock().unwrap().get(&ListenerId::Browser) {
-                                tx.send(browser_event).unwrap()
-                            }
-                        }
-                    },
+                    }
                 }
             }
 
             trace!("Shutting down message handling loop");
 
+            // Need to do this because otherwise WS thread might block forever
+            conn.shutdown();
+
             open.store(false, Ordering::SeqCst);
             waiting_call_registry.cancel_outstanding_method_calls();
+            let mut listeners = listeners.lock().unwrap();
+            *listeners = HashMap::new();
+            trace!("cleared listeners, I think");
         });
     }
 }

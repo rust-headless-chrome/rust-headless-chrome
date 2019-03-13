@@ -2,24 +2,32 @@ use std::sync::mpsc;
 
 use failure::Error;
 use log::*;
+
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 use websocket::{ClientBuilder, OwnedMessage};
 
-use crate::cdtp;
+use crate::protocol;
 use std::sync::Mutex;
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
 }
 
+// TODO websocket::sender::Writer is not :Debug...
+impl std::fmt::Debug for WebSocketConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "WebSocketConnection {{}}")
+    }
+}
+
 impl WebSocketConnection {
     pub fn new(
         ws_url: &str,
-        target_messages_tx: mpsc::Sender<cdtp::Message>,
+        target_messages_tx: mpsc::Sender<protocol::Message>,
     ) -> Result<Self, Error> {
-        let connection = WebSocketConnection::websocket_connection(&ws_url)?;
+        let connection = Self::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
         std::thread::spawn(move || {
@@ -28,14 +36,21 @@ impl WebSocketConnection {
             trace!("Quit loop msg dispatching loop");
         });
 
-        Ok(WebSocketConnection {
+        Ok(Self {
             sender: Mutex::new(sender),
         })
     }
 
+    pub fn shutdown(&self) {
+        trace!("Shutting down WebSocket connection");
+        if self.sender.lock().unwrap().shutdown_all().is_err() {
+            warn!("Couldn't shut down WS connection");
+        }
+    }
+
     fn dispatch_incoming_messages(
         mut receiver: websocket::receiver::Reader<TcpStream>,
-        messages_tx: mpsc::Sender<cdtp::Message>,
+        messages_tx: mpsc::Sender<protocol::Message>,
     ) {
         for ws_message in receiver.incoming_messages() {
             match ws_message {
@@ -52,7 +67,7 @@ impl WebSocketConnection {
                 },
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
-                        if let Ok(message) = cdtp::parse_raw_message(&message_string) {
+                        if let Ok(message) = protocol::parse_raw_message(&message_string) {
                             if messages_tx.send(message).is_err() {
                                 break;
                             }
@@ -67,6 +82,14 @@ impl WebSocketConnection {
                     }
                 }
             }
+        }
+
+        trace!("Sending shutdown message to message handling loop");
+        if messages_tx
+            .send(protocol::Message::ConnectionShutdown)
+            .is_err()
+        {
+            warn!("Couldn't send message to transport loop telling it to shut down")
         }
     }
 

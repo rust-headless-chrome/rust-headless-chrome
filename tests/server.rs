@@ -19,7 +19,7 @@ impl Server {
         let exit = shall_exit.clone();
         let handler = std::thread::spawn(move || {
             loop {
-                if let Some(r) = srv.recv_timeout(Duration::from_millis(100))? {
+                if let Some(r) = srv.recv_timeout(Duration::from_millis(1000))? {
                     responder(r)?;
                 }
                 if exit.load(atomic::Ordering::Relaxed) {
@@ -35,6 +35,7 @@ impl Server {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_dumb_html(data: &'static str) -> Self {
         let responder = move |r: tiny_http::Request| {
             let response = tiny_http::Response::new(

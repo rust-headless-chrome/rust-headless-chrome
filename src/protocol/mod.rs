@@ -5,9 +5,11 @@ use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+pub mod browser;
 pub mod dom;
 pub mod input;
 pub mod page;
+pub mod profiler;
 pub mod runtime;
 pub mod target;
 
@@ -86,7 +88,7 @@ pub enum Event {
     #[serde(rename = "Page.frameStoppedLoading")]
     FrameStoppedLoading(page::events::FrameStoppedLoadingEvent),
     #[serde(rename = "Page.lifecycleEvent")]
-    LifecycleEvent(page::events::LifecycleEvent),
+    Lifecycle(page::events::LifecycleEvent),
 }
 
 #[derive(Deserialize, Debug)]
@@ -94,6 +96,7 @@ pub enum Event {
 pub enum Message {
     Event(Event),
     Response(Response),
+    ConnectionShutdown,
 }
 
 #[cfg(test)]
@@ -146,12 +149,9 @@ mod tests {
             }
         });
 
-        let event: Event = serde_json::from_value(attached_to_target_json).unwrap();
-        match event {
-            Event::AttachedToTarget(_) => {}
-            _ => {
-                panic!("bad news");
-            }
+        if let Ok(Event::AttachedToTarget(_)) = serde_json::from_value(attached_to_target_json) {
+        } else {
+            panic!("Failed to parse event properly");
         }
 
         let received_target_msg_event = json!({

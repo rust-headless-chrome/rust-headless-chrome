@@ -20,6 +20,21 @@ pub(crate) enum InternalScreenshotFormat {
     PNG,
 }
 
+/// Viewport for capturing screenshot.
+#[derive(Debug, Clone, Serialize)]
+pub struct Viewport {
+    /// X offset in device independent pixels
+    pub x: f64,
+    /// Y offset in device independent pixels
+    pub y: f64,
+    /// Rectangle width in device independent pixels
+    pub width: f64,
+    /// Rectangle height in device independent pixels
+    pub height: f64,
+    /// Page scale factor
+    pub scale: f64,
+}
+
 /// The format a screenshot will be captured in
 #[derive(Debug, Clone)]
 pub enum ScreenshotFormat {
@@ -75,7 +90,7 @@ pub mod events {
 }
 
 pub mod methods {
-    use crate::cdtp::Method;
+    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]
@@ -84,6 +99,8 @@ pub mod methods {
         pub format: super::InternalScreenshotFormat,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub quality: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub clip: Option<super::Viewport>,
         pub from_surface: bool,
     }
     #[derive(Debug, Deserialize)]

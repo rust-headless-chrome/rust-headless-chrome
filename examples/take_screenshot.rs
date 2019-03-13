@@ -1,19 +1,28 @@
-//! Create a headless browser, navigate to wikipedia, wait for the page
-//! to render completely, take a screenshot in JPEG-format using 75% quality
-use headless_chrome::{cdtp::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
 use std::fs;
 
 fn main() -> Result<(), failure::Error> {
+    // Create a headless browser, navigate to wikipedia.org, wait for the page
+    // to render completely, take a screenshot of the entire page
+    // in JPEG-format using 75% quality.
     let options = LaunchOptionsBuilder::default()
         .build()
         .expect("Couldn't find appropriate Chrome binary.");
-    let browser = Browser::new(options).expect("Failed to launch and connect to Chrome");
-    let jpeg_data = browser
-        .wait_for_initial_tab()?
+    let browser = Browser::new(options)?;
+    let tab = browser.wait_for_initial_tab()?;
+    let jpeg_data = tab
         .navigate_to("https://www.wikipedia.org")?
         .wait_until_navigated()?
-        .capture_screenshot(ScreenshotFormat::JPEG(Some(75)), true)?;
+        .capture_screenshot(ScreenshotFormat::JPEG(Some(75)), None, true)?;
     fs::write("screenshot.jpg", &jpeg_data)?;
-    println!("Screenshot successfully created.");
+
+    // Browse to the WebKit-Page and take a screenshot of the infobox.
+    let png_data = tab
+        .navigate_to("https://en.wikipedia.org/wiki/WebKit")?
+        .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
+        .capture_screenshot(ScreenshotFormat::PNG)?;
+    fs::write("screenshot.png", &png_data)?;
+
+    println!("Screenshots successfully created.");
     Ok(())
 }

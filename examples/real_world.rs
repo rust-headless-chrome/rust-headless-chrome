@@ -5,12 +5,14 @@ use failure::Error;
 use log::*;
 use toml;
 
+use env_logger;
 use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use rand::distributions::Alphanumeric;
 use rand::{self, Rng};
 use std::sync::Arc;
 
 fn main() {
+    env_logger::init();
     wikipedia();
     fastmail();
     digital_pigeon();
@@ -145,7 +147,10 @@ fn log_in_to_digital_pigeon() -> Result<(), Error> {
         .click()
         .unwrap();
 
-    tab.wait_for_element_with_custom_timeout(".file.status-completed", 40_000)?;
+    tab.wait_for_element_with_custom_timeout(
+        ".file.status-completed",
+        std::time::Duration::from_secs(40),
+    )?;
 
     Ok(())
 }

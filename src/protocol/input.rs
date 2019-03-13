@@ -1,5 +1,5 @@
 pub mod methods {
-    use crate::cdtp::Method;
+    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug)]
@@ -38,8 +38,14 @@ pub mod methods {
     pub struct DispatchKeyEvent<'a> {
         #[serde(rename = "type")]
         pub event_type: &'a str,
-        pub key: &'a str,
-        pub text: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub key: Option<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub text: Option<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub code: Option<&'a str>,
+        pub windows_virtual_key_code: u8,
+        pub native_virtual_key_code: u8,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
