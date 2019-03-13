@@ -48,7 +48,7 @@ pub struct NavigationFailed {
     error_text: String,
 }
 
-impl<'a> Tab {
+impl Tab {
     pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
         let target_id = target_info.target_id.clone();
 
@@ -169,11 +169,11 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+    pub fn wait_for_element<'a>(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
         self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(15))
     }
 
-    pub fn wait_for_element_with_custom_timeout(
+    pub fn wait_for_element_with_custom_timeout<'a>(
         &'a self,
         selector: &'a str,
         timeout: std::time::Duration,
@@ -190,7 +190,7 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
-    pub fn wait_for_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+    pub fn wait_for_elements<'a>(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(Duration::from_secs(15))
             .until(|| {
@@ -203,7 +203,7 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
-    pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+    pub fn find_element<'a>(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
@@ -228,7 +228,7 @@ impl<'a> Tab {
             .root)
     }
 
-    pub fn find_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+    pub fn find_elements<'a>(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
         trace!("Looking up elements via selector: {}", selector);
 
         let node_ids = {
