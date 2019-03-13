@@ -312,8 +312,8 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn click_point(&self, point: Point) -> Result<&Self, Error> {
-        trace!("Clicking point: {:?}", point);
+    /// Moves the mouse to this point (dispatches a mouseMoved event)
+    pub fn move_mouse_to_point(&self, point: Point) -> Result<&Self, Error> {
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
         }
@@ -324,6 +324,17 @@ impl<'a> Tab {
             y: point.y,
             ..Default::default()
         })?;
+        Ok(self)
+    }
+
+    pub fn click_point(&self, point: Point) -> Result<&Self, Error> {
+        trace!("Clicking point: {:?}", point);
+        if point.x == 0.0 && point.y == 0.0 {
+            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
+        }
+
+        self.move_mouse_to_point(point)?;
+
         self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,

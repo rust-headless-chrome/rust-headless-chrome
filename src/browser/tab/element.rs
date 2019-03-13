@@ -236,6 +236,13 @@ impl<'a> Element<'a> {
         })
     }
 
+    /// Moves the mouse to the middle of this element
+    pub fn move_mouse_over(&self) -> Result<&Self, Error> {
+        let midpoint = self.get_midpoint()?;
+        self.parent.move_mouse_to_point(midpoint)?;
+        Ok(self)
+    }
+
     pub fn click(&self) -> Result<&Self, Error> {
         debug!("Clicking element {:?}", &self);
         let midpoint = self.get_midpoint()?;
