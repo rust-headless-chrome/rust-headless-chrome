@@ -89,6 +89,19 @@ impl<'a> Tab {
         &self.target_id
     }
 
+    /// Fetches the most recent info about this target
+    pub fn get_target_info(&self) -> Result<TargetInfo, failure::Error> {
+        Ok(self
+            .call_method(target::methods::GetTargetInfo {
+                target_id: self.get_target_id(),
+            })?
+            .target_info)
+    }
+
+    pub fn get_browser_context_id(&self) -> Result<Option<String>, failure::Error> {
+        Ok(self.get_target_info()?.browser_context_id)
+    }
+
     pub fn get_url(&self) -> String {
         let info = self.target_info.lock().unwrap();
         info.url.clone()

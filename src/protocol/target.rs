@@ -114,6 +114,20 @@ pub mod methods {
         type ReturnObject = GetTargetsReturnObject;
     }
 
+    #[derive(Serialize, Debug)]
+    pub struct GetTargetInfo<'a> {
+        pub target_id: &'a str,
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetTargetInfoReturnObject {
+        pub target_info: super::TargetInfo,
+    }
+    impl<'a> Method for GetTargetInfo<'a> {
+        const NAME: &'static str = "Target.getTargetInfo";
+        type ReturnObject = GetTargetInfoReturnObject;
+    }
+
     #[derive(Serialize)]
     pub struct CreateBrowserContext {}
     #[derive(Deserialize, Debug)]

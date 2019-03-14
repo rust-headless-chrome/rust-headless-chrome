@@ -14,12 +14,14 @@ use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::protocol::{self, Event};
 use crate::util;
 
+use crate::browser::context::Context;
 pub use process::LaunchOptionsBuilder;
 use process::{LaunchOptions, Process};
 use std::time::Duration;
 pub use tab::Tab;
 use transport::Transport;
 
+pub mod context;
 mod fetcher;
 mod process;
 pub mod tab;
@@ -92,8 +94,8 @@ impl Browser {
 
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
     /// (including the one that handles incoming protocol events about new or changed tabs).
-    pub fn get_tabs(&self) -> Arc<Mutex<Vec<Arc<Tab>>>> {
-        Arc::clone(&self.tabs)
+    pub fn get_tabs(&self) -> &Arc<Mutex<Vec<Arc<Tab>>>> {
+        &self.tabs
     }
 
     /// Chrome always launches with at least one tab. The reason we have to 'wait' is because information
@@ -106,6 +108,8 @@ impl Browser {
     }
 
     /// Create a new tab and return a handle to it.
+    ///
+    /// If you want to specify its starting options, see `new_tab_with_options`.
     ///
     /// ```rust
     /// # use failure::Error;
@@ -121,19 +125,40 @@ impl Browser {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// Currently does not support creating the tab in a new "browser context", aka an incognito
-    /// window.
     pub fn new_tab(&self) -> Result<Arc<Tab>, Error> {
-        let create_target = CreateTarget {
+        let default_blank_tab = CreateTarget {
             url: "about:blank",
             width: None,
             height: None,
             browser_context_id: None,
             enable_begin_frame_control: None,
         };
+        self.new_tab_with_options(default_blank_tab)
+    }
 
-        let target_id = self.call_method(create_target)?.target_id;
+    /// Create a new tab with a starting url, height / width, context ID and 'frame control'
+    /// ```rust
+    /// # use failure::Error;
+    /// # fn main() -> Result<(), Error> {
+    /// #
+    /// # use headless_chrome::{Browser, browser::default_executable, LaunchOptionsBuilder, protocol::target::methods::CreateTarget};
+    /// # let browser = Browser::new(LaunchOptionsBuilder::default().path(Some(default_executable().unwrap())).build().unwrap())?;
+    ///    let new_tab = browser.new_tab_with_options(CreateTarget {
+    ///    url: "chrome://version",
+    ///    width: Some(1024),
+    ///    height: Some(800),
+    ///    browser_context_id: None,
+    ///    enable_begin_frame_control: None,
+    ///    })?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new_tab_with_options(
+        &self,
+        create_target_params: CreateTarget,
+    ) -> Result<Arc<Tab>, Error> {
+        let target_id = self.call_method(create_target_params)?.target_id;
 
         util::Wait::default()
             .until(|| {
@@ -143,6 +168,16 @@ impl Browser {
                     .map(|tab_ref| Arc::clone(tab_ref))
             })
             .map_err(|e| e.into())
+    }
+
+    /// Creates the equivalent of a new incognito window, AKA a browser context
+    pub fn new_context(&self) -> Result<context::Context, Error> {
+        debug!("Creating new browser context");
+        let context_id = self
+            .call_method(protocol::target::methods::CreateBrowserContext {})?
+            .browser_context_id;
+        debug!("Created new browser context: {:?}", context_id);
+        Ok(Context::new(self, context_id))
     }
 
     /// Get version information
