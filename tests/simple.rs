@@ -251,3 +251,20 @@ fn find_elements() -> Result<(), failure::Error> {
     assert_eq!(8, divs.len());
     Ok(())
 }
+
+#[test]
+fn incognito_contexts() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+
+    let incognito_context = browser.new_context()?;
+    let incognito_tab: Arc<Tab> = incognito_context.new_tab()?;
+    let tab_context_id = incognito_tab.get_target_info()?.browser_context_id.unwrap();
+
+    assert_eq!(incognito_context.get_id(), tab_context_id);
+    assert_eq!(
+        incognito_context.get_tabs()?[0].get_target_id(),
+        incognito_tab.get_target_id()
+    );
+    Ok(())
+}
