@@ -7,23 +7,41 @@
 [Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
 
 ```rust
-use headless_chrome::{Browser, LaunchOptionsBuilder};
+use headless_chrome::{browser::default_executable, Browser,
+                      LaunchOptionsBuilder, protocol::page::ScreenshotFormat};
 
 fn browse_wikipedia() -> Result<(), failure::Error> {
-    let options = LaunchOptionsBuilder::default().build().expect("Failed to find chrome");
+    let options = LaunchOptionsBuilder::default()
+                      .path(Some(default_executable().unwrap()))
+                      .build().unwrap();
     let browser = Browser::new(options)?;
 
     let tab = browser.wait_for_initial_tab()?;
 
+    /// Navigate to wikipedia
     tab.navigate_to("https://www.wikipedia.org")?;
 
-    tab.wait_for_element("input#searchInput")?
-       .click()?;
-    tab.type_str("WebKit")?
-       .press_key("Enter")?;
+    /// Wait for network/javascript/dom to make the search-box available
+    /// and click it.
+    tab.wait_for_element("input#searchInput")?.click()?;
 
+    /// Type in a query and press `Enter`
+    tab.type_str("WebKit")?.press_key("Enter")?;
+
+    /// We should end up on the WebKit-page once navigated
     tab.wait_for_element("#firstHeading")?;
-    assert_eq!(true, tab.get_url().ends_with("WebKit"));
+    assert!(tab.get_url().ends_with("WebKit"));
+
+    /// Take a screenshot of the entire browser window
+    let _jpeg_data = tab.capture_screenshot(
+                        ScreenshotFormat::JPEG(Some(75)),
+                        None,
+                        true)?;
+
+    /// Take a screenshot of just the WebKit-Infobox
+    let _png_data = tab
+        .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
+        .capture_screenshot(ScreenshotFormat::PNG)?;
     Ok(())
 }
 
