@@ -18,7 +18,7 @@ impl<'a> Context<'a> {
     }
 
     /// Opens a new tab in this context. It will not share cookies or a cache with the default
-    /// browsing session, although it will share its cache with other new contexts.
+    /// browsing context or any other contexts created
     pub fn new_tab(&self) -> Result<Arc<Tab>, failure::Error> {
         let tab_in_context = CreateTarget {
             url: "about:blank",
