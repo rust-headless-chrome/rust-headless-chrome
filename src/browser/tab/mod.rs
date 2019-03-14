@@ -37,10 +37,8 @@ pub struct Tab {
 }
 
 #[derive(Debug, Fail)]
-#[fail(display = "No element found for selector: {}", selector)]
-pub struct NoElementFound {
-    selector: String,
-}
+#[fail(display = "No element found")]
+pub struct NoElementFound {}
 
 #[derive(Debug, Fail)]
 #[fail(display = "Navigate failed: {}", error_text)]
@@ -169,15 +167,15 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+    pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>, Error> {
         self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(15))
     }
 
     pub fn wait_for_element_with_custom_timeout(
-        &'a self,
-        selector: &'a str,
+        &self,
+        selector: &str,
         timeout: std::time::Duration,
-    ) -> Result<Element<'a>, Error> {
+    ) -> Result<Element<'_>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(timeout)
             .until(|| {
@@ -190,7 +188,7 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
-    pub fn wait_for_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+    pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(Duration::from_secs(15))
             .until(|| {
@@ -203,7 +201,7 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
-    pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+    pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
@@ -216,7 +214,7 @@ impl<'a> Tab {
             .node_id
         };
 
-        Element::new(&self, node_id, selector)
+        Element::new(&self, node_id)
     }
 
     pub fn get_document(&self) -> Result<Node, Error> {
@@ -228,7 +226,7 @@ impl<'a> Tab {
             .root)
     }
 
-    pub fn find_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+    pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         trace!("Looking up elements via selector: {}", selector);
 
         let node_ids = {
@@ -242,19 +240,13 @@ impl<'a> Tab {
         };
 
         if node_ids.is_empty() {
-            return Err(NoElementFound {
-                selector: selector.to_string(),
-            }
-            .into());
+            return Err(NoElementFound {}.into());
         }
 
-        let mut elements = vec![];
-
-        for node_id in &node_ids {
-            elements.push(Element::new(&self, *node_id, selector)?)
-        }
-
-        Ok(elements)
+        node_ids
+            .into_iter()
+            .map(|node_id| Element::new(&self, node_id))
+            .collect()
     }
 
     pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node, Error> {
