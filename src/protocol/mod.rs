@@ -12,6 +12,7 @@ pub mod page;
 pub mod profiler;
 pub mod runtime;
 pub mod target;
+pub mod network;
 
 pub type CallId = usize;
 
@@ -89,6 +90,8 @@ pub enum Event {
     FrameStoppedLoading(page::events::FrameStoppedLoadingEvent),
     #[serde(rename = "Page.lifecycleEvent")]
     Lifecycle(page::events::LifecycleEvent),
+    #[serde(rename = "Network.requestIntercepted")]
+    RequestIntercepted(network::events::RequestInterceptedEvent),
 }
 
 #[derive(Deserialize, Debug)]

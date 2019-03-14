@@ -13,8 +13,8 @@ use crate::browser::Transport;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
-use crate::protocol::Event;
 use crate::protocol::{dom, input, page, profiler, target};
+use crate::protocol::{network, Event};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
@@ -102,17 +102,23 @@ impl<'a> Tab {
 
         std::thread::spawn(move || {
             for event in incoming_events_rx {
-                trace!("{:?}", &event);
-                if let Event::Lifecycle(lifecycle_event) = event {
-                    //                        if lifecycle_event.params.frame_id == main_frame_id {
-                    match lifecycle_event.params.name.as_ref() {
-                        "networkAlmostIdle" => {
-                            navigating.store(false, Ordering::SeqCst);
+                match event {
+                    Event::Lifecycle(lifecycle_event) => {
+                        //                        if lifecycle_event.params.frame_id == main_frame_id {
+                        match lifecycle_event.params.name.as_ref() {
+                            "networkAlmostIdle" => {
+                                navigating.store(false, Ordering::SeqCst);
+                            }
+                            "init" => {
+                                navigating.store(true, Ordering::SeqCst);
+                            }
+                            _ => {}
                         }
-                        "init" => {
-                            navigating.store(true, Ordering::SeqCst);
-                        }
-                        _ => {}
+                    }
+                    Event::RequestIntercepted(interception_event) => {
+                    }
+                    _ => {
+                        trace!("{:?}", &event);
                     }
                 }
             }
@@ -469,5 +475,32 @@ impl<'a> Tab {
             .call_method(profiler::methods::TakePreciseCoverage {})?
             .result;
         Ok(script_coverages)
+    }
+
+    pub fn enable_request_interception(
+        &self,
+        request_patterns: &[network::methods::RequestPattern],
+    ) -> Result<(), Error> {
+        self.call_method(network::methods::SetRequestInterception {
+            patterns: &request_patterns,
+        })?;
+        Ok(())
+    }
+
+    pub fn continue_intercepted_request(
+        &self,
+        id: &str,
+    ) -> Result<(), Error> {
+        self.call_method(network::methods::ContinueInterceptedRequest {
+            interception_id: id,
+            error_reason: None,
+            raw_response: None,
+            url: None,
+            method: None,
+            post_data: None,
+            headers: None,
+            auth_challenge_response: None
+        })?;
+        Ok(())
     }
 }

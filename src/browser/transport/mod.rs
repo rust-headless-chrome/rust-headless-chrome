@@ -251,7 +251,7 @@ impl Transport {
                                     } else {
                                         trace!(
                                             "Message from target isn't recognised: {:?}",
-                                            &raw_message[..30]
+                                            &raw_message
                                         );
                                     }
                                 }

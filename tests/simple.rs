@@ -1,12 +1,14 @@
 #![allow(unused_variables)]
 
+use headless_chrome::protocol::network::methods::RequestPattern;
 use headless_chrome::{
     browser::default_executable, protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder,
-    Tab,
+    browser::tab::Tab,
 };
 use log::*;
 use rand::prelude::*;
 use std::sync::Arc;
+use std::thread::sleep_ms;
 
 mod logging;
 mod server;
@@ -245,5 +247,34 @@ fn find_elements() -> Result<(), failure::Error> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let divs = tab.wait_for_elements("div")?;
     assert_eq!(8, divs.len());
+    Ok(())
+}
+
+#[test]
+fn set_request_interception() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+
+    let patterns = vec![RequestPattern {
+        url_pattern: None,
+        resource_type: None,
+        interception_stage: None,
+    }];
+
+//    let handler = |request| {
+//
+//    };
+
+    tab.enable_request_interception(&patterns)?;
+
+    // ignore cache:
+    tab.reload(true, None)?;
+
+    tab.wait_until_navigated()?;
+
+    tab.continue_intercepted_request("id-1")?;
+
+    sleep_ms(4000);
+
     Ok(())
 }
