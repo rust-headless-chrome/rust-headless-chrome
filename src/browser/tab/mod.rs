@@ -11,10 +11,8 @@ use point::Point;
 
 use crate::browser::Transport;
 use crate::protocol::page::methods::Navigate;
-use crate::protocol::target::TargetId;
-use crate::protocol::target::TargetInfo;
-use crate::protocol::Event;
-use crate::protocol::{dom, input, page, profiler, target};
+use crate::protocol::target::{TargetId, TargetInfo};
+use crate::protocol::{dom, input, page, profiler, target, Event};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
@@ -461,5 +459,52 @@ impl<'a> Tab {
             .call_method(profiler::methods::TakePreciseCoverage {})?
             .result;
         Ok(script_coverages)
+    }
+
+    /// Get position and size of the browser window associated with this `Tab`.
+    ///
+    /// Note that the returned bounds are always specified for normal (windowed)
+    /// state; they do not change when minimizing, maximizing or setting to
+    /// fullscreen.
+    pub fn get_bounds(&self) -> Result<protocol::browser::CurrentBounds, Error> {
+        self.transport
+            .call_method_on_browser(protocol::browser::methods::GetWindowForTarget {
+                target_id: self.get_target_id(),
+            })
+            .map(|r| r.bounds.into())
+    }
+
+    /// Set position and/or size of the browser window associated with this `Tab`.
+    ///
+    /// When setting the window to normal (windowed) state, unspecified fields
+    /// are left unchanged.
+    pub fn set_bounds(&self, bounds: protocol::browser::Bounds) -> Result<&Self, Error> {
+        let window_id = self
+            .transport
+            .call_method_on_browser(protocol::browser::methods::GetWindowForTarget {
+                target_id: self.get_target_id(),
+            })?
+            .window_id;
+        // If we set Normal window state, we *have* to make two API calls
+        // to set the state before setting the coordinates; despite what the docs say...
+        if let protocol::browser::Bounds::Normal { .. } = &bounds {
+            self.transport
+                .call_method_on_browser(protocol::browser::methods::SetWindowBounds {
+                    window_id,
+                    bounds: protocol::browser::methods::Bounds {
+                        left: None,
+                        top: None,
+                        width: None,
+                        height: None,
+                        window_state: protocol::browser::WindowState::Normal,
+                    },
+                })?;
+        }
+        self.transport
+            .call_method_on_browser(protocol::browser::methods::SetWindowBounds {
+                window_id,
+                bounds: bounds.into(),
+            })?;
+        Ok(self)
     }
 }

@@ -1,11 +1,6 @@
 use serde::Deserialize;
 
-// TODO: use these aliases in other parts of the protocol module
-// From experimentation, it seems the protocol's integers are i32s.
-#[allow(dead_code)]
-type JsInt = i32;
-// For when we specifically want to guard against negative numbers.
-type JsUInt = u32;
+use super::JsUInt;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
