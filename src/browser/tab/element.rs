@@ -207,23 +207,15 @@ pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
     pub parent: &'a super::Tab,
-    pub found_via_selector: &'a str,
 }
 
 impl<'a> Element<'a> {
     /// Using a 'node_id', of the type returned by QuerySelector and QuerySelectorAll, this finds
     /// the 'backend_node_id' and 'remote_object_id' which are stable identifiers, unlike node_id.
     /// We use these two when making various calls to the API because of that.
-    pub fn new(
-        parent: &'a super::Tab,
-        node_id: dom::NodeId,
-        found_via_selector: &'a str,
-    ) -> Result<Self, Error> {
+    pub fn new(parent: &'a super::Tab, node_id: dom::NodeId) -> Result<Self, Error> {
         if node_id == 0 {
-            return Err(super::NoElementFound {
-                selector: found_via_selector.to_string(),
-            }
-            .into());
+            return Err(super::NoElementFound {}.into());
         }
 
         let backend_node_id = parent.describe_node(node_id)?.backend_node_id;
@@ -241,13 +233,18 @@ impl<'a> Element<'a> {
             remote_object_id,
             backend_node_id,
             parent,
-            found_via_selector,
         })
     }
 
-    pub fn click(&self) -> Result<&Self, Error> {
-        debug!("Clicking element found via {}", self.found_via_selector);
+    /// Moves the mouse to the middle of this element
+    pub fn move_mouse_over(&self) -> Result<&Self, Error> {
+        let midpoint = self.get_midpoint()?;
+        self.parent.move_mouse_to_point(midpoint)?;
+        Ok(self)
+    }
 
+    pub fn click(&self) -> Result<&Self, Error> {
+        debug!("Clicking element {:?}", &self);
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
         Ok(self)
@@ -256,10 +253,7 @@ impl<'a> Element<'a> {
     pub fn type_into(&self, text: &str) -> Result<&Self, Error> {
         self.click()?;
 
-        debug!(
-            "Typing into element ( {} ): {}",
-            self.found_via_selector, text
-        );
+        debug!("Typing into element ( {:?} ): {}", &self, text);
 
         self.parent.type_str(text)?;
 

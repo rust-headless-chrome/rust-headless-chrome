@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // TODO: use these aliases in other parts of the protocol module
 // From experimentation, it seems the protocol's integers are i32s.
@@ -7,7 +7,7 @@ type JsInt = i32;
 // For when we specifically want to guard against negative numbers.
 type JsUInt = u32;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 /// Coverage data for a source range.
 pub struct CoverageRange {
@@ -19,7 +19,7 @@ pub struct CoverageRange {
     pub count: JsUInt,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 /// Coverage data for a JavaScript function.
 pub struct FunctionCoverage {
@@ -30,7 +30,7 @@ pub struct FunctionCoverage {
 
 /// JS line coverage information for a single script
 /// See https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptCoverage {
     pub script_id: String,

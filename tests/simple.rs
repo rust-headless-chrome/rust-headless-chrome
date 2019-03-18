@@ -91,6 +91,17 @@ fn decode_png(i: &[u8]) -> Result<Vec<u8>, failure::Error> {
     Ok(buf)
 }
 
+fn sum_of_errors(inp: &[u8], fixture: &[u8]) -> u32 {
+    inp.chunks_exact(fixture.len())
+        .map(|c| {
+            c.iter()
+                .zip(fixture)
+                .map(|(b, e)| (i32::from(*b) - i32::from(*e)).pow(2) as u32)
+                .sum::<u32>()
+        })
+        .sum()
+}
+
 #[test]
 fn capture_screenshot_png() -> Result<(), failure::Error> {
     logging::enable_logging();
@@ -99,7 +110,7 @@ fn capture_screenshot_png() -> Result<(), failure::Error> {
     // Check that the top-left pixel on the page has the background color set in simple.html
     let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, None, true)?;
     let buf = decode_png(&png_data[..])?;
-    assert_eq!(buf[0..4], [0x11, 0x22, 0x33, 0xff][..]);
+    assert!(sum_of_errors(&buf[0..4], &[0x11, 0x22, 0x33, 0xff]) < 5);
     Ok(())
 }
 
@@ -113,7 +124,7 @@ fn capture_screenshot_element() -> Result<(), failure::Error> {
         .capture_screenshot(ScreenshotFormat::PNG)?;
     let buf = decode_png(&png_data[..])?;
     for i in 0..buf.len() / 4 {
-        assert_eq!(buf[i * 4..(i + 1) * 4], [0x33, 0x22, 0x11, 0xff][..]);
+        assert!(sum_of_errors(&buf[i * 4..(i + 1) * 4], &[0x33, 0x22, 0x11, 0xff]) < 5);
     }
     Ok(())
 }
@@ -127,7 +138,7 @@ fn capture_screenshot_element_box() -> Result<(), failure::Error> {
     let png_data =
         tab.capture_screenshot(ScreenshotFormat::PNG, Some(pox.border_viewport()), true)?;
     let buf = decode_png(&png_data[..])?;
-    assert_eq!(buf[0..4], [0x22, 0x11, 0x33, 0xff][..]);
+    assert!(dbg!(sum_of_errors(&buf[0..4], &[0x22, 0x11, 0x33, 0xff])) < 15);
     Ok(())
 }
 
@@ -139,14 +150,7 @@ fn capture_screenshot_jpeg() -> Result<(), failure::Error> {
     let jpg_data = tab.capture_screenshot(ScreenshotFormat::JPEG(Some(100)), None, true)?;
     let mut decoder = jpeg_decoder::Decoder::new(&jpg_data[..]);
     let buf = decoder.decode().unwrap();
-    // Check that the total compression error is small-ish compared to the expected
-    // pixel color
-    let err = buf
-        .iter()
-        .zip(&[0x11, 0x22, 0x33])
-        .map(|(b, e)| (i32::from(*b) - e).pow(2) as u32)
-        .sum::<u32>();
-    assert!(err < 5);
+    assert!(sum_of_errors(&buf[0..4], &[0x11, 0x22, 0x33]) < 5);
     Ok(())
 }
 
@@ -275,6 +279,22 @@ fn set_request_interception() -> Result<(), failure::Error> {
     tab.continue_intercepted_request("id-1")?;
 
     sleep_ms(4000);
+    Ok(())
+}
 
+#[test]
+fn incognito_contexts() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+
+    let incognito_context = browser.new_context()?;
+    let incognito_tab: Arc<Tab> = incognito_context.new_tab()?;
+    let tab_context_id = incognito_tab.get_target_info()?.browser_context_id.unwrap();
+
+    assert_eq!(incognito_context.get_id(), tab_context_id);
+    assert_eq!(
+        incognito_context.get_tabs()?[0].get_target_id(),
+        incognito_tab.get_target_id()
+    );
     Ok(())
 }

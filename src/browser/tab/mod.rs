@@ -37,10 +37,8 @@ pub struct Tab {
 }
 
 #[derive(Debug, Fail)]
-#[fail(display = "No element found for selector: {}", selector)]
-pub struct NoElementFound {
-    selector: String,
-}
+#[fail(display = "No element found")]
+pub struct NoElementFound {}
 
 #[derive(Debug, Fail)]
 #[fail(display = "Navigate failed: {}", error_text)]
@@ -89,6 +87,19 @@ impl<'a> Tab {
         &self.target_id
     }
 
+    /// Fetches the most recent info about this target
+    pub fn get_target_info(&self) -> Result<TargetInfo, failure::Error> {
+        Ok(self
+            .call_method(target::methods::GetTargetInfo {
+                target_id: self.get_target_id(),
+            })?
+            .target_info)
+    }
+
+    pub fn get_browser_context_id(&self) -> Result<Option<String>, failure::Error> {
+        Ok(self.get_target_info()?.browser_context_id)
+    }
+
     pub fn get_url(&self) -> String {
         let info = self.target_info.lock().unwrap();
         info.url.clone()
@@ -129,21 +140,21 @@ impl<'a> Tab {
     where
         C: protocol::Method + serde::Serialize + std::fmt::Debug,
     {
-        debug!("Calling method: {:?}", method);
+        trace!("Calling method: {:?}", method);
         let result = self
             .transport
             .call_method_on_target(self.session_id.clone(), method);
         let mut result_string = format!("{:?}", result);
         result_string.truncate(70);
-        debug!("Got result: {:?}", result_string);
+        trace!("Got result: {:?}", result_string);
         result
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
-        trace!("waiting to start navigating");
+        debug!("waiting to start navigating");
         // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        util::Wait::default().until(|| {
+        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 Some(true)
             } else {
@@ -152,7 +163,7 @@ impl<'a> Tab {
         })?;
         debug!("A tab started navigating");
 
-        util::Wait::default().until(|| {
+        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 None
             } else {
@@ -175,15 +186,15 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn wait_for_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
-        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(15))
+    pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>, Error> {
+        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(5))
     }
 
     pub fn wait_for_element_with_custom_timeout(
-        &'a self,
-        selector: &'a str,
+        &self,
+        selector: &str,
         timeout: std::time::Duration,
-    ) -> Result<Element<'a>, Error> {
+    ) -> Result<Element<'_>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(timeout)
             .until(|| {
@@ -196,7 +207,7 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
-    pub fn wait_for_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+    pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(Duration::from_secs(15))
             .until(|| {
@@ -209,7 +220,7 @@ impl<'a> Tab {
             .map_err(|e| e.into())
     }
 
-    pub fn find_element(&'a self, selector: &'a str) -> Result<Element<'a>, Error> {
+    pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {
         trace!("Looking up element via selector: {}", selector);
 
         let node_id = {
@@ -222,7 +233,7 @@ impl<'a> Tab {
             .node_id
         };
 
-        Element::new(&self, node_id, selector)
+        Element::new(&self, node_id)
     }
 
     pub fn get_document(&self) -> Result<Node, Error> {
@@ -234,7 +245,7 @@ impl<'a> Tab {
             .root)
     }
 
-    pub fn find_elements(&'a self, selector: &'a str) -> Result<Vec<Element<'a>>, Error> {
+    pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         trace!("Looking up elements via selector: {}", selector);
 
         let node_ids = {
@@ -248,19 +259,13 @@ impl<'a> Tab {
         };
 
         if node_ids.is_empty() {
-            return Err(NoElementFound {
-                selector: selector.to_string(),
-            }
-            .into());
+            return Err(NoElementFound {}.into());
         }
 
-        let mut elements = vec![];
-
-        for node_id in &node_ids {
-            elements.push(Element::new(&self, *node_id, selector)?)
-        }
-
-        Ok(elements)
+        node_ids
+            .into_iter()
+            .map(|node_id| Element::new(&self, node_id))
+            .collect()
     }
 
     pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node, Error> {
@@ -326,8 +331,8 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn click_point(&self, point: Point) -> Result<&Self, Error> {
-        trace!("Clicking point: {:?}", point);
+    /// Moves the mouse to this point (dispatches a mouseMoved event)
+    pub fn move_mouse_to_point(&self, point: Point) -> Result<&Self, Error> {
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
         }
@@ -338,6 +343,17 @@ impl<'a> Tab {
             y: point.y,
             ..Default::default()
         })?;
+        Ok(self)
+    }
+
+    pub fn click_point(&self, point: Point) -> Result<&Self, Error> {
+        trace!("Clicking point: {:?}", point);
+        if point.x == 0.0 && point.y == 0.0 {
+            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
+        }
+
+        self.move_mouse_to_point(point)?;
+
         self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,
