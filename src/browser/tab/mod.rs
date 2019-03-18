@@ -134,21 +134,21 @@ impl<'a> Tab {
     where
         C: protocol::Method + serde::Serialize + std::fmt::Debug,
     {
-        debug!("Calling method: {:?}", method);
+        trace!("Calling method: {:?}", method);
         let result = self
             .transport
             .call_method_on_target(self.session_id.clone(), method);
         let mut result_string = format!("{:?}", result);
         result_string.truncate(70);
-        debug!("Got result: {:?}", result_string);
+        trace!("Got result: {:?}", result_string);
         result
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
-        trace!("waiting to start navigating");
+        debug!("waiting to start navigating");
         // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        util::Wait::default().until(|| {
+        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 Some(true)
             } else {
@@ -157,7 +157,7 @@ impl<'a> Tab {
         })?;
         debug!("A tab started navigating");
 
-        util::Wait::default().until(|| {
+        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 None
             } else {
@@ -181,7 +181,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>, Error> {
-        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(15))
+        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(5))
     }
 
     pub fn wait_for_element_with_custom_timeout(

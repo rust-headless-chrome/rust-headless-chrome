@@ -102,7 +102,7 @@ impl Browser {
     /// about that tab isn't available *immediately* after starting the process. Tabs are behind `Arc`s
     /// because they each have their own thread which handles events and method responses directed to them.
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>, Error> {
-        util::Wait::default()
+        util::Wait::with_timeout(Duration::from_secs(10))
             .until(|| self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)))
             .map_err(|e| e.into())
     }
