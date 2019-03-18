@@ -6,6 +6,7 @@ use crate::protocol::dom;
 use crate::protocol::page;
 use crate::protocol::runtime;
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ElementQuad {
@@ -202,11 +203,17 @@ impl BoxModel {
     }
 }
 
-#[derive(Debug)]
 pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
     pub parent: &'a super::Tab,
+}
+
+impl<'a> Debug for Element<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "Element {}", self.backend_node_id);
+        Ok(())
+    }
 }
 
 impl<'a> Element<'a> {

@@ -19,21 +19,36 @@ use crate::{protocol, util};
 
 use super::transport::SessionId;
 use crate::protocol::dom::Node;
+use crate::protocol::network::events::RequestInterceptedEventParams;
+use crate::protocol::network::methods::ContinueInterceptedRequest;
 use std::time::Duration;
 
 pub mod element;
 mod keys;
 mod point;
 
+#[derive(Debug)]
+pub enum RequestInterceptionDecision {
+    Continue,
+    Error(String),
+    Response(String),
+}
+
+type RequestInterceptor = Box<
+    Fn(protocol::network::events::RequestInterceptedEventParams) -> RequestInterceptionDecision
+        + Send
+        + Sync,
+>;
+
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
-#[derive(Debug)]
 pub struct Tab {
     target_id: TargetId,
     transport: Arc<Transport>,
     session_id: SessionId,
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
+    request_interceptor: Arc<Mutex<RequestInterceptor>>,
 }
 
 #[derive(Debug, Fail)]
@@ -68,6 +83,9 @@ impl<'a> Tab {
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
+            request_interceptor: Arc::new(Mutex::new(Box::new(|r| {
+                RequestInterceptionDecision::Continue
+            }))),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -106,10 +124,13 @@ impl<'a> Tab {
     }
 
     fn start_event_handler_thread(&self) {
+        let transport: Arc<Transport> = Arc::clone(&self.transport);
         let incoming_events_rx = self
             .transport
             .listen_to_target_events(self.session_id.clone());
         let navigating = Arc::clone(&self.navigating);
+        let interceptor_mutex = Arc::clone(&self.request_interceptor);
+        let session_id = self.session_id.clone();
 
         std::thread::spawn(move || {
             for event in incoming_events_rx {
@@ -127,6 +148,40 @@ impl<'a> Tab {
                         }
                     }
                     Event::RequestIntercepted(interception_event) => {
+                        let mut interceptor = interceptor_mutex.lock().unwrap();
+                        let id = interception_event.params.interception_id.clone();
+                        let decision = interceptor(interception_event.params);
+                        info!("Request with interception id ({}): {:?}", &id, decision);
+                        match decision {
+                            RequestInterceptionDecision::Continue => {
+                                let method = network::methods::ContinueInterceptedRequest {
+                                    interception_id: &id,
+                                    error_reason: None,
+                                    raw_response: None,
+                                    url: None,
+                                    method: None,
+                                    post_data: None,
+                                    headers: None,
+                                    auth_challenge_response: None,
+                                };
+                                transport.call_method_on_target(session_id.clone(), method);
+                            }
+                            RequestInterceptionDecision::Response(response_str) => {
+                                let method = network::methods::ContinueInterceptedRequest {
+                                    interception_id: &id,
+                                    error_reason: None,
+                                    raw_response: Some(&response_str),
+                                    url: None,
+                                    method: None,
+                                    post_data: None,
+                                    headers: None,
+                                    auth_challenge_response: None,
+                                };
+                                dbg!(&method);
+                                transport.call_method_on_target(session_id.clone(), method);
+                            }
+                            _ => {}
+                        }
                     }
                     _ => {
                         trace!("{:?}", &event);
@@ -495,18 +550,18 @@ impl<'a> Tab {
 
     pub fn enable_request_interception(
         &self,
-        request_patterns: &[network::methods::RequestPattern],
+        patterns: &[network::methods::RequestPattern],
+        interceptor: RequestInterceptor,
     ) -> Result<(), Error> {
+        let mut current_interceptor = self.request_interceptor.lock().unwrap();
+        *current_interceptor = interceptor;
         self.call_method(network::methods::SetRequestInterception {
-            patterns: &request_patterns,
+            patterns: &patterns,
         })?;
         Ok(())
     }
 
-    pub fn continue_intercepted_request(
-        &self,
-        id: &str,
-    ) -> Result<(), Error> {
+    pub fn continue_intercepted_request(&self, id: &str) -> Result<(), Error> {
         self.call_method(network::methods::ContinueInterceptedRequest {
             interception_id: id,
             error_reason: None,
@@ -515,7 +570,7 @@ impl<'a> Tab {
             method: None,
             post_data: None,
             headers: None,
-            auth_challenge_response: None
+            auth_challenge_response: None,
         })?;
         Ok(())
     }

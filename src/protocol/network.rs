@@ -1,28 +1,31 @@
+type Headers = HashMap<String, String>;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Request {
+    pub url: String,
+    pub url_fragment: Option<String>,
+    pub method: String,
+    pub headers: Headers,
+    pub post_data: Option<String>,
+    pub has_post_data: Option<bool>,
+    pub mixed_content_type: Option<String>,
+    /// Loading priority of a resource request.
+    /// Allow values: VeryLow, Low, Medium, High, VeryHigh
+    pub initial_priority: String,
+    /// The referrer policy of the request, as defined in https://www.w3.org/TR/referrer-policy/
+    /// Allow values: unsafe-url, no-referrer-when-downgrade, no-referrer, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin
+    pub referrer_policy: String,
+    pub is_link_preload: Option<bool>,
+}
+
 pub mod events {
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
-    use std::collections::HashMap;
 
-    type Headers = HashMap<String, String>;
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Request {
-        pub url: String,
-        pub url_fragment: Option<String>,
-        pub method: String,
-        pub headers: Headers,
-        pub post_data: Option<String>,
-        pub has_post_data: Option<bool>,
-        pub mixed_content_type: Option<String>,
-        /// Loading priority of a resource request.
-        /// Allow values: VeryLow, Low, Medium, High, VeryHigh
-        pub initial_priority: String,
-        /// The referrer policy of the request, as defined in https://www.w3.org/TR/referrer-policy/
-        /// Allow values: unsafe-url, no-referrer-when-downgrade, no-referrer, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin
-        pub referrer_policy: String,
-        pub is_link_preload: Option<bool>,
-    }
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     #[serde(rename_all = "camelCase")]
@@ -39,7 +42,7 @@ pub mod events {
     #[serde(rename_all = "camelCase")]
     pub struct RequestInterceptedEventParams {
         pub interception_id: String,
-        pub request: Request,
+        pub request: super::Request,
         pub frame_id: String,
         pub resource_type: String,
         pub is_navigation_request: bool,
@@ -51,7 +54,7 @@ pub mod events {
         /// Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused, ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable, BlockedByClient, BlockedByResponse
         pub response_error_reason: Option<String>,
         pub response_status_code: Option<i32>,
-        pub response_headers: Option<Headers>,
+        pub response_headers: Option<super::Headers>,
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -86,7 +89,7 @@ pub mod events {
              }
         });
 
-        let request = serde_json::from_value::<Request>(json_message["params"]["request"].clone()).unwrap();
+        let request = serde_json::from_value::<super::Request>(json_message["params"]["request"].clone()).unwrap();
         let event = serde_json::from_value::<protocol::Message>(json_message).unwrap();
     }
 }
