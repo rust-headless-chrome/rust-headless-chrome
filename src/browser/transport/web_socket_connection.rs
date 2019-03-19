@@ -13,6 +13,7 @@ use std::sync::Mutex;
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
+    process_id: u32,
 }
 
 // TODO websocket::sender::Writer is not :Debug...
@@ -25,45 +26,57 @@ impl std::fmt::Debug for WebSocketConnection {
 impl WebSocketConnection {
     pub fn new(
         ws_url: &str,
-        target_messages_tx: mpsc::Sender<protocol::Message>,
+        process_id: u32,
+        messages_tx: mpsc::Sender<protocol::Message>,
     ) -> Result<Self, Error> {
         let connection = Self::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
         std::thread::spawn(move || {
             trace!("Starting msg dispatching loop");
-            Self::dispatch_incoming_messages(websocket_receiver, target_messages_tx);
+            Self::dispatch_incoming_messages(websocket_receiver, messages_tx, process_id);
             trace!("Quit loop msg dispatching loop");
         });
 
         Ok(Self {
             sender: Mutex::new(sender),
+            process_id,
         })
     }
 
     pub fn shutdown(&self) {
-        trace!("Shutting down WebSocket connection");
+        trace!(
+            "Shutting down WebSocket connection for Chrome {}",
+            self.process_id
+        );
         if self.sender.lock().unwrap().shutdown_all().is_err() {
-            warn!("Couldn't shut down WS connection");
+            warn!(
+                "Couldn't shut down WS connection for Chrome {}",
+                self.process_id
+            );
         }
     }
 
     fn dispatch_incoming_messages(
         mut receiver: websocket::receiver::Reader<TcpStream>,
         messages_tx: mpsc::Sender<protocol::Message>,
+        process_id: u32,
     ) {
         for ws_message in receiver.incoming_messages() {
             match ws_message {
                 Err(error) => match error {
                     WebSocketError::NoDataAvailable => {
-                        warn!("{}", error);
+                        warn!("WS Error Chrome #{}: {}", process_id, error);
                         break;
                     }
                     WebSocketError::IoError(err) => {
-                        warn!("{}", err);
+                        warn!("WS IO Error for Chrome #{}: {}", process_id, err);
                         break;
                     }
-                    _ => panic!("Unhandled WebSocket error: {:?}", error),
+                    _ => panic!(
+                        "Unhandled WebSocket error for Chrome #{}: {:?}",
+                        process_id, error
+                    ),
                 },
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
@@ -72,7 +85,7 @@ impl WebSocketConnection {
                                 break;
                             }
                         } else {
-                            debug!(
+                            trace!(
                                 "Incoming message isn't recognised as event or method response: {}",
                                 message_string
                             );
@@ -84,7 +97,7 @@ impl WebSocketConnection {
             }
         }
 
-        trace!("Sending shutdown message to message handling loop");
+        info!("Sending shutdown message to message handling loop");
         if messages_tx
             .send(protocol::Message::ConnectionShutdown)
             .is_err()
@@ -108,3 +121,4 @@ impl WebSocketConnection {
         Ok(())
     }
 }
+

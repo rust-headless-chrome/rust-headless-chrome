@@ -34,7 +34,7 @@ pub enum RequestInterceptionDecision {
     Response(String),
 }
 
-type RequestInterceptor = Box<
+pub type RequestInterceptor = Box<
     Fn(protocol::network::events::RequestInterceptedEventParams) -> RequestInterceptionDecision
         + Send
         + Sync,
@@ -148,10 +148,9 @@ impl<'a> Tab {
                         }
                     }
                     Event::RequestIntercepted(interception_event) => {
-                        let mut interceptor = interceptor_mutex.lock().unwrap();
                         let id = interception_event.params.interception_id.clone();
+                        let mut interceptor = interceptor_mutex.lock().unwrap();
                         let decision = interceptor(interception_event.params);
-                        info!("Request with interception id ({}): {:?}", &id, decision);
                         match decision {
                             RequestInterceptionDecision::Continue => {
                                 let method = network::methods::ContinueInterceptedRequest {
@@ -177,14 +176,15 @@ impl<'a> Tab {
                                     headers: None,
                                     auth_challenge_response: None,
                                 };
-                                dbg!(&method);
                                 transport.call_method_on_target(session_id.clone(), method);
                             }
                             _ => {}
                         }
                     }
                     _ => {
-                        trace!("{:?}", &event);
+                        let mut raw_event = format!("{:?}", event);
+                        raw_event.truncate(50);
+                        trace!("Unhandled event: {}", raw_event);
                     }
                 }
             }
@@ -209,7 +209,7 @@ impl<'a> Tab {
         debug!("waiting to start navigating");
         // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
+        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 Some(true)
             } else {
@@ -218,7 +218,7 @@ impl<'a> Tab {
         })?;
         debug!("A tab started navigating");
 
-        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
+        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 None
             } else {
@@ -242,7 +242,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>, Error> {
-        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(5))
+        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(3))
     }
 
     pub fn wait_for_element_with_custom_timeout(
@@ -264,7 +264,7 @@ impl<'a> Tab {
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        util::Wait::with_timeout(Duration::from_secs(15))
+        util::Wait::with_timeout(Duration::from_secs(3))
             .until(|| {
                 if let Ok(elements) = self.find_elements(selector) {
                     Some(elements)

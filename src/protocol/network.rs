@@ -25,8 +25,6 @@ pub mod events {
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
 
-
-
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct AuthChallenge {
@@ -60,7 +58,7 @@ pub mod events {
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct RequestInterceptedEvent {
-        pub params: RequestInterceptedEventParams
+        pub params: RequestInterceptedEventParams,
     }
 
     #[test]
@@ -89,7 +87,9 @@ pub mod events {
              }
         });
 
-        let request = serde_json::from_value::<super::Request>(json_message["params"]["request"].clone()).unwrap();
+        let request =
+            serde_json::from_value::<super::Request>(json_message["params"]["request"].clone())
+                .unwrap();
         let event = serde_json::from_value::<protocol::Message>(json_message).unwrap();
     }
 }
@@ -101,6 +101,18 @@ pub mod methods {
     use std::collections::HashMap;
 
     #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Enable {}
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct EnableReturnObject {}
+    impl Method for Enable {
+        const NAME: &'static str = "Network.enable";
+        type ReturnObject = EnableReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct RequestPattern<'a> {
         /// Wildcards ('*' -> zero or more, '?' -> exactly one) are allowed.
         /// Escape character is backslash. Omitting is equivalent to "*".
@@ -127,14 +139,13 @@ pub mod methods {
     pub struct SetRequestInterception<'a> {
         pub patterns: &'a [RequestPattern<'a>],
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct SetRequestInterceptionReturnObject {}
     impl<'a> Method for SetRequestInterception<'a> {
         const NAME: &'static str = "Network.setRequestInterception";
         type ReturnObject = SetRequestInterceptionReturnObject;
     }
-
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -163,14 +174,30 @@ pub mod methods {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub headers: Option<HashMap<&'a str, &'a str>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub auth_challenge_response: Option<AuthChallengeResponse<'a>>
+        pub auth_challenge_response: Option<AuthChallengeResponse<'a>>,
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct ContinueInterceptedRequestReturnObject {}
     impl<'a> Method for ContinueInterceptedRequest<'a> {
         const NAME: &'static str = "Network.continueInterceptedRequest";
         type ReturnObject = ContinueInterceptedRequestReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetResponseBodyForInterception<'a> {
+        pub interception_id: &'a str,
+    }
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetResponseBodyForInterceptionReturnObject {
+        pub body: String,
+        pub base64_encoded: bool,
+    }
+    impl<'a> Method for GetResponseBodyForInterception<'a> {
+        const NAME: &'static str = "Network.getResponseBodyForInterception";
+        type ReturnObject = GetResponseBodyForInterceptionReturnObject;
     }
 
 }

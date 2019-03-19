@@ -4,27 +4,37 @@ use failure::{Error, Fail};
 use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::fmt::Debug;
 
 pub mod browser;
 pub mod dom;
 pub mod input;
+pub mod network;
 pub mod page;
 pub mod profiler;
 pub mod runtime;
 pub mod target;
-pub mod network;
 
 pub type CallId = usize;
 
 #[derive(Serialize, Debug)]
-pub struct MethodCall<T> {
+pub struct MethodCall<T>
+where
+    T: Debug,
+{
     #[serde(rename = "method")]
     method_name: &'static str,
     pub id: CallId,
     params: T,
 }
 
-pub trait Method {
+impl<T> MethodCall<T> where T: Debug{
+    pub fn get_params(&self) -> &T {
+        &self.params
+    }
+}
+
+pub trait Method: Debug {
     const NAME: &'static str;
 
     type ReturnObject: serde::de::DeserializeOwned + std::fmt::Debug; // have this = something?
@@ -69,7 +79,7 @@ where
     Ok(result)
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "method")]
 pub enum Event {
     #[serde(rename = "Target.attachedToTarget")]
@@ -94,7 +104,7 @@ pub enum Event {
     RequestIntercepted(network::events::RequestInterceptedEvent),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Message {
     Event(Event),

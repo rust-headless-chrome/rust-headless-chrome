@@ -1,25 +1,24 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, TryRecvError, RecvTimeoutError};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use failure::{Error, Fail};
 use log::*;
-
 use serde;
 
+use waiting_call_registry::WaitingCallRegistry;
+use web_socket_connection::WebSocketConnection;
+
 use crate::protocol::target;
+use crate::protocol::CallId;
 use crate::protocol::Event;
 use crate::protocol::Message;
 use crate::{protocol, util};
-
-use crate::protocol::CallId;
-use std::time::Duration;
-use waiting_call_registry::WaitingCallRegistry;
-use web_socket_connection::WebSocketConnection;
 
 mod waiting_call_registry;
 mod web_socket_connection;
@@ -59,6 +58,7 @@ pub struct Transport {
     listeners: Listeners,
     open: Arc<AtomicBool>,
     call_id_counter: Arc<AtomicUsize>,
+    loop_shutdown_tx: Mutex<mpsc::Sender<()>>,
 }
 
 #[derive(Debug, Fail)]
@@ -66,9 +66,10 @@ pub struct Transport {
 pub struct ConnectionClosed {}
 
 impl Transport {
-    pub fn new(ws_url: String) -> Result<Self, Error> {
+    pub fn new(ws_url: String, process_id: u32) -> Result<Self, Error> {
         let (messages_tx, messages_rx) = mpsc::channel();
-        let web_socket_connection = Arc::new(WebSocketConnection::new(&ws_url, messages_tx)?);
+        let web_socket_connection =
+            Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
 
         let waiting_call_registry = Arc::new(WaitingCallRegistry::new());
 
@@ -76,12 +77,18 @@ impl Transport {
 
         let open = Arc::new(AtomicBool::new(true));
 
+        let (shutdown_tx, shutdown_rx) = mpsc::channel();
+
+        let guarded_shutdown_tx = Mutex::new(shutdown_tx);
+
         Self::handle_incoming_messages(
             messages_rx,
             Arc::clone(&waiting_call_registry),
             Arc::clone(&listeners),
             Arc::clone(&open),
             Arc::clone(&web_socket_connection),
+            shutdown_rx,
+            process_id
         );
 
         Ok(Self {
@@ -90,6 +97,7 @@ impl Transport {
             listeners,
             open,
             call_id_counter: Arc::new(AtomicUsize::new(0)),
+            loop_shutdown_tx: guarded_shutdown_tx
         })
     }
 
@@ -125,8 +133,11 @@ impl Transport {
                     session_id: Some(session_id.as_str()),
                     message: &message_text,
                 };
+                let mut raw = message_text.clone();
+                raw.truncate(300);
+                trace!("Msg to tab: {}", &raw);
                 if let Err(e) = self.call_method_on_browser(target_method) {
-                    error!("Failed to call method on browser");
+                    error!("Failed to call method on browser: {:?}", e);
                     self.waiting_call_registry.unregister_call(call.id);
                     trace!("Unregistered callback: {:?}", call.id);
                     return Err(e);
@@ -142,9 +153,17 @@ impl Transport {
             }
         }
 
-        trace!("waiting for response from call registry");
-        let response_result =
-            util::Wait::with_sleep(Duration::from_millis(5)).until(|| response_rx.try_recv().ok());
+        let mut params_string = format!("{:?}", call.get_params());
+        params_string.truncate(400);
+        trace!(
+            "waiting for response from call registry: {} {:?}",
+            &call_id,
+            params_string
+        );
+
+        let response_result = util::Wait::new(Duration::from_secs(15), Duration::from_millis(5))
+            .until(|| response_rx.try_recv().ok());
+        trace!("received response for: {} {:?}", &call_id, params_string);
         protocol::parse_response::<C::ReturnObject>((response_result?)?)
     }
 
@@ -185,12 +204,19 @@ impl Transport {
         events_rx
     }
 
+    pub fn shutdown(&self) {
+        let shutdown_tx = self.loop_shutdown_tx.lock().unwrap();
+        shutdown_tx.send(());
+    }
+
     fn handle_incoming_messages(
         messages_rx: Receiver<protocol::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
         listeners: Listeners,
         open: Arc<AtomicBool>,
         conn: Arc<WebSocketConnection>,
+        shutdown_rx: Receiver<()>,
+        process_id: u32,
     ) {
         trace!("Starting handle_incoming_messages");
         std::thread::spawn(move || {
@@ -198,15 +224,36 @@ impl Transport {
             // this iterator calls .recv() under the hood, so can block thread forever
             // hence need for Connection Shutdown
             loop {
-                match messages_rx.recv_timeout(Duration::from_millis(20_000)) {
-                    Err(_) => {
+                match shutdown_rx.try_recv() {
+                    Ok(_) | Err(TryRecvError::Disconnected) => {
+                        info!("Transport incoming message loop loop received shutdown message");
+                        break;
+                    }
+                    Err(TryRecvError::Empty) => {}
+                }
+                match messages_rx.recv_timeout(Duration::from_millis(30_000)) {
+                    Err(recv_timeout_error) => {
+                        match recv_timeout_error {
+                            RecvTimeoutError::Timeout => {
+                                error!(
+                                    "Transport loop got a timeout while listening for messages (Chrome #{})",
+                                    process_id
+                                );
+                            },
+                            RecvTimeoutError::Disconnected => {
+                                error!(
+                                    "Transport loop got disconnected from WS's sender (Chrome #{})",
+                                    process_id
+                                );
+                            },
+                        }
                         break;
                     }
                     Ok(message) => {
-                        trace!("{:?}", message);
+                        //                        trace!("{:?}", message);
                         match message {
                             Message::ConnectionShutdown => {
-                                trace!("Received shutdown message");
+                                info!("Received shutdown message");
                                 break;
                             }
                             Message::Response(response_to_browser_method_call) => {
@@ -260,8 +307,13 @@ impl Transport {
                                     if let Some(tx) =
                                         listeners.lock().unwrap().get(&ListenerId::Browser)
                                     {
-                                        if tx.send(browser_event).is_err() {
-                                            trace!("Couldn't send browser an event");
+                                        if let Err(err) = tx.send(browser_event.clone()) {
+                                            let mut event_string = format!("{:?}", browser_event);
+                                            event_string.truncate(400);
+                                            warn!(
+                                                "Couldn't send browser an event: {:?}\n{:?}",
+                                                event_string, err
+                                            );
                                             break;
                                         }
                                     }
@@ -272,7 +324,7 @@ impl Transport {
                 }
             }
 
-            trace!("Shutting down message handling loop");
+            info!("Shutting down message handling loop");
 
             // Need to do this because otherwise WS thread might block forever
             conn.shutdown();
@@ -281,7 +333,7 @@ impl Transport {
             waiting_call_registry.cancel_outstanding_method_calls();
             let mut listeners = listeners.lock().unwrap();
             *listeners = HashMap::new();
-            trace!("cleared listeners, I think");
+            info!("cleared listeners, I think");
         });
     }
 }
