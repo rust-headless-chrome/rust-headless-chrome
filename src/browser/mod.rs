@@ -32,11 +32,14 @@ mod transport;
 ///
 /// Most of your actual "driving" (e.g. clicking, typing, navigating) will be via instances of [Tab](../tab/struct.Tab.html), which are accessible via methods such as `get_tabs`.
 ///
-/// With the default [LaunchOptions](../process/LaunchOptions.struct.html), we will automatically
+/// A Browser can either manage its own Chrome process or connect to a remote one.
+/// 
+/// [LaunchOptions](../process/LaunchOptions.struct.html) will automatically
 /// download a revision of Chromium that has a compatible API into your `$XDG_DATA_DIR`. Alternatively,
 /// you can specify your own path to a binary, or make use of the `default_executable` function to use
 ///  your already-installed copy of Chrome.
 ///
+/// Option 1: Managing a Chrome process 
 /// ```rust
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
@@ -49,12 +52,27 @@ mod transport;
 /// # Ok(())
 /// # }
 /// ```
+/// 
+/// Option 2: Connecting to a remote Chrome service
+/// ```rust
+/// # use failure::Error;
+/// # fn main() -> Result<(), Error> {
+/// #
+/// use headless_chrome::{Browser, browser::default_executable};
+/// let browser = Browser::connect(debug_ws_url)?;
+/// let first_tab = browser.wait_for_initial_tab()?;
+/// assert_eq!("about:blank", first_tab.get_url());
+/// #
+/// # Ok(())
+/// # }
+/// ```
+/// 
 ///
 /// While the Chrome DevTools Protocl (CDTP) does define some methods in a
 /// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
 /// (such as for resizing the window in non-headless mode), we currently don't implement those.
 pub struct Browser {
-    _process: Process,
+    _process: Option<Process>,
     transport: Arc<Transport>,
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
 }
@@ -66,17 +84,27 @@ impl Browser {
     /// The browser process will be killed when this struct is dropped.
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         let process = Process::new(launch_options)?;
-
         let transport = Arc::new(Transport::new(process.debug_ws_url.clone())?);
-
         trace!("created transport");
 
+        Self::create_browser(Some(process), transport)
+    }
+    
+    pub fn connect(debug_ws_url: String) -> Result<Self, Error> {
+        let transport = Arc::new(Transport::new(debug_ws_url)?);
+        trace!("created transport");
+
+        Self::create_browser(None, transport)
+    }
+
+    fn create_browser(process: Option<Process>, transport: Arc<Transport>)
+                        -> Result<Self, Error> {
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let browser = Self {
             _process: process,
             tabs,
-            transport,
+            transport
         };
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
@@ -262,9 +290,9 @@ impl Browser {
 
     #[allow(dead_code)]
     #[cfg(test)]
-    pub(crate) fn process(&self) -> &Process {
+    pub(crate) fn process(&self) -> Option<&Process> {
         #[allow(clippy::used_underscore_binding)]
-        &self._process
+        self._process.as_ref()
     }
 }
 
