@@ -1,5 +1,5 @@
-use headless_chrome::{protocol::page::PrintToPdfOptions, Browser};
 use std::fs;
+use headless_chrome::{protocol::page::PrintToPdfOptions, Browser);
 
 
 fn main() -> Result<(), failure::Error> {
@@ -9,20 +9,25 @@ fn main() -> Result<(), failure::Error> {
     // webSocketDebuggerUrl is obtained by GET http request to 
     // http://{chromeservicehost}{port}/json/version
     // and pass an empty-value host param: {host: ""} in header 
-    let debug_ws_url = "ws://localhost:9222/devtools/browser/7e2d7ecb-4c63-49de-9c06-7cd9ffcdd224";
+    let debug_ws_url = "ws://127.0.0.1:9222/devtools/browser/14804b82-0392-43be-b20f-d75678460e43";
 
     let browser = Browser::connect(debug_ws_url.to_string())?;
     let tab = browser.wait_for_initial_tab()?;
 
-    // Browse to the file url and render a pdf of the web page.
-    let pdf_options = None;  // use chrome's defaults for this example
-
-    let pdf_data = tab
-        .navigate_to("file://index.html")?
+    let wikidata = tab
+        .navigate_to("https://www.wikipedia.org")?
         .wait_until_navigated()?
-        .print_to_pdf(pdf_options)?;
-    fs::write("rust.pdf", &pdf_data)?;
+        .print_to_pdf(None)?;
+    fs::write("wiki.pdf", &wikidata)?;
+    println!("PDF successfully created from internet web page.");
 
-    println!("PDF successfully created.");
+    // Browse to the file url and render a pdf of the web page.
+    let pdf_options: Option<PrintToPdfOptions> = None;  // use chrome's defaults for this example
+    let pdf_data = tab.navigate_to("file://index.html")?
+                      .wait_until_navigated()?
+                      .print_to_pdf(pdf_options)?;
+    fs::write("rust.pdf", &pdf_data)?;
+    println!("PDF successfully created from local web page.");
+
     Ok(())
 }
