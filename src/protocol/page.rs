@@ -43,6 +43,41 @@ pub enum ScreenshotFormat {
     PNG,
 }
 
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PrintToPdfOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub landscape: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_header_footer: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub print_background: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scale: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paper_width: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paper_height: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub margin_top: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub margin_bottom: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub margin_left: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub margin_right: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page_ranges: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ignore_invalid_page_ranges: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub header_template: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub footer_template: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_css_page_size: Option<bool>
+}
+
 pub mod events {
     use serde::Deserialize;
     #[derive(Deserialize, Debug)]
@@ -92,6 +127,14 @@ pub mod events {
 pub mod methods {
     use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
+    use super::PrintToPdfOptions;
+
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ReturnDataObject {
+        pub data: String,
+    }
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -103,14 +146,22 @@ pub mod methods {
         pub clip: Option<super::Viewport>,
         pub from_surface: bool,
     }
-    #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct CaptureScreenshotReturnObject {
-        pub data: String,
-    }
     impl Method for CaptureScreenshot {
         const NAME: &'static str = "Page.captureScreenshot";
-        type ReturnObject = CaptureScreenshotReturnObject;
+        type ReturnObject = ReturnDataObject;
+    }
+    
+    
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub(crate) struct PrintToPdf {
+        #[serde(flatten)]
+        pub options: Option<PrintToPdfOptions>
+    }
+
+    impl Method for PrintToPdf {
+        const NAME: &'static str = "Page.printToPDF";
+        type ReturnObject = ReturnDataObject;
     }
 
     #[derive(Serialize, Debug)]
