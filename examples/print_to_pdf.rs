@@ -2,7 +2,7 @@ use headless_chrome::{protocol::page::PrintToPdfOptions, Browser};
 use std::{env, fs};
 
 /// Run the example as follows:
-/// ./print_to_pdf /rust-headless-chrome/tests/pdfassets/index.html
+/// ./print_to_pdf {debug_ws_url} /rust-headless-chrome/tests/pdfassets/index.html
 fn main() -> Result<(), failure::Error> {
     // Create a headless browser, navigate to index.html file, wait for the page
     // to render completely, render a PDF of the page and save it to the filesystem.
@@ -10,13 +10,16 @@ fn main() -> Result<(), failure::Error> {
     // webSocketDebuggerUrl is obtained by GET http request to
     // http://{chromeservicehost}{port}/json/version
     // and pass an empty-value host param: {host: ""} in header
+    //
+    // an example looks like this: "ws://127.0.0.1:9222/devtools/browser/14804b82-0392-43be-b20f-d75678460e43";
+    let debug_ws_url = env::args().nth(1).expect("Must provide debug_ws_url");
+
     let file_path = format!(
         "file://{}",
         env::args()
-            .nth(1)
+            .nth(2)
             .expect("Must provide path/to/file/index.html")
     );
-    let debug_ws_url = "ws://127.0.0.1:9222/devtools/browser/14804b82-0392-43be-b20f-d75678460e43";
 
     let browser = Browser::connect(debug_ws_url.to_string())?;
     let tab = browser.wait_for_initial_tab()?;
