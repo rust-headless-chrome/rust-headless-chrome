@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/olivierlacan/keep-a-changelog/compare/v0.2.0...HEAD)
+## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.2.0...HEAD)
 ### Added
 ### Removed
 ### Changed
