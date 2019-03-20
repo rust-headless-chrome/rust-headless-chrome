@@ -551,6 +551,11 @@ impl<'a> Tab {
         Ok(script_coverages)
     }
 
+    /// Allows you to inspect outgoing network requests from the tab, and optionally return
+    /// your own responses to them
+    ///
+    /// The `interceptor` argument is a closure which takes this tab's `Transport` and its SessionID
+    /// so that you can call methods from within
     pub fn enable_request_interception(
         &self,
         patterns: &[network::methods::RequestPattern],
@@ -564,11 +569,19 @@ impl<'a> Tab {
         Ok(())
     }
 
-    pub fn continue_intercepted_request(&self, id: &str) -> Result<(), Error> {
+    /// Once you have an intercepted request, you can choose to let it continue by calling this.
+    ///
+    /// If you specify a 'modified_response', that's what the requester in the page will receive
+    /// instead of what they normally would've received.
+    pub fn continue_intercepted_request(
+        &self,
+        interception_id: &str,
+        modified_response: Option<&str>,
+    ) -> Result<(), Error> {
         self.call_method(network::methods::ContinueInterceptedRequest {
-            interception_id: id,
+            interception_id,
             error_reason: None,
-            raw_response: None,
+            raw_response: modified_response,
             url: None,
             method: None,
             post_data: None,
