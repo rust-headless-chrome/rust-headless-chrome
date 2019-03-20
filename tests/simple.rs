@@ -1,19 +1,17 @@
 #![allow(unused_variables)]
 
+use std::sync::Arc;
+
 use base64;
+use log::*;
+use rand::prelude::*;
+
 use headless_chrome::browser::tab::RequestInterceptionDecision;
-use headless_chrome::protocol::network;
 use headless_chrome::protocol::network::methods::RequestPattern;
 use headless_chrome::{
     browser::default_executable, browser::tab::Tab, protocol::page::ScreenshotFormat, Browser,
     LaunchOptionsBuilder,
 };
-use log::*;
-use rand::prelude::*;
-use std::io::prelude::*;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::thread::sleep_ms;
 
 mod logging;
 mod server;

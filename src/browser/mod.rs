@@ -257,7 +257,7 @@ impl Browser {
                                         Ok(new_tab) => {
                                             tabs.lock().unwrap().push(Arc::new(new_tab));
                                         }
-                                        Err(tab_creation_err) => {
+                                        Err(_tab_creation_err) => {
                                             info!("Failed to create a handle to new tab");
                                             break;
                                         }
@@ -313,8 +313,7 @@ impl Browser {
 impl Drop for Browser {
     fn drop(&mut self) {
         info!("Dropping browser");
-        let tabs = self.get_tabs().lock().unwrap();
-        self.loop_shutdown_tx.send(());
+        let _ = self.loop_shutdown_tx.send(());
         self.transport.shutdown();
     }
 }

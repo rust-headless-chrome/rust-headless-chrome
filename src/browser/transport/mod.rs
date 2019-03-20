@@ -207,7 +207,7 @@ impl Transport {
     pub fn shutdown(&self) {
         self.web_socket_connection.shutdown();
         let shutdown_tx = self.loop_shutdown_tx.lock().unwrap();
-        shutdown_tx.send(());
+        let _ = shutdown_tx.send(());
     }
 
     fn handle_incoming_messages(

@@ -20,8 +20,6 @@ use crate::{protocol, util};
 
 use super::transport::SessionId;
 use crate::protocol::dom::Node;
-use crate::protocol::network::events::RequestInterceptedEventParams;
-use crate::protocol::network::methods::ContinueInterceptedRequest;
 use std::thread::JoinHandle;
 use std::time::Duration;
 
@@ -32,7 +30,7 @@ mod point;
 #[derive(Debug)]
 pub enum RequestInterceptionDecision {
     Continue,
-    Error(String),
+    // TODO: Error
     Response(String),
 }
 
@@ -91,7 +89,7 @@ impl<'a> Tab {
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
             request_interceptor: Arc::new(Mutex::new(Box::new(
-                |transport, session_id, intercepted| RequestInterceptionDecision::Continue,
+                |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
             ))),
             loop_thread: None,
         };
@@ -157,7 +155,7 @@ impl<'a> Tab {
                     }
                     Event::RequestIntercepted(interception_event) => {
                         let id = interception_event.params.interception_id.clone();
-                        let mut interceptor = interceptor_mutex.lock().unwrap();
+                        let interceptor = interceptor_mutex.lock().unwrap();
                         let decision = interceptor(
                             Arc::clone(&transport),
                             session_id.clone(),
@@ -167,30 +165,22 @@ impl<'a> Tab {
                             RequestInterceptionDecision::Continue => {
                                 let method = network::methods::ContinueInterceptedRequest {
                                     interception_id: &id,
-                                    error_reason: None,
-                                    raw_response: None,
-                                    url: None,
-                                    method: None,
-                                    post_data: None,
-                                    headers: None,
-                                    auth_challenge_response: None,
+                                    ..Default::default()
                                 };
-                                transport.call_method_on_target(session_id.clone(), method);
+                                transport
+                                    .call_method_on_target(session_id.clone(), method)
+                                    .expect("couldn't continue intercepted request");
                             }
                             RequestInterceptionDecision::Response(response_str) => {
                                 let method = network::methods::ContinueInterceptedRequest {
                                     interception_id: &id,
-                                    error_reason: None,
                                     raw_response: Some(&response_str),
-                                    url: None,
-                                    method: None,
-                                    post_data: None,
-                                    headers: None,
-                                    auth_challenge_response: None,
+                                    ..Default::default()
                                 };
-                                transport.call_method_on_target(session_id.clone(), method);
+                                transport
+                                    .call_method_on_target(session_id.clone(), method)
+                                    .expect("couldn't continue intercepted request");
                             }
-                            _ => {}
                         }
                     }
                     _ => {

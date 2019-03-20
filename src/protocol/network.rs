@@ -23,7 +23,6 @@ pub struct Request {
 
 pub mod events {
     use serde::{Deserialize, Serialize};
-    use serde_json::Value;
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     #[serde(rename_all = "camelCase")]
@@ -87,10 +86,10 @@ pub mod events {
              }
         });
 
-        let request =
+        let _request =
             serde_json::from_value::<super::Request>(json_message["params"]["request"].clone())
                 .unwrap();
-        let event = serde_json::from_value::<protocol::Message>(json_message).unwrap();
+        let _event = serde_json::from_value::<protocol::Message>(json_message).unwrap();
     }
 }
 
@@ -157,7 +156,7 @@ pub mod methods {
         pub password: Option<&'a str>,
     }
 
-    #[derive(Serialize, Debug)]
+    #[derive(Serialize, Debug, Default)]
     #[serde(rename_all = "camelCase")]
     pub struct ContinueInterceptedRequest<'a> {
         pub interception_id: &'a str,

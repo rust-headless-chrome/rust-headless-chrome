@@ -211,7 +211,7 @@ pub struct Element<'a> {
 
 impl<'a> Debug for Element<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "Element {}", self.backend_node_id);
+        write!(f, "Element {}", self.backend_node_id)?;
         Ok(())
     }
 }
