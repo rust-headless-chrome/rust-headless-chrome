@@ -158,7 +158,7 @@ fn test_print_file_to_pdf() -> Result<(), failure::Error> {
     let (_, browser, tab) = dumb_server(include_str!("./pdfassets/index.html"));
     let local_pdf = tab.wait_until_navigated()?.print_to_pdf(None)?;
     assert_eq!(true, local_pdf.len() > 1000); // an arbitrary size
-    assert!(local_pdf.starts_with(b"PDF%"))
+    assert!(local_pdf.starts_with(b"%PDF"));
     Ok(())
 }
 
