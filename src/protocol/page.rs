@@ -129,12 +129,6 @@ pub mod methods {
     use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
-    #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct ReturnDataObject {
-        pub data: String,
-    }
-
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub(crate) struct CaptureScreenshot {
@@ -145,9 +139,14 @@ pub mod methods {
         pub clip: Option<super::Viewport>,
         pub from_surface: bool,
     }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CaptureScreenshotReturnObject {
+        pub data: String,
+    }
     impl Method for CaptureScreenshot {
         const NAME: &'static str = "Page.captureScreenshot";
-        type ReturnObject = ReturnDataObject;
+        type ReturnObject = CaptureScreenshotReturnObject;
     }
 
     #[derive(Serialize, Debug)]
@@ -156,10 +155,14 @@ pub mod methods {
         #[serde(flatten)]
         pub options: Option<PrintToPdfOptions>,
     }
-
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct PrintToPdfReturnObject {
+        pub data: String,
+    }
     impl Method for PrintToPdf {
         const NAME: &'static str = "Page.printToPDF";
-        type ReturnObject = ReturnDataObject;
+        type ReturnObject = PrintToPdfReturnObject;
     }
 
     #[derive(Serialize, Debug)]
