@@ -42,5 +42,6 @@ name = "headless_chrome"
 path = "src/lib.rs"
 
 [features]
-default = [ "reqwest", "directories", "zip" ]
+default = [ "fetch" ]
+fetch = ["reqwest", "directories", "zip"]
 nightly = []

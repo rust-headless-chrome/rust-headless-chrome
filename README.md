@@ -59,7 +59,7 @@ If you get errors related to timeouts, you likely need to enable sandboxing eith
 
 By default, `headless_chrome` will download a compatible version of chrome to `XDG_DATA_HOME` (or equivalent on Windows/Mac). This behaviour can be optionally turned off, and you can use the system version of chrome (assuming you have chrome installed) by disabling the default feature in your `Cargo.toml`:
 
-```
+```toml
 [dependencies.headless_chrome]
 default-features = false
 ```

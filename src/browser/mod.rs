@@ -22,7 +22,7 @@ pub use tab::Tab;
 use transport::Transport;
 
 pub mod context;
-#[cfg(feature = "default")]
+#[cfg(feature = "fetch")]
 mod fetcher;
 mod process;
 pub mod tab;

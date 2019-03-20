@@ -16,9 +16,9 @@ use std::{
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-#[cfg(feature = "default")]
+#[cfg(feature = "fetch")]
 use super::fetcher::{self, Fetcher};
-#[cfg(not(feature = "default"))]
+#[cfg(not(feature = "fetch"))]
 use crate::browser::default_executable;
 
 use crate::util;
@@ -87,12 +87,12 @@ pub struct LaunchOptions<'a> {
     /// The revision of chrome to use
     ///
     /// By default, we'll use a revision guaranteed to work with our API.
-    #[cfg(feature = "default")]
+    #[cfg(feature = "fetch")]
     #[builder(default = "self.default_revision()")]
     revision: &'static str,
 }
 
-#[cfg(feature = "default")]
+#[cfg(feature = "fetch")]
 impl<'a> LaunchOptionsBuilder<'a> {
     fn default_revision(&self) -> &'static str {
         fetcher::CUR_REV
@@ -102,12 +102,12 @@ impl<'a> LaunchOptionsBuilder<'a> {
 impl Process {
     pub fn new(mut launch_options: LaunchOptions) -> Result<Self, Error> {
         if launch_options.path.is_none() {
-            #[cfg(feature = "default")]
+            #[cfg(feature = "fetch")]
             {
                 let fetch = Fetcher::new(launch_options.revision)?;
                 launch_options.path = Some(fetch.run()?);
             }
-            #[cfg(not(feature = "default"))]
+            #[cfg(not(feature = "fetch"))]
             {
                 launch_options.path = Some(default_executable().map_err(|e| format_err!("{}", e))?);
             }
