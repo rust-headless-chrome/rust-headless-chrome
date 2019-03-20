@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 * [Element.move_mouse_over and Tab.move_mouse_to_point functions](https://github.com/atroche/rust-headless-chrome/pull/96)
 * [Browser.get_version](https://github.com/atroche/rust-headless-chrome/pull/66)
 * [LaunchOptionsBuilder](https://github.com/atroche/rust-headless-chrome/pull/62)
+* Added badge to [the Discord server](https://discord.gg/yyGEzcc) in README
 
 ### Changed
 * [Renamed cdtp module to protocol](https://github.com/atroche/rust-headless-chrome/pull/80)
