@@ -142,7 +142,6 @@ impl<'a> Tab {
             for event in incoming_events_rx {
                 match event {
                     Event::Lifecycle(lifecycle_event) => {
-                        //                        if lifecycle_event.params.frame_id == main_frame_id {
                         match lifecycle_event.params.name.as_ref() {
                             "networkAlmostIdle" => {
                                 navigating.store(false, Ordering::SeqCst);
@@ -555,7 +554,10 @@ impl<'a> Tab {
     /// your own responses to them
     ///
     /// The `interceptor` argument is a closure which takes this tab's `Transport` and its SessionID
-    /// so that you can call methods from within
+    /// so that you can call methods from within the closure using `transport.call_method_on_target`.
+    ///
+    /// The closure needs to return a variant of `RequestInterceptionDecision` (so, `Continue` or
+    /// `Response(String)`).
     pub fn enable_request_interception(
         &self,
         patterns: &[network::methods::RequestPattern],
