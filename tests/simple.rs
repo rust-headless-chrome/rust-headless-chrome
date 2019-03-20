@@ -298,7 +298,7 @@ fn set_request_interception() -> Result<(), failure::Error> {
                     200.into(),
                     vec![tiny_http::Header::from_bytes(
                         &b"Content-Type"[..],
-                        "application/javascript".as_bytes(),
+                        &b"application/javascript"[..],
                     )
                     .unwrap()],
                     js_body.as_bytes(),

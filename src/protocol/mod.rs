@@ -84,6 +84,7 @@ where
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "method")]
+#[allow(clippy::large_enum_variant)]
 pub enum Event {
     #[serde(rename = "Target.attachedToTarget")]
     AttachedToTarget(target::events::AttachedToTargetEvent),
@@ -109,6 +110,7 @@ pub enum Event {
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum Message {
     Event(Event),
     Response(Response),
