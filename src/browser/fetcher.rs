@@ -1,14 +1,12 @@
 use directories::ProjectDirs;
 use failure::{format_err, Error};
-use indicatif::{ProgressBar, ProgressStyle};
 use log::*;
 use reqwest::{self, header::CONTENT_LENGTH};
 use zip;
 
 use std::{
-    env,
     fs::{self, File, OpenOptions},
-    io::{self, BufWriter, Write},
+    io::{self, BufWriter},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -24,39 +22,6 @@ const PLATFORM: &str = "linux";
 const PLATFORM: &str = "mac";
 #[cfg(windows)]
 const PLATFORM: &str = "win";
-
-struct DownloadProgress<W, F> {
-    inner: W,
-    bytes_read: usize,
-    progress: F,
-}
-
-impl<W, F> DownloadProgress<W, F>
-where
-    W: Write,
-    F: FnMut(usize),
-{
-    pub fn new(inner: W, progress: F) -> Self {
-        Self {
-            inner,
-            bytes_read: 0,
-            progress,
-        }
-    }
-}
-
-impl<W: Write, F: FnMut(usize)> Write for DownloadProgress<W, F> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.inner.write(buf).map(|n| {
-            self.bytes_read += n;
-            (self.progress)(self.bytes_read);
-            n
-        })
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
-    }
-}
 
 pub struct Fetcher<'a> {
     rev: &'a str,
@@ -143,26 +108,10 @@ impl<'a> Fetcher<'a> {
         let path = self.base_path(self.rev).with_extension("zip");
 
         info!("Creating file for download: {}", &path.display());
-        let file = OpenOptions::new().create(true).write(true).open(&path)?;
-
-        let pb = ProgressBar::new(total);
-        pb.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "[{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})",
-                )
-                .progress_chars("#>-"),
-        );
-        let mut dest = DownloadProgress::new(file, |n| {
-            if !in_ci() {
-                pb.set_position(n as u64);
-            }
-        });
+        let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
 
         let mut resp = reqwest::get(&url)?;
-        io::copy(&mut resp, &mut dest)?;
-
-        pb.finish();
+        io::copy(&mut resp, &mut file)?;
 
         self.unzip(&path)?;
 
@@ -175,12 +124,6 @@ impl<'a> Fetcher<'a> {
         fs::create_dir_all(&extract_path)?;
 
         info!("Extracting: {}", extract_path.display());
-        let pb = ProgressBar::new(archive.len() as u64);
-        pb.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] [{wide_bar}] ({pos}/{len})")
-                .progress_chars("#>-"),
-        );
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
@@ -213,10 +156,6 @@ impl<'a> Fetcher<'a> {
                 }
                 let mut out_file = BufWriter::new(File::create(&out_path)?);
                 io::copy(&mut file, &mut out_file)?;
-
-                if !in_ci() {
-                    pb.set_position(i as u64);
-                }
             }
             // Get and Set permissions
             #[cfg(unix)]
@@ -229,7 +168,6 @@ impl<'a> Fetcher<'a> {
             }
         }
 
-        pb.finish();
         info!("Cleaning up");
         if fs::remove_file(&path).is_err() {
             info!("Failed to delete zip");
@@ -314,12 +252,5 @@ fn archive_name<R: AsRef<str>>(_revision: R) -> Result<&'static str, Error> {
         } else {
             Ok("chrome-win32")
         }
-    }
-}
-
-fn in_ci() -> bool {
-    match env::var("IN_CI") {
-        Ok(s) => s == "true",
-        _ => false,
     }
 }

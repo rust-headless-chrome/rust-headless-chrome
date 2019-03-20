@@ -57,6 +57,13 @@ If you're looking to do general browser testing or scraping (rather than anythin
 
 If you get errors related to timeouts, you likely need to enable sandboxing either in the kernel or as a setuid sandbox. Puppeteer has some information about how to do that [here](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md)
 
+By default, `headless_chrome` will download a compatible version of chrome to `XDG_DATA_HOME` (or equivalent on Windows/Mac). This behaviour can be optionally turned off, and you can use the system version of chrome (assuming you have chrome installed) by disabling the default feature in your `Cargo.toml`:
+
+```toml
+[dependencies.headless_chrome]
+default-features = false
+```
+
 ## Missing features
 
 - Frame / iframe support

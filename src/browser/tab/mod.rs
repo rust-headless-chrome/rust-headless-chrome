@@ -258,7 +258,7 @@ impl<'a> Tab {
                     None
                 }
             })
-            .map_err(|e| e.into())
+            .map_err(Into::into)
     }
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
@@ -271,7 +271,7 @@ impl<'a> Tab {
                     None
                 }
             })
-            .map_err(|e| e.into())
+            .map_err(Into::into)
     }
 
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {
