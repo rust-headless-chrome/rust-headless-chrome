@@ -1,16 +1,14 @@
 language: rust
 
 rust:
-    - stable
-    - nightly
+  - stable
+  - nightly
 
 addons:
   chrome: stable
   apt:
     packages:
       - libnss3
-env:
-  - IN_CI=true
 
 os:
   - linux

@@ -22,6 +22,7 @@ pub use tab::Tab;
 use transport::Transport;
 
 pub mod context;
+#[cfg(feature = "default")]
 mod fetcher;
 mod process;
 pub mod tab;
@@ -104,7 +105,7 @@ impl Browser {
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>, Error> {
         util::Wait::with_timeout(Duration::from_secs(10))
             .until(|| self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)))
-            .map_err(|e| e.into())
+            .map_err(Into::into)
     }
 
     /// Create a new tab and return a handle to it.
@@ -167,7 +168,7 @@ impl Browser {
                     .find(|tab| *tab.get_target_id() == target_id)
                     .map(|tab_ref| Arc::clone(tab_ref))
             })
-            .map_err(|e| e.into())
+            .map_err(Into::into)
     }
 
     /// Creates the equivalent of a new incognito window, AKA a browser context
