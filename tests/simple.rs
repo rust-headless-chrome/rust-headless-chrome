@@ -31,7 +31,6 @@ fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
     let browser = Browser::new(
         LaunchOptionsBuilder::default()
             .path(Some(default_executable().unwrap()))
-            .headless(false)
             .build()
             .unwrap(),
     )
@@ -267,8 +266,7 @@ fn set_request_interception() -> Result<(), failure::Error> {
 
     let browser = Browser::new(
         LaunchOptionsBuilder::default()
-            .path(Some("/home/alistair/Downloads/chrome-linux/chrome".into()))
-            //            .headless(false)
+            .path(Some(default_executable().unwrap()))
             .build()
             .unwrap(),
     )
