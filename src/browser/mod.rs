@@ -25,7 +25,7 @@ pub mod context;
 mod fetcher;
 mod process;
 pub mod tab;
-mod transport;
+pub mod transport;
 
 /// A handle to an instance of Chrome / Chromium, which wraps a WebSocket connection to its debugging port.
 ///
@@ -103,6 +103,7 @@ impl Browser {
     }
 
     pub fn get_process_id(&self) -> u32 {
+        println!("getting process ID");
         self.process.get_id()
     }
 
@@ -256,7 +257,7 @@ impl Browser {
                                             tabs.lock().unwrap().push(Arc::new(new_tab));
                                         }
                                         Err(tab_creation_err) => {
-                                            error!("Failed to create a handle to new tab");
+                                            info!("Failed to create a handle to new tab");
                                             break;
                                         }
                                     }
@@ -286,7 +287,7 @@ impl Browser {
                     }
                 }
             }
-            trace!("Finished browser's event handling loop");
+            info!("Finished browser's event handling loop");
         });
     }
 
@@ -310,6 +311,8 @@ impl Browser {
 
 impl Drop for Browser {
     fn drop(&mut self) {
+        info!("Dropping browser");
+        let tabs = self.get_tabs().lock().unwrap();
         self.loop_shutdown_tx.send(());
         self.transport.shutdown();
     }

@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread;
 
 use failure::{Error, Fail};
 use log::*;
@@ -21,6 +22,7 @@ use super::transport::SessionId;
 use crate::protocol::dom::Node;
 use crate::protocol::network::events::RequestInterceptedEventParams;
 use crate::protocol::network::methods::ContinueInterceptedRequest;
+use std::thread::JoinHandle;
 use std::time::Duration;
 
 pub mod element;
@@ -35,7 +37,11 @@ pub enum RequestInterceptionDecision {
 }
 
 pub type RequestInterceptor = Box<
-    Fn(protocol::network::events::RequestInterceptedEventParams) -> RequestInterceptionDecision
+    Fn(
+            Arc<Transport>,
+            SessionId,
+            protocol::network::events::RequestInterceptedEventParams,
+        ) -> RequestInterceptionDecision
         + Send
         + Sync,
 >;
@@ -49,6 +55,7 @@ pub struct Tab {
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
+    loop_thread: Option<JoinHandle<()>>,
 }
 
 #[derive(Debug, Fail)]
@@ -77,21 +84,23 @@ impl<'a> Tab {
 
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
-        let tab = Self {
+        let mut tab = Self {
             target_id,
             transport,
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
-            request_interceptor: Arc::new(Mutex::new(Box::new(|r| {
-                RequestInterceptionDecision::Continue
-            }))),
+            request_interceptor: Arc::new(Mutex::new(Box::new(
+                |transport, session_id, intercepted|
+                    RequestInterceptionDecision::Continue,
+            ))),
+            loop_thread: None,
         };
 
         tab.call_method(page::methods::Enable {})?;
         tab.call_method(page::methods::SetLifecycleEventsEnabled { enabled: true })?;
 
-        tab.start_event_handler_thread();
+        tab.loop_thread = Some(tab.start_event_handler_thread());
 
         Ok(tab)
     }
@@ -123,7 +132,7 @@ impl<'a> Tab {
         info.url.clone()
     }
 
-    fn start_event_handler_thread(&self) {
+    fn start_event_handler_thread(&self) -> JoinHandle<()> {
         let transport: Arc<Transport> = Arc::clone(&self.transport);
         let incoming_events_rx = self
             .transport
@@ -132,7 +141,7 @@ impl<'a> Tab {
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
         let session_id = self.session_id.clone();
 
-        std::thread::spawn(move || {
+        thread::spawn(move || {
             for event in incoming_events_rx {
                 match event {
                     Event::Lifecycle(lifecycle_event) => {
@@ -150,7 +159,11 @@ impl<'a> Tab {
                     Event::RequestIntercepted(interception_event) => {
                         let id = interception_event.params.interception_id.clone();
                         let mut interceptor = interceptor_mutex.lock().unwrap();
-                        let decision = interceptor(interception_event.params);
+                        let decision = interceptor(
+                            Arc::clone(&transport),
+                            session_id.clone(),
+                            interception_event.params,
+                        );
                         match decision {
                             RequestInterceptionDecision::Continue => {
                                 let method = network::methods::ContinueInterceptedRequest {
@@ -188,7 +201,8 @@ impl<'a> Tab {
                     }
                 }
             }
-        });
+            info!("finished tab's event handling loop");
+        })
     }
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
@@ -573,5 +587,15 @@ impl<'a> Tab {
             auth_challenge_response: None,
         })?;
         Ok(())
+    }
+}
+
+impl Drop for Tab {
+    fn drop(&mut self) {
+        info!("dropping tab");
+        if let Some(handle) = self.loop_thread.take() {
+            handle.join().expect("failed to join thread");
+        }
+        info!("dropped tab");
     }
 }

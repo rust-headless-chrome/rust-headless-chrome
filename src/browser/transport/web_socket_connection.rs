@@ -50,7 +50,7 @@ impl WebSocketConnection {
             self.process_id
         );
         if self.sender.lock().unwrap().shutdown_all().is_err() {
-            warn!(
+            debug!(
                 "Couldn't shut down WS connection for Chrome {}",
                 self.process_id
             );
@@ -66,11 +66,11 @@ impl WebSocketConnection {
             match ws_message {
                 Err(error) => match error {
                     WebSocketError::NoDataAvailable => {
-                        warn!("WS Error Chrome #{}: {}", process_id, error);
+                        debug!("WS Error Chrome #{}: {}", process_id, error);
                         break;
                     }
                     WebSocketError::IoError(err) => {
-                        warn!("WS IO Error for Chrome #{}: {}", process_id, err);
+                        debug!("WS IO Error for Chrome #{}: {}", process_id, err);
                         break;
                     }
                     _ => panic!(
@@ -122,3 +122,8 @@ impl WebSocketConnection {
     }
 }
 
+impl Drop for WebSocketConnection {
+    fn drop(&mut self) {
+        info!("dropping websocket connection");
+    }
+}

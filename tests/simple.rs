@@ -295,8 +295,8 @@ fn set_request_interception() -> Result<(), failure::Error> {
 
     tab.enable_request_interception(
         &patterns,
-        Box::new(|params| {
-            if params.request.url.ends_with(".js") {
+        Box::new(|transport, session_id, intercepted| {
+            if intercepted.request.url.ends_with(".js") {
                 let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
                 let js_response = tiny_http::Response::new(
                     200.into(),

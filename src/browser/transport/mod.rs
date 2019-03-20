@@ -205,6 +205,7 @@ impl Transport {
     }
 
     pub fn shutdown(&self) {
+        self.web_socket_connection.shutdown();
         let shutdown_tx = self.loop_shutdown_tx.lock().unwrap();
         shutdown_tx.send(());
     }
@@ -335,5 +336,13 @@ impl Transport {
             *listeners = HashMap::new();
             info!("cleared listeners, I think");
         });
+    }
+}
+
+
+impl Drop for Transport {
+    fn drop(&mut self) {
+        println!("dropping transport");
+        info!("dropping transport");
     }
 }
