@@ -7,13 +7,15 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 
-## 0.1.4 - 2018-03-20
+## 0.1.4 - 2018-03-21
 
 ### Added
 * [Tab.capture_screenshot](https://github.com/atroche/rust-headless-chrome/pull/48)
+* [Tab.print_to_pdf](https://github.com/atroche/rust-headless-chrome/pull/107)
 * [Element.wait_for_elements](https://github.com/atroche/rust-headless-chrome/pull/90)
 * [Automatic downloading of Chromium binary for people who don't want to use their own binary](https://github.com/atroche/rust-headless-chrome/pull/83)
 * [Tab.reload](https://github.com/atroche/rust-headless-chrome/pull/49)
+* [Network request interception](https://github.com/atroche/rust-headless-chrome/pull/98)
 * [Method chaining on Tab for common methods like click()](https://github.com/atroche/rust-headless-chrome/pull/44)
 * [Browser.new_tab](https://github.com/atroche/rust-headless-chrome/pull/56)
 * [Incognito support (Browser.new_context)](https://github.com/atroche/rust-headless-chrome/pull/97)
