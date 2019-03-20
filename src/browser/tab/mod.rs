@@ -20,7 +20,6 @@ use crate::{protocol, util};
 
 use super::transport::SessionId;
 use crate::protocol::dom::Node;
-use std::thread::JoinHandle;
 use std::time::Duration;
 
 pub mod element;
@@ -53,7 +52,6 @@ pub struct Tab {
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
-    loop_thread: Option<JoinHandle<()>>,
 }
 
 #[derive(Debug, Fail)]
@@ -82,7 +80,7 @@ impl<'a> Tab {
 
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
-        let mut tab = Self {
+        let tab = Self {
             target_id,
             transport,
             session_id,
@@ -91,13 +89,12 @@ impl<'a> Tab {
             request_interceptor: Arc::new(Mutex::new(Box::new(
                 |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
             ))),
-            loop_thread: None,
         };
 
         tab.call_method(page::methods::Enable {})?;
         tab.call_method(page::methods::SetLifecycleEventsEnabled { enabled: true })?;
 
-        tab.loop_thread = Some(tab.start_event_handler_thread());
+        tab.start_event_handler_thread();
 
         Ok(tab)
     }
@@ -129,7 +126,7 @@ impl<'a> Tab {
         info.url.clone()
     }
 
-    fn start_event_handler_thread(&self) -> JoinHandle<()> {
+    fn start_event_handler_thread(&self) {
         let transport: Arc<Transport> = Arc::clone(&self.transport);
         let incoming_events_rx = self
             .transport
@@ -190,7 +187,7 @@ impl<'a> Tab {
                 }
             }
             info!("finished tab's event handling loop");
-        })
+        });
     }
 
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
@@ -597,9 +594,6 @@ impl<'a> Tab {
 impl Drop for Tab {
     fn drop(&mut self) {
         info!("dropping tab");
-        if let Some(handle) = self.loop_thread.take() {
-            handle.join().expect("failed to join thread");
-        }
         info!("dropped tab");
     }
 }
