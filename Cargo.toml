@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "0.2.0"
+version = "0.1.4"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2018"
 description = "Control Chrome programatically"
