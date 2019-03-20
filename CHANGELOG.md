@@ -1,13 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.2.0...HEAD)
+## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.4...HEAD)
 ### Added
 ### Removed
 ### Changed
 
 
-## 0.2 - 2018-03-20
+## 0.1.4 - 2018-03-20
 
 ### Added
 * [Tab.capture_screenshot](https://github.com/atroche/rust-headless-chrome/pull/48)
