@@ -4,10 +4,12 @@ use failure::{Error, Fail};
 use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::fmt::Debug;
 
 pub mod browser;
 pub mod dom;
 pub mod input;
+pub mod network;
 pub mod page;
 pub mod profiler;
 pub mod runtime;
@@ -16,14 +18,26 @@ pub mod target;
 pub type CallId = usize;
 
 #[derive(Serialize, Debug)]
-pub struct MethodCall<T> {
+pub struct MethodCall<T>
+where
+    T: Debug,
+{
     #[serde(rename = "method")]
     method_name: &'static str,
     pub id: CallId,
     params: T,
 }
 
-pub trait Method {
+impl<T> MethodCall<T>
+where
+    T: Debug,
+{
+    pub fn get_params(&self) -> &T {
+        &self.params
+    }
+}
+
+pub trait Method: Debug {
     const NAME: &'static str;
 
     type ReturnObject: serde::de::DeserializeOwned + std::fmt::Debug; // have this = something?
@@ -68,8 +82,9 @@ where
     Ok(result)
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "method")]
+#[allow(clippy::large_enum_variant)]
 pub enum Event {
     #[serde(rename = "Target.attachedToTarget")]
     AttachedToTarget(target::events::AttachedToTargetEvent),
@@ -89,10 +104,13 @@ pub enum Event {
     FrameStoppedLoading(page::events::FrameStoppedLoadingEvent),
     #[serde(rename = "Page.lifecycleEvent")]
     Lifecycle(page::events::LifecycleEvent),
+    #[serde(rename = "Network.requestIntercepted")]
+    RequestIntercepted(network::events::RequestInterceptedEvent),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum Message {
     Event(Event),
     Response(Response),

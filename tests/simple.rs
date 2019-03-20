@@ -1,12 +1,17 @@
 #![allow(unused_variables)]
 
-use headless_chrome::{
-    browser::default_executable, protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder,
-    Tab,
-};
+use std::sync::Arc;
+
+use base64;
 use log::*;
 use rand::prelude::*;
-use std::sync::Arc;
+
+use headless_chrome::browser::tab::RequestInterceptionDecision;
+use headless_chrome::protocol::network::methods::RequestPattern;
+use headless_chrome::{
+    browser::default_executable, browser::tab::Tab, protocol::page::ScreenshotFormat, Browser,
+    LaunchOptionsBuilder,
+};
 
 mod logging;
 mod server;
@@ -249,6 +254,81 @@ fn find_elements() -> Result<(), failure::Error> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let divs = tab.wait_for_elements("div")?;
     assert_eq!(8, divs.len());
+    Ok(())
+}
+
+#[test]
+fn set_request_interception() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let server = server::Server::with_dumb_html(include_str!(
+        "coverage_fixtures/basic_page_with_js_scripts.html"
+    ));
+
+    let browser = Browser::new(
+        LaunchOptionsBuilder::default()
+            .path(Some(default_executable().unwrap()))
+            .build()
+            .unwrap(),
+    )
+    .unwrap();
+
+    let tab = browser.wait_for_initial_tab().unwrap();
+
+    //    tab.call_method(network::methods::Enable{})?;
+
+    let patterns = vec![
+        RequestPattern {
+            url_pattern: None,
+            resource_type: None,
+            interception_stage: Some("HeadersReceived"),
+        },
+        RequestPattern {
+            url_pattern: None,
+            resource_type: None,
+            interception_stage: Some("Request"),
+        },
+    ];
+
+    tab.enable_request_interception(
+        &patterns,
+        Box::new(|transport, session_id, intercepted| {
+            if intercepted.request.url.ends_with(".js") {
+                let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
+                let js_response = tiny_http::Response::new(
+                    200.into(),
+                    vec![tiny_http::Header::from_bytes(
+                        &b"Content-Type"[..],
+                        &b"application/javascript"[..],
+                    )
+                    .unwrap()],
+                    js_body.as_bytes(),
+                    Some(js_body.len()),
+                    None,
+                );
+
+                let mut wrapped_writer = Vec::new();
+                js_response
+                    .raw_print(&mut wrapped_writer, (1, 2).into(), &[], false, None)
+                    .unwrap();
+
+                let base64_response = base64::encode(&wrapped_writer);
+
+                RequestInterceptionDecision::Response(base64_response)
+            } else {
+                RequestInterceptionDecision::Continue
+            }
+        }),
+    )?;
+
+    // ignore cache:
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
+        .unwrap();
+
+    tab.wait_until_navigated()?;
+
+    // There are two JS scripts that get loaded via network, they both append an element like this:
+    assert_eq!(2, tab.wait_for_elements("hr")?.len());
+
     Ok(())
 }
 

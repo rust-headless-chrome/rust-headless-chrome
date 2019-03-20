@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 pub type TargetId = String;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum TargetType {
     Page,
@@ -21,7 +21,7 @@ impl TargetType {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetInfo {
     pub target_id: TargetId,
@@ -37,12 +37,12 @@ pub struct TargetInfo {
 pub mod events {
     use serde::Deserialize;
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     pub struct AttachedToTargetEvent {
         pub params: AttachedToTargetParams,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachedToTargetParams {
         pub session_id: String,
@@ -50,12 +50,12 @@ pub mod events {
         pub waiting_for_debugger: bool,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     pub struct ReceivedMessageFromTargetEvent {
         pub params: ReceivedMessageFromTargetParams,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct ReceivedMessageFromTargetParams {
         pub session_id: String,
@@ -63,34 +63,34 @@ pub mod events {
         pub message: String,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     pub struct TargetInfoChangedEvent {
         pub params: TargetInfoChangedParams,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct TargetInfoChangedParams {
         pub target_info: super::TargetInfo,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     pub struct TargetCreatedEvent {
         pub params: TargetCreatedParams,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct TargetCreatedParams {
         pub target_info: super::TargetInfo,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     pub struct TargetDestroyedEvent {
         pub params: TargetDestroyedParams,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct TargetDestroyedParams {
         pub target_id: super::TargetId,
@@ -102,9 +102,9 @@ pub mod methods {
 
     use crate::protocol::Method;
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     pub struct GetTargets {}
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct GetTargetsReturnObject {
         pub target_infos: Vec<super::TargetInfo>,
@@ -118,7 +118,7 @@ pub mod methods {
     pub struct GetTargetInfo<'a> {
         pub target_id: &'a str,
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct GetTargetInfoReturnObject {
         pub target_info: super::TargetInfo,
@@ -128,9 +128,9 @@ pub mod methods {
         type ReturnObject = GetTargetInfoReturnObject;
     }
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     pub struct CreateBrowserContext {}
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct CreateBrowserContextReturnObject {
         pub browser_context_id: String,
@@ -140,7 +140,7 @@ pub mod methods {
         type ReturnObject = CreateBrowserContextReturnObject;
     }
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct CreateTarget<'a> {
         pub url: &'a str,
@@ -155,7 +155,7 @@ pub mod methods {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub enable_begin_frame_control: Option<bool>,
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct CreateTargetReturnObject {
         pub target_id: super::TargetId,
@@ -165,14 +165,14 @@ pub mod methods {
         type ReturnObject = CreateTargetReturnObject;
     }
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachToTarget<'a> {
         pub target_id: &'a str,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub flatten: Option<bool>,
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachToTargetReturnObject {
         pub session_id: String,
@@ -182,10 +182,10 @@ pub mod methods {
         type ReturnObject = AttachToTargetReturnObject;
     }
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachToBrowserTarget {}
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachToBrowserTargetReturnObject {
         pub session_id: String,
@@ -195,12 +195,12 @@ pub mod methods {
         type ReturnObject = AttachToBrowserTargetReturnObject;
     }
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SetDiscoverTargets {
         pub discover: bool,
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct SetDiscoverTargetsReturnObject {}
     impl Method for SetDiscoverTargets {
@@ -208,7 +208,7 @@ pub mod methods {
         type ReturnObject = SetDiscoverTargetsReturnObject;
     }
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SendMessageToTarget<'a> {
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -217,7 +217,7 @@ pub mod methods {
         pub session_id: Option<&'a str>,
         pub message: &'a str,
     }
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct SendMessageToTargetReturnObject {}
     impl<'a> Method for SendMessageToTarget<'a> {

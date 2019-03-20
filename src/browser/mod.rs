@@ -1,25 +1,25 @@
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use failure::Error;
 use log::*;
+use serde;
 use which::which;
 
-use serde;
+pub use process::LaunchOptionsBuilder;
+use process::{LaunchOptions, Process};
+pub use tab::Tab;
+use transport::Transport;
 
+use crate::browser::context::Context;
 use crate::protocol::browser::methods::GetVersion;
 pub use crate::protocol::browser::methods::VersionInformationReturnObject;
 use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::protocol::{self, Event};
 use crate::util;
-
-use crate::browser::context::Context;
-pub use process::LaunchOptionsBuilder;
-use process::{LaunchOptions, Process};
-use std::time::Duration;
-pub use tab::Tab;
-use transport::Transport;
+use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
 
 pub mod context;
 mod fetcher;
@@ -54,9 +54,10 @@ mod transport;
 /// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
 /// (such as for resizing the window in non-headless mode), we currently don't implement those.
 pub struct Browser {
-    _process: Process,
+    process: Process,
     transport: Arc<Transport>,
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
+    loop_shutdown_tx: mpsc::Sender<()>,
 }
 
 impl Browser {
@@ -66,21 +67,26 @@ impl Browser {
     /// The browser process will be killed when this struct is dropped.
     pub fn new(launch_options: LaunchOptions) -> Result<Self, Error> {
         let process = Process::new(launch_options)?;
+        let process_id = process.get_id();
 
-        let transport = Arc::new(Transport::new(process.debug_ws_url.clone())?);
+        let transport = Arc::new(Transport::new(process.debug_ws_url.clone(), process_id)?);
 
         trace!("created transport");
 
         let tabs = Arc::new(Mutex::new(vec![]));
 
+        let (shutdown_tx, shutdown_rx) = mpsc::channel();
+
         let browser = Self {
-            _process: process,
+            process,
             tabs,
             transport,
+            loop_shutdown_tx: shutdown_tx,
         };
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
-        browser.handle_browser_level_events(incoming_events_rx);
+
+        browser.handle_browser_level_events(incoming_events_rx, process_id, shutdown_rx);
         trace!("created browser event listener");
 
         // so we get events like 'targetCreated' and 'targetDestroyed'
@@ -90,6 +96,11 @@ impl Browser {
         browser.wait_for_initial_tab()?;
 
         Ok(browser)
+    }
+
+    pub fn get_process_id(&self) -> u32 {
+        println!("getting process ID");
+        self.process.get_id()
     }
 
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
@@ -160,7 +171,7 @@ impl Browser {
     ) -> Result<Arc<Tab>, Error> {
         let target_id = self.call_method(create_target_params)?.target_id;
 
-        util::Wait::default()
+        util::Wait::with_timeout(Duration::from_secs(20))
             .until(|| {
                 let tabs = self.tabs.lock().unwrap();
                 tabs.iter()
@@ -198,29 +209,56 @@ impl Browser {
         self.call_method(GetVersion {})
     }
 
-    fn handle_browser_level_events(&self, events_rx: mpsc::Receiver<Event>) {
+    fn handle_browser_level_events(
+        &self,
+        events_rx: mpsc::Receiver<Event>,
+        process_id: u32,
+        shutdown_rx: mpsc::Receiver<()>,
+    ) {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
 
         std::thread::spawn(move || {
             trace!("Starting browser's event handling loop");
             loop {
+                match shutdown_rx.try_recv() {
+                    Ok(_) | Err(TryRecvError::Disconnected) => {
+                        info!("Browser event loop received shutdown message");
+                        break;
+                    }
+                    Err(TryRecvError::Empty) => {}
+                }
+
                 match events_rx.recv_timeout(Duration::from_millis(20_000)) {
-                    Err(_) => {
+                    Err(recv_timeout_error) => {
+                        match recv_timeout_error {
+                            RecvTimeoutError::Timeout => {
+                                error!(
+                                    "Got a timeout while listening for browser events (Chrome #{})",
+                                    process_id
+                                );
+                            }
+                            RecvTimeoutError::Disconnected => {
+                                debug!(
+                                    "Browser event sender disconnected while loop was waiting (Chrome #{})",
+                                    process_id
+                                );
+                            }
+                        }
                         break;
                     }
                     Ok(event) => {
                         match event {
                             Event::TargetCreated(ev) => {
                                 let target_info = ev.params.target_info;
-                                trace!("Target created: {:?}", target_info);
+                                trace!("Creating target: {:?}", target_info);
                                 if target_info.target_type.is_page() {
                                     match Tab::new(target_info, Arc::clone(&transport)) {
                                         Ok(new_tab) => {
                                             tabs.lock().unwrap().push(Arc::new(new_tab));
                                         }
                                         Err(_tab_creation_err) => {
-                                            error!("Failed to create a handle to new tab");
+                                            info!("Failed to create a handle to new tab");
                                             break;
                                         }
                                     }
@@ -241,12 +279,16 @@ impl Browser {
                             Event::TargetDestroyed(ev) => {
                                 trace!("Target destroyed: {:?}", ev.params.target_id);
                             }
-                            _ => {}
+                            _ => {
+                                let mut raw_event = format!("{:?}", event);
+                                raw_event.truncate(50);
+                                trace!("Unhandled event: {}", raw_event);
+                            }
                         }
                     }
                 }
             }
-            trace!("Finished browser's event handling loop");
+            info!("Finished browser's event handling loop");
         });
     }
 
@@ -264,7 +306,15 @@ impl Browser {
     #[cfg(test)]
     pub(crate) fn process(&self) -> &Process {
         #[allow(clippy::used_underscore_binding)]
-        &self._process
+        &self.process
+    }
+}
+
+impl Drop for Browser {
+    fn drop(&mut self) {
+        info!("Dropping browser");
+        let _ = self.loop_shutdown_tx.send(());
+        self.transport.shutdown();
     }
 }
 

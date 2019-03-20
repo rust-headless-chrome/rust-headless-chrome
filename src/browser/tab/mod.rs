@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread;
 
 use failure::{Error, Fail};
 use log::*;
@@ -13,8 +14,8 @@ use crate::browser::Transport;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
-use crate::protocol::Event;
 use crate::protocol::{dom, input, page, profiler, target};
+use crate::protocol::{network, Event};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
@@ -25,15 +26,32 @@ pub mod element;
 mod keys;
 mod point;
 
+#[derive(Debug)]
+pub enum RequestInterceptionDecision {
+    Continue,
+    // TODO: Error
+    Response(String),
+}
+
+pub type RequestInterceptor = Box<
+    Fn(
+            Arc<Transport>,
+            SessionId,
+            protocol::network::events::RequestInterceptedEventParams,
+        ) -> RequestInterceptionDecision
+        + Send
+        + Sync,
+>;
+
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
-#[derive(Debug)]
 pub struct Tab {
     target_id: TargetId,
     transport: Arc<Transport>,
     session_id: SessionId,
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
+    request_interceptor: Arc<Mutex<RequestInterceptor>>,
 }
 
 #[derive(Debug, Fail)]
@@ -68,6 +86,9 @@ impl<'a> Tab {
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
+            request_interceptor: Arc::new(Mutex::new(Box::new(
+                |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
+            ))),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -106,27 +127,66 @@ impl<'a> Tab {
     }
 
     fn start_event_handler_thread(&self) {
+        let transport: Arc<Transport> = Arc::clone(&self.transport);
         let incoming_events_rx = self
             .transport
             .listen_to_target_events(self.session_id.clone());
         let navigating = Arc::clone(&self.navigating);
+        let interceptor_mutex = Arc::clone(&self.request_interceptor);
+        let session_id = self.session_id.clone();
 
-        std::thread::spawn(move || {
+        thread::spawn(move || {
             for event in incoming_events_rx {
-                trace!("{:?}", &event);
-                if let Event::Lifecycle(lifecycle_event) = event {
-                    //                        if lifecycle_event.params.frame_id == main_frame_id {
-                    match lifecycle_event.params.name.as_ref() {
-                        "networkAlmostIdle" => {
-                            navigating.store(false, Ordering::SeqCst);
+                match event {
+                    Event::Lifecycle(lifecycle_event) => {
+                        match lifecycle_event.params.name.as_ref() {
+                            "networkAlmostIdle" => {
+                                navigating.store(false, Ordering::SeqCst);
+                            }
+                            "init" => {
+                                navigating.store(true, Ordering::SeqCst);
+                            }
+                            _ => {}
                         }
-                        "init" => {
-                            navigating.store(true, Ordering::SeqCst);
+                    }
+                    Event::RequestIntercepted(interception_event) => {
+                        let id = interception_event.params.interception_id.clone();
+                        let interceptor = interceptor_mutex.lock().unwrap();
+                        let decision = interceptor(
+                            Arc::clone(&transport),
+                            session_id.clone(),
+                            interception_event.params,
+                        );
+                        match decision {
+                            RequestInterceptionDecision::Continue => {
+                                let method = network::methods::ContinueInterceptedRequest {
+                                    interception_id: &id,
+                                    ..Default::default()
+                                };
+                                transport
+                                    .call_method_on_target(session_id.clone(), method)
+                                    .expect("couldn't continue intercepted request");
+                            }
+                            RequestInterceptionDecision::Response(response_str) => {
+                                let method = network::methods::ContinueInterceptedRequest {
+                                    interception_id: &id,
+                                    raw_response: Some(&response_str),
+                                    ..Default::default()
+                                };
+                                transport
+                                    .call_method_on_target(session_id.clone(), method)
+                                    .expect("couldn't continue intercepted request");
+                            }
                         }
-                        _ => {}
+                    }
+                    _ => {
+                        let mut raw_event = format!("{:?}", event);
+                        raw_event.truncate(50);
+                        trace!("Unhandled event: {}", raw_event);
                     }
                 }
             }
+            info!("finished tab's event handling loop");
         });
     }
 
@@ -148,7 +208,7 @@ impl<'a> Tab {
         debug!("waiting to start navigating");
         // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
+        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 Some(true)
             } else {
@@ -157,7 +217,7 @@ impl<'a> Tab {
         })?;
         debug!("A tab started navigating");
 
-        util::Wait::with_timeout(Duration::from_secs(60)).until(|| {
+        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 None
             } else {
@@ -181,7 +241,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>, Error> {
-        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(5))
+        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(3))
     }
 
     pub fn wait_for_element_with_custom_timeout(
@@ -203,7 +263,7 @@ impl<'a> Tab {
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        util::Wait::with_timeout(Duration::from_secs(15))
+        util::Wait::with_timeout(Duration::from_secs(3))
             .until(|| {
                 if let Ok(elements) = self.find_elements(selector) {
                     Some(elements)
@@ -485,5 +545,55 @@ impl<'a> Tab {
             .call_method(profiler::methods::TakePreciseCoverage {})?
             .result;
         Ok(script_coverages)
+    }
+
+    /// Allows you to inspect outgoing network requests from the tab, and optionally return
+    /// your own responses to them
+    ///
+    /// The `interceptor` argument is a closure which takes this tab's `Transport` and its SessionID
+    /// so that you can call methods from within the closure using `transport.call_method_on_target`.
+    ///
+    /// The closure needs to return a variant of `RequestInterceptionDecision` (so, `Continue` or
+    /// `Response(String)`).
+    pub fn enable_request_interception(
+        &self,
+        patterns: &[network::methods::RequestPattern],
+        interceptor: RequestInterceptor,
+    ) -> Result<(), Error> {
+        let mut current_interceptor = self.request_interceptor.lock().unwrap();
+        *current_interceptor = interceptor;
+        self.call_method(network::methods::SetRequestInterception {
+            patterns: &patterns,
+        })?;
+        Ok(())
+    }
+
+    /// Once you have an intercepted request, you can choose to let it continue by calling this.
+    ///
+    /// If you specify a 'modified_response', that's what the requester in the page will receive
+    /// instead of what they normally would've received.
+    pub fn continue_intercepted_request(
+        &self,
+        interception_id: &str,
+        modified_response: Option<&str>,
+    ) -> Result<(), Error> {
+        self.call_method(network::methods::ContinueInterceptedRequest {
+            interception_id,
+            error_reason: None,
+            raw_response: modified_response,
+            url: None,
+            method: None,
+            post_data: None,
+            headers: None,
+            auth_challenge_response: None,
+        })?;
+        Ok(())
+    }
+}
+
+impl Drop for Tab {
+    fn drop(&mut self) {
+        info!("dropping tab");
+        info!("dropped tab");
     }
 }

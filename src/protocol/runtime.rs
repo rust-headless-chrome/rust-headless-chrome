@@ -2,7 +2,7 @@ pub mod methods {
     use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct PropertyPreview {
         pub name: String,
@@ -13,7 +13,7 @@ pub mod methods {
         pub subtype: Option<String>,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct ObjectPreview {
         #[serde(rename = "type")]
@@ -24,7 +24,7 @@ pub mod methods {
         pub properties: Vec<PropertyPreview>,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct RemoteObject {
         #[serde(rename = "type")]

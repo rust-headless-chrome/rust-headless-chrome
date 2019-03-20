@@ -20,7 +20,7 @@ use crate::util;
 use std::time::Duration;
 
 pub struct Process {
-    _child_process: TemporaryProcess,
+    child_process: TemporaryProcess,
     pub debug_ws_url: String,
 }
 
@@ -135,7 +135,7 @@ impl Process {
         }
 
         Ok(Self {
-            _child_process: process,
+            child_process: process,
             debug_ws_url: url,
         })
     }
@@ -243,6 +243,10 @@ impl Process {
         } else {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
         }
+    }
+
+    pub fn get_id(&self) -> u32 {
+        self.child_process.0.id()
     }
 }
 

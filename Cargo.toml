@@ -37,6 +37,7 @@ winreg = "0.6"
 tiny_http = "0.6"
 png = "0.14"
 jpeg-decoder = { version = "0.1", default_features = false }
+base64 = "0.10.1"
 
 [lib]
 name = "headless_chrome"

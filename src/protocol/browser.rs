@@ -2,7 +2,7 @@ pub mod methods {
     use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
 
-    #[derive(Serialize)]
+    #[derive(Serialize, Debug)]
     pub struct GetVersion {}
     #[derive(Deserialize, Clone, Debug)]
     #[serde(rename_all = "camelCase")]
