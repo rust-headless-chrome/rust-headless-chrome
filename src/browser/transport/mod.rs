@@ -66,7 +66,7 @@ pub struct Transport {
 pub struct ConnectionClosed {}
 
 impl Transport {
-    pub fn new(ws_url: String, process_id: u32) -> Result<Self, Error> {
+    pub fn new(ws_url: String, process_id: Option<u32>) -> Result<Self, Error> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let web_socket_connection =
             Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
@@ -217,7 +217,7 @@ impl Transport {
         open: Arc<AtomicBool>,
         conn: Arc<WebSocketConnection>,
         shutdown_rx: Receiver<()>,
-        process_id: u32,
+        process_id: Option<u32>,
     ) {
         trace!("Starting handle_incoming_messages");
         std::thread::spawn(move || {
@@ -237,13 +237,13 @@ impl Transport {
                         match recv_timeout_error {
                             RecvTimeoutError::Timeout => {
                                 error!(
-                                    "Transport loop got a timeout while listening for messages (Chrome #{})",
+                                    "Transport loop got a timeout while listening for messages (Chrome #{:?})",
                                     process_id
                                 );
                             }
                             RecvTimeoutError::Disconnected => {
                                 error!(
-                                    "Transport loop got disconnected from WS's sender (Chrome #{})",
+                                    "Transport loop got disconnected from WS's sender (Chrome #{:?})",
                                     process_id
                                 );
                             }

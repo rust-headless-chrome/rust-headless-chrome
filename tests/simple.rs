@@ -158,6 +158,16 @@ fn capture_screenshot_jpeg() -> Result<(), failure::Error> {
 }
 
 #[test]
+fn test_print_file_to_pdf() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("./pdfassets/index.html"));
+    let local_pdf = tab.wait_until_navigated()?.print_to_pdf(None)?;
+    assert_eq!(true, local_pdf.len() > 1000); // an arbitrary size
+    assert!(local_pdf.starts_with(b"%PDF"));
+    Ok(())
+}
+
+#[test]
 fn get_box_model() -> Result<(), failure::Error> {
     logging::enable_logging();
     let (_, browser, tab) = dumb_server(include_str!("simple.html"));

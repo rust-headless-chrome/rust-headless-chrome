@@ -13,7 +13,7 @@ use std::sync::Mutex;
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
-    process_id: u32,
+    process_id: Option<u32>,
 }
 
 // TODO websocket::sender::Writer is not :Debug...
@@ -26,7 +26,7 @@ impl std::fmt::Debug for WebSocketConnection {
 impl WebSocketConnection {
     pub fn new(
         ws_url: &str,
-        process_id: u32,
+        process_id: Option<u32>,
         messages_tx: mpsc::Sender<protocol::Message>,
     ) -> Result<Self, Error> {
         let connection = Self::websocket_connection(&ws_url)?;
@@ -46,12 +46,12 @@ impl WebSocketConnection {
 
     pub fn shutdown(&self) {
         trace!(
-            "Shutting down WebSocket connection for Chrome {}",
+            "Shutting down WebSocket connection for Chrome {:?}",
             self.process_id
         );
         if self.sender.lock().unwrap().shutdown_all().is_err() {
             debug!(
-                "Couldn't shut down WS connection for Chrome {}",
+                "Couldn't shut down WS connection for Chrome {:?}",
                 self.process_id
             );
         }
@@ -60,21 +60,21 @@ impl WebSocketConnection {
     fn dispatch_incoming_messages(
         mut receiver: websocket::receiver::Reader<TcpStream>,
         messages_tx: mpsc::Sender<protocol::Message>,
-        process_id: u32,
+        process_id: Option<u32>,
     ) {
         for ws_message in receiver.incoming_messages() {
             match ws_message {
                 Err(error) => match error {
                     WebSocketError::NoDataAvailable => {
-                        debug!("WS Error Chrome #{}: {}", process_id, error);
+                        debug!("WS Error Chrome #{:?}: {}", process_id, error);
                         break;
                     }
                     WebSocketError::IoError(err) => {
-                        debug!("WS IO Error for Chrome #{}: {}", process_id, err);
+                        debug!("WS IO Error for Chrome #{:?}: {}", process_id, err);
                         break;
                     }
                     _ => panic!(
-                        "Unhandled WebSocket error for Chrome #{}: {:?}",
+                        "Unhandled WebSocket error for Chrome #{:?}: {:?}",
                         process_id, error
                     ),
                 },

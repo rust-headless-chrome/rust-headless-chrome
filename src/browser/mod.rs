@@ -32,11 +32,14 @@ mod transport;
 ///
 /// Most of your actual "driving" (e.g. clicking, typing, navigating) will be via instances of [Tab](../tab/struct.Tab.html), which are accessible via methods such as `get_tabs`.
 ///
-/// With the default [LaunchOptions](../process/LaunchOptions.struct.html), we will automatically
+/// A Browser can either manage its own Chrome process or connect to a remote one.
+///
+/// [LaunchOptions](../process/LaunchOptions.struct.html) will automatically
 /// download a revision of Chromium that has a compatible API into your `$XDG_DATA_DIR`. Alternatively,
 /// you can specify your own path to a binary, or make use of the `default_executable` function to use
 ///  your already-installed copy of Chrome.
 ///
+/// Option 1: Managing a Chrome process
 /// ```rust
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
@@ -50,11 +53,15 @@ mod transport;
 /// # }
 /// ```
 ///
+/// Option 2: Connecting to a remote Chrome service
+/// - see /examples/print_to_pdf.rs for a working example
+///
+///
 /// While the Chrome DevTools Protocl (CDTP) does define some methods in a
 /// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
 /// (such as for resizing the window in non-headless mode), we currently don't implement those.
 pub struct Browser {
-    process: Process,
+    process: Option<Process>,
     transport: Arc<Transport>,
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
     loop_shutdown_tx: mpsc::Sender<()>,
@@ -69,10 +76,22 @@ impl Browser {
         let process = Process::new(launch_options)?;
         let process_id = process.get_id();
 
-        let transport = Arc::new(Transport::new(process.debug_ws_url.clone(), process_id)?);
+        let transport = Arc::new(Transport::new(
+            process.debug_ws_url.clone(),
+            Some(process_id),
+        )?);
 
+        Self::create_browser(Some(process), transport)
+    }
+
+    pub fn connect(debug_ws_url: String) -> Result<Self, Error> {
+        let transport = Arc::new(Transport::new(debug_ws_url, None)?);
         trace!("created transport");
 
+        Self::create_browser(None, transport)
+    }
+
+    fn create_browser(process: Option<Process>, transport: Arc<Transport>) -> Result<Self, Error> {
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let (shutdown_tx, shutdown_rx) = mpsc::channel();
@@ -86,7 +105,11 @@ impl Browser {
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
 
-        browser.handle_browser_level_events(incoming_events_rx, process_id, shutdown_rx);
+        browser.handle_browser_level_events(
+            incoming_events_rx,
+            browser.get_process_id(),
+            shutdown_rx,
+        );
         trace!("created browser event listener");
 
         // so we get events like 'targetCreated' and 'targetDestroyed'
@@ -98,9 +121,8 @@ impl Browser {
         Ok(browser)
     }
 
-    pub fn get_process_id(&self) -> u32 {
-        println!("getting process ID");
-        self.process.get_id()
+    pub fn get_process_id(&self) -> Option<u32> {
+        self.process.as_ref().map(|process| process.get_id())
     }
 
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
@@ -212,7 +234,7 @@ impl Browser {
     fn handle_browser_level_events(
         &self,
         events_rx: mpsc::Receiver<Event>,
-        process_id: u32,
+        process_id: Option<u32>,
         shutdown_rx: mpsc::Receiver<()>,
     ) {
         let tabs = Arc::clone(&self.tabs);
@@ -234,13 +256,13 @@ impl Browser {
                         match recv_timeout_error {
                             RecvTimeoutError::Timeout => {
                                 error!(
-                                    "Got a timeout while listening for browser events (Chrome #{})",
+                                    "Got a timeout while listening for browser events (Chrome #{:?})",
                                     process_id
                                 );
                             }
                             RecvTimeoutError::Disconnected => {
                                 debug!(
-                                    "Browser event sender disconnected while loop was waiting (Chrome #{})",
+                                    "Browser event sender disconnected while loop was waiting (Chrome #{:?})",
                                     process_id
                                 );
                             }
@@ -304,9 +326,9 @@ impl Browser {
 
     #[allow(dead_code)]
     #[cfg(test)]
-    pub(crate) fn process(&self) -> &Process {
+    pub(crate) fn process(&self) -> Option<&Process> {
         #[allow(clippy::used_underscore_binding)]
-        &self.process
+        self.process.as_ref()
     }
 }
 
