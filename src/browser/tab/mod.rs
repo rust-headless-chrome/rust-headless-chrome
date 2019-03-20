@@ -91,8 +91,7 @@ impl<'a> Tab {
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
             request_interceptor: Arc::new(Mutex::new(Box::new(
-                |transport, session_id, intercepted|
-                    RequestInterceptionDecision::Continue,
+                |transport, session_id, intercepted| RequestInterceptionDecision::Continue,
             ))),
             loop_thread: None,
         };

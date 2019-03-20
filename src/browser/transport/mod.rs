@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, TryRecvError, RecvTimeoutError};
 use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Receiver, RecvTimeoutError, TryRecvError};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -88,7 +88,7 @@ impl Transport {
             Arc::clone(&open),
             Arc::clone(&web_socket_connection),
             shutdown_rx,
-            process_id
+            process_id,
         );
 
         Ok(Self {
@@ -97,7 +97,7 @@ impl Transport {
             listeners,
             open,
             call_id_counter: Arc::new(AtomicUsize::new(0)),
-            loop_shutdown_tx: guarded_shutdown_tx
+            loop_shutdown_tx: guarded_shutdown_tx,
         })
     }
 
@@ -240,13 +240,13 @@ impl Transport {
                                     "Transport loop got a timeout while listening for messages (Chrome #{})",
                                     process_id
                                 );
-                            },
+                            }
                             RecvTimeoutError::Disconnected => {
                                 error!(
                                     "Transport loop got disconnected from WS's sender (Chrome #{})",
                                     process_id
                                 );
-                            },
+                            }
                         }
                         break;
                     }
@@ -338,7 +338,6 @@ impl Transport {
         });
     }
 }
-
 
 impl Drop for Transport {
     fn drop(&mut self) {

@@ -28,7 +28,10 @@ where
     params: T,
 }
 
-impl<T> MethodCall<T> where T: Debug{
+impl<T> MethodCall<T>
+where
+    T: Debug,
+{
     pub fn get_params(&self) -> &T {
         &self.params
     }

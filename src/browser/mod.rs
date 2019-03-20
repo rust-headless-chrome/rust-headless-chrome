@@ -69,10 +69,7 @@ impl Browser {
         let process = Process::new(launch_options)?;
         let process_id = process.get_id();
 
-        let transport = Arc::new(Transport::new(
-            process.debug_ws_url.clone(),
-            process_id,
-        )?);
+        let transport = Arc::new(Transport::new(process.debug_ws_url.clone(), process_id)?);
 
         trace!("created transport");
 
@@ -84,11 +81,10 @@ impl Browser {
             process,
             tabs,
             transport,
-            loop_shutdown_tx: shutdown_tx
+            loop_shutdown_tx: shutdown_tx,
         };
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
-
 
         browser.handle_browser_level_events(incoming_events_rx, process_id, shutdown_rx);
         trace!("created browser event listener");
@@ -213,7 +209,12 @@ impl Browser {
         self.call_method(GetVersion {})
     }
 
-    fn handle_browser_level_events(&self, events_rx: mpsc::Receiver<Event>, process_id: u32, shutdown_rx: mpsc::Receiver<()>) {
+    fn handle_browser_level_events(
+        &self,
+        events_rx: mpsc::Receiver<Event>,
+        process_id: u32,
+        shutdown_rx: mpsc::Receiver<()>,
+    ) {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
 
@@ -236,13 +237,13 @@ impl Browser {
                                     "Got a timeout while listening for browser events (Chrome #{})",
                                     process_id
                                 );
-                            },
+                            }
                             RecvTimeoutError::Disconnected => {
                                 debug!(
                                     "Browser event sender disconnected while loop was waiting (Chrome #{})",
                                     process_id
                                 );
-                            },
+                            }
                         }
                         break;
                     }
