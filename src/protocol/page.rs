@@ -75,7 +75,7 @@ pub struct PrintToPdfOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub footer_template: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub prefer_css_page_size: Option<bool>
+    pub prefer_css_page_size: Option<bool>,
 }
 
 pub mod events {
@@ -125,10 +125,9 @@ pub mod events {
 }
 
 pub mod methods {
+    use super::PrintToPdfOptions;
     use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
-    use super::PrintToPdfOptions;
-
 
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -150,13 +149,12 @@ pub mod methods {
         const NAME: &'static str = "Page.captureScreenshot";
         type ReturnObject = ReturnDataObject;
     }
-    
-    
+
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub(crate) struct PrintToPdf {
         #[serde(flatten)]
-        pub options: Option<PrintToPdfOptions>
+        pub options: Option<PrintToPdfOptions>,
     }
 
     impl Method for PrintToPdf {

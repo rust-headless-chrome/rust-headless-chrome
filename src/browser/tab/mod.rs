@@ -413,11 +413,10 @@ impl<'a> Tab {
         base64::decode(&data).map_err(Into::into)
     }
 
-    pub fn print_to_pdf(&self, options: Option<page::PrintToPdfOptions>)
-                        -> Result<Vec<u8>, Error> {
-        let data = self.call_method(
-            page::methods::PrintToPdf{options}
-            )?.data;
+    pub fn print_to_pdf(&self, options: Option<page::PrintToPdfOptions>) -> Result<Vec<u8>, Error> {
+        let data = self
+            .call_method(page::methods::PrintToPdf { options })?
+            .data;
         base64::decode(&data).map_err(Into::into)
     }
 

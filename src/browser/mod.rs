@@ -33,13 +33,13 @@ mod transport;
 /// Most of your actual "driving" (e.g. clicking, typing, navigating) will be via instances of [Tab](../tab/struct.Tab.html), which are accessible via methods such as `get_tabs`.
 ///
 /// A Browser can either manage its own Chrome process or connect to a remote one.
-/// 
+///
 /// [LaunchOptions](../process/LaunchOptions.struct.html) will automatically
 /// download a revision of Chromium that has a compatible API into your `$XDG_DATA_DIR`. Alternatively,
 /// you can specify your own path to a binary, or make use of the `default_executable` function to use
 ///  your already-installed copy of Chrome.
 ///
-/// Option 1: Managing a Chrome process 
+/// Option 1: Managing a Chrome process
 /// ```rust
 /// # use failure::Error;
 /// # fn main() -> Result<(), Error> {
@@ -52,21 +52,10 @@ mod transport;
 /// # Ok(())
 /// # }
 /// ```
-/// 
+///
 /// Option 2: Connecting to a remote Chrome service
-/// ```rust
-/// # use failure::Error;
-/// # fn main() -> Result<(), Error> {
-/// #
-/// use headless_chrome::{Browser, browser::default_executable};
-/// let browser = Browser::connect(debug_ws_url)?;
-/// let first_tab = browser.wait_for_initial_tab()?;
-/// assert_eq!("about:blank", first_tab.get_url());
-/// #
-/// # Ok(())
-/// # }
-/// ```
-/// 
+/// - see /examples/print_to_pdf.rs for a working example
+///
 ///
 /// While the Chrome DevTools Protocl (CDTP) does define some methods in a
 /// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
@@ -89,7 +78,7 @@ impl Browser {
 
         Self::create_browser(Some(process), transport)
     }
-    
+
     pub fn connect(debug_ws_url: String) -> Result<Self, Error> {
         let transport = Arc::new(Transport::new(debug_ws_url)?);
         trace!("created transport");
@@ -97,14 +86,13 @@ impl Browser {
         Self::create_browser(None, transport)
     }
 
-    fn create_browser(process: Option<Process>, transport: Arc<Transport>)
-                        -> Result<Self, Error> {
+    fn create_browser(process: Option<Process>, transport: Arc<Transport>) -> Result<Self, Error> {
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let browser = Self {
             _process: process,
             tabs,
-            transport
+            transport,
         };
 
         let incoming_events_rx = browser.transport.listen_to_browser_events();
