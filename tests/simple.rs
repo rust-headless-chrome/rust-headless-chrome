@@ -12,6 +12,8 @@ use headless_chrome::{
     browser::default_executable, browser::tab::Tab, protocol::page::ScreenshotFormat, Browser,
     LaunchOptionsBuilder,
 };
+use std::thread::sleep;
+use std::time::Duration;
 
 mod logging;
 mod server;
@@ -356,5 +358,51 @@ fn incognito_contexts() -> Result<(), failure::Error> {
         incognito_context.get_tabs()?[0].get_target_id(),
         incognito_tab.get_target_id()
     );
+    Ok(())
+}
+
+#[test]
+fn get_script_source() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let server = server::file_server("tests/coverage_fixtures");
+    let browser = Browser::new(
+        LaunchOptionsBuilder::default()
+            .path(Some(default_executable().unwrap()))
+            .headless(false)
+            .build()
+            .unwrap(),
+    )
+    .unwrap();
+
+    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+
+    tab.enable_profiler()?;
+    tab.start_js_coverage()?;
+
+    tab.navigate_to(&format!(
+        "{}/basic_page_with_js_scripts.html",
+        &server.url()
+    ))?;
+
+    tab.wait_until_navigated()?;
+
+    sleep(Duration::from_millis(100));
+
+    let script_coverages = tab.take_precise_js_coverage()?;
+
+    tab.enable_debugger()?;
+
+    let contents = tab.get_script_source(&script_coverages[0].script_id)?;
+    assert_eq!(
+        include_str!("coverage_fixtures/coverage_fixture1.js"),
+        contents
+    );
+
+    let contents = tab.get_script_source(&script_coverages[1].script_id)?;
+    assert_eq!(
+        include_str!("coverage_fixtures/coverage_fixture2.js"),
+        contents
+    );
+
     Ok(())
 }

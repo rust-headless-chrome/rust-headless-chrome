@@ -596,6 +596,27 @@ impl<'a> Tab {
         })?;
         Ok(())
     }
+
+    /// Enables Debugger
+    pub fn enable_debugger(&self) -> Result<(), Error> {
+        self.call_method(protocol::debugger::methods::Enable {})?;
+        Ok(())
+    }
+
+    /// Disables Debugger
+    pub fn disable_debugger(&self) -> Result<(), Error> {
+        self.call_method(protocol::debugger::methods::Disable {})?;
+        Ok(())
+    }
+
+    /// Returns source for the script with given id.
+    ///
+    /// Debugger must be enabled.
+    pub fn get_script_source(&self, script_id: &str) -> Result<String, Error> {
+        Ok(self
+            .call_method(protocol::debugger::methods::GetScriptSource { script_id })?
+            .script_source)
+    }
 }
 
 impl Drop for Tab {
