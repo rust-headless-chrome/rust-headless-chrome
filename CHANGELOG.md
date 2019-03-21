@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.4...HEAD)
 ### Added
+
+* Tab.get_script_source, Tab.enable_debugger, Tab.disable_debugger
+
 ### Removed
 ### Changed
 

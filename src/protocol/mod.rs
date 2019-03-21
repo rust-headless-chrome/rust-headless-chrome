@@ -7,6 +7,7 @@ use serde_json::Value;
 use std::fmt::Debug;
 
 pub mod browser;
+pub mod debugger;
 pub mod dom;
 pub mod input;
 pub mod network;
