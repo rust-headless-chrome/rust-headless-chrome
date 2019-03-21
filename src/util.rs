@@ -17,7 +17,7 @@ impl Default for Wait {
     fn default() -> Self {
         Self {
             timeout: Duration::from_secs(10),
-            sleep: Duration::from_millis(100),
+            sleep: Duration::from_millis(5),
         }
     }
 }
