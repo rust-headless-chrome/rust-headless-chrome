@@ -232,21 +232,25 @@ where
     }
 }
 
-fn archive_name<R: AsRef<str>>(_revision: R) -> Result<&'static str, Error> {
+fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str, Error> {
     #[cfg(target_os = "linux")]
     {
+        drop(revision);
+
         Ok("chrome-linux")
     }
 
     #[cfg(target_os = "macos")]
     {
+        drop(revision);
+
         Ok("chrome-mac")
     }
 
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
-        if _revision.as_ref().parse::<u32>()? > 591_479 {
+        if revision.as_ref().parse::<u32>()? > 591_479 {
             Ok("chrome-win")
         } else {
             Ok("chrome-win32")
