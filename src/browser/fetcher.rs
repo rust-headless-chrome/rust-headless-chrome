@@ -246,7 +246,7 @@ fn archive_name<R: AsRef<str>>(_revision: R) -> Result<&'static str, Error> {
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
-        if revision.as_ref().parse::<u32>()? > 591_479 {
+        if _revision.as_ref().parse::<u32>()? > 591_479 {
             Ok("chrome-win")
         } else {
             Ok("chrome-win32")

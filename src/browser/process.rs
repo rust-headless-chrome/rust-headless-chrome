@@ -39,7 +39,7 @@ enum ChromeLaunchError {
 }
 
 #[cfg(windows)]
-fn get_chrome_path_from_registry() -> Option<std::path::PathBuf> {
+pub(crate) fn get_chrome_path_from_registry() -> Option<std::path::PathBuf> {
     RegKey::predef(HKEY_LOCAL_MACHINE)
         .open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe")
         .and_then(|key| key.get_value::<String, _>(""))
