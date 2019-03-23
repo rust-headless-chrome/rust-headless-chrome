@@ -1,7 +1,7 @@
 use directories::ProjectDirs;
 use failure::{format_err, Error};
 use log::*;
-use reqwest::{self, header::CONTENT_LENGTH};
+use ureq;
 use zip;
 
 use std::{
@@ -104,14 +104,14 @@ impl<'a> Fetcher<'a> {
         let url = dl_url(self.rev)?;
         info!("Chrome download url: {}", url);
         let total = get_size(&url)?;
-        info!("Total size of download: {}", total);
+        info!("Total size of download: {} MiB", total);
         let path = self.base_path(self.rev).with_extension("zip");
 
         info!("Creating file for download: {}", &path.display());
         let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
 
-        let mut resp = reqwest::get(&url)?;
-        io::copy(&mut resp, &mut file)?;
+        let resp = ureq::get(&url).call();
+        io::copy(&mut resp.into_reader(), &mut file)?;
 
         self.unzip(&path)?;
 
@@ -123,7 +123,10 @@ impl<'a> Fetcher<'a> {
         let extract_path = self.base_path(self.rev);
         fs::create_dir_all(&extract_path)?;
 
-        info!("Extracting: {}", extract_path.display());
+        info!(
+            "Extracting (this can take a while): {}",
+            extract_path.display()
+        );
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
@@ -179,13 +182,9 @@ impl<'a> Fetcher<'a> {
 }
 
 fn get_size<U: AsRef<str>>(url: U) -> Result<u64, Error> {
-    let client = reqwest::Client::new();
-    let response = client.head(url.as_ref()).send()?;
-    match response.headers().get(CONTENT_LENGTH) {
-        Some(len) => {
-            let length = u64::from_str(len.to_str()?)?;
-            Ok(length)
-        }
+    let resp = ureq::get(url.as_ref()).call();
+    match resp.header("Content-Length") {
+        Some(len) => Ok(u64::from_str(len)? / 2_u64.pow(20)),
         None => Err(format_err!("response doesn't include the content length")),
     }
 }
