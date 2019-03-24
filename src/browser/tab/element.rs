@@ -270,6 +270,7 @@ impl<'a> Element<'a> {
     pub fn call_js_fn(
         &self,
         function_declaration: &str,
+        await_promise: bool,
     ) -> Result<runtime::methods::RemoteObject, Error> {
         let result = self
             .parent
@@ -279,6 +280,7 @@ impl<'a> Element<'a> {
                 return_by_value: false,
                 generate_preview: true,
                 silent: false,
+                await_promise,
             })?
             .result;
 
@@ -376,7 +378,8 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_js_midpoint(&self) -> Result<Point, Error> {
-        let result = self.call_js_fn("function(){ return this.getBoundingClientRect(); }")?;
+        let result =
+            self.call_js_fn("function(){ return this.getBoundingClientRect(); }", false)?;
 
         let properties = result
             .preview

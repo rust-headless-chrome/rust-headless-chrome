@@ -45,6 +45,7 @@ pub mod methods {
         pub return_by_value: bool,
         pub generate_preview: bool,
         pub silent: bool,
+        pub await_promise: bool,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]

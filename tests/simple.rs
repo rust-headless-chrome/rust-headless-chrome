@@ -270,6 +270,44 @@ fn find_elements() -> Result<(), failure::Error> {
 }
 
 #[test]
+fn call_js_fn_sync() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let element = tab.wait_for_element("#foobar")?;
+    let result = element.call_js_fn("function() { return 42 }", false)?;
+    assert_eq!(result.object_type, "number");
+    assert_eq!(result.description, Some("42".to_owned()));
+    assert_eq!(result.value, Some((42).into()));
+    Ok(())
+}
+
+#[test]
+fn call_js_fn_async_unresolved() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let element = tab.wait_for_element("#foobar")?;
+    let result = element.call_js_fn("async function() { return 42 }", false)?;
+    assert_eq!(result.object_type, "object");
+    assert_eq!(result.subtype, Some("promise".to_owned()));
+    assert_eq!(result.description, Some("Promise".to_owned()));
+    assert_eq!(result.value, None);
+    Ok(())
+}
+
+#[test]
+fn call_js_fn_async_resolved() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let element = tab.wait_for_element("#foobar")?;
+    let result = element.call_js_fn("async function() { return 42 }", true)?;
+    assert_eq!(result.object_type, "number");
+    assert_eq!(result.subtype, None);
+    assert_eq!(result.description, Some("42".to_owned()));
+    assert_eq!(result.value, Some((42).into()));
+    Ok(())
+}
+
+#[test]
 fn set_request_interception() -> Result<(), failure::Error> {
     logging::enable_logging();
     let server = server::Server::with_dumb_html(include_str!(
