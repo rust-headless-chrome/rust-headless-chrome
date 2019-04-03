@@ -201,6 +201,7 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct FrameTree {
         pub frame: super::Frame,
+        pub child_frames: Option<Vec<FrameTree>>,
     }
 
     #[derive(Debug, Deserialize)]
