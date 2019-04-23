@@ -185,7 +185,7 @@ impl Process {
             "--verbose",
             "--no-first-run",
             data_dir_option.as_str(),
-            window_size_option.as_str()
+            window_size_option.as_str(),
         ];
 
         if launch_options.headless {
