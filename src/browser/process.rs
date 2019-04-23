@@ -64,6 +64,8 @@ pub struct LaunchOptions<'a> {
     #[builder(default = "true")]
     headless: bool,
     /// Launch the browser with a specific window width and height.
+    /// 
+    /// If unspecified, the window size will be set to 1920 x 1080.
     #[builder(default = "None")]
     window_size: Option<(u32, u32)>,
     /// Launch the browser with a specific debugging port.
