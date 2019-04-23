@@ -123,7 +123,11 @@ impl Browser {
     }
 
     pub fn get_process_id(&self) -> Option<u32> {
-        self.process.as_ref().map(|process| process.get_id())
+        if let Some(process) = &self.process {
+            Some(process.get_id())
+        } else {
+            None
+        }
     }
 
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
