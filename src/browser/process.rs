@@ -68,6 +68,10 @@ pub struct LaunchOptions<'a> {
     #[builder(default = "None")]
     port: Option<u16>,
 
+    /// Launch the browser with a specific window width and height.
+    #[builder(default = "None")]
+    window_size: Option<(u32, u32)>,
+
     /// Path for Chrome or Chromium.
     ///
     /// If unspecified, the create will try to automatically detect a suitable binary.
@@ -180,6 +184,15 @@ impl Process {
 
         if launch_options.headless {
             args.extend(&["--headless"]);
+        }
+
+        if let Some((width, height)) = launch_options.window_size {
+            args.extend(&[unsafe {
+                std::mem::transmute::<Box<str>, &'static str>(std::boxed::Box::from(format!(
+                    "--window-size={},{}",
+                    width, height
+                )))
+            }]);
         }
 
         let extension_args: Vec<String> = launch_options
