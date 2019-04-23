@@ -184,7 +184,7 @@ impl Process {
             "--no-first-run",
             data_dir_option.as_str(),
         ];
-        
+
         if !window_size_option.is_empty() {
             args.extend(&[window_size_option.as_str()]);
         }
