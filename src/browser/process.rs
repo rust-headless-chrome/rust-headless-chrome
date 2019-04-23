@@ -63,7 +63,9 @@ pub struct LaunchOptions<'a> {
     /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
     headless: bool,
-
+    /// Launch the browser with a specific window width and height.
+    #[builder(default = "None")]
+    window_size: Option<(u32, u32)>,
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
     port: Option<u16>,
@@ -161,6 +163,14 @@ impl Process {
         };
         let port_option = format!("--remote-debugging-port={}", debug_port);
 
+        let window_size = if let Some((width, height)) = launch_options.window_size {
+            (width, height)
+        } else {
+            (1920, 1080)
+        };
+
+        let window_size_option = format!("--window-size={},{}", window_size.0, window_size.1);
+
         // NOTE: picking random data dir so that each a new browser instance is launched
         // (see man google-chrome)
         let user_data_dir = ::tempfile::Builder::new()
@@ -175,7 +185,7 @@ impl Process {
             "--verbose",
             "--no-first-run",
             data_dir_option.as_str(),
-            //            "--window-size=1920,1080"
+            window_size_option.as_str()
         ];
 
         if launch_options.headless {
