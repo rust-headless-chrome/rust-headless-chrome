@@ -64,8 +64,6 @@ pub struct LaunchOptions<'a> {
     #[builder(default = "true")]
     headless: bool,
     /// Launch the browser with a specific window width and height.
-    ///
-    /// If unspecified, the window size will be set to 1920 x 1080.
     #[builder(default = "None")]
     window_size: Option<(u32, u32)>,
     /// Launch the browser with a specific debugging port.
@@ -165,13 +163,11 @@ impl Process {
         };
         let port_option = format!("--remote-debugging-port={}", debug_port);
 
-        let window_size = if let Some((width, height)) = launch_options.window_size {
-            (width, height)
+        let window_size_option = if let Some((width, height)) = launch_options.window_size {
+            format!("--window-size={},{}", width, height)
         } else {
-            (1920, 1080)
+            String::from("")
         };
-
-        let window_size_option = format!("--window-size={},{}", window_size.0, window_size.1);
 
         // NOTE: picking random data dir so that each a new browser instance is launched
         // (see man google-chrome)
