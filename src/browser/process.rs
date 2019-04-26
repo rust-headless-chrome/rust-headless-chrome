@@ -63,6 +63,9 @@ pub struct LaunchOptions<'a> {
     /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
     headless: bool,
+    /// Determines whether to run the browser with a sandbox.
+    #[builder(default = "true")]
+    sandbox: bool,
     /// Launch the browser with a specific window width and height.
     #[builder(default = "None")]
     window_size: Option<(u32, u32)>,
@@ -191,6 +194,10 @@ impl Process {
 
         if launch_options.headless {
             args.extend(&["--headless"]);
+        }
+
+        if !launch_options.sandbox {
+            args.extend(&["--no-sandbox"]);
         }
 
         let extension_args: Vec<String> = launch_options
