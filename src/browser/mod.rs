@@ -350,8 +350,8 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
     // $BROWSER may also provide default arguments, which we may
     // or may not override later on.
     if let Ok(path) = std::env::var("CHROME") {
-        if std::path::Path::new(path).exists() {
-            return Ok(path);
+        if std::path::Path::new(&path).exists() {
+            return Ok(path.into());
         }
     }
 
