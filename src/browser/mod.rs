@@ -354,7 +354,7 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
             return Ok(path);
         }
     }
-    
+
     for app in &[
         "google-chrome-stable",
         "chromium",
