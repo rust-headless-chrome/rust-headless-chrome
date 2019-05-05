@@ -349,8 +349,19 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
     // TODO Look at $BROWSER and if it points to a chrome binary
     // $BROWSER may also provide default arguments, which we may
     // or may not override later on.
-
-    for app in &["google-chrome-stable", "chromium"] {
+    if let Ok(path) std::env::var("CHROME") {
+        if std::path::Path::new(path).exists() {
+            return Ok(path);
+        }
+    }
+    
+    for app in &[
+        "google-chrome-stable",
+        "chromium",
+        "chromium-browser",
+        "chrome",
+        "chrome-browser",
+    ] {
         if let Ok(path) = which(app) {
             return Ok(path);
         }
