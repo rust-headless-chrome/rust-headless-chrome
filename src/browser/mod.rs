@@ -346,11 +346,11 @@ impl Drop for Browser {
 }
 
 /// Returns the path to Chrome's executable.
-/// 
+///
 /// If the `CHROME` environment variable is set, `default_executable` will
 /// use it as the default path. Otherwise, the filenames `google-chrome-stable`
 /// `chromium`, `chromium-browser`, `chrome` and `chrome-browser` are
-/// searched for in standard places. If that fails, 
+/// searched for in standard places. If that fails,
 /// `/Applications/Google Chrome.app/...` (on MacOS) or the registry (on Windows)
 /// is consulted. If all of the above fail, an error is returned.
 pub fn default_executable() -> Result<std::path::PathBuf, String> {
