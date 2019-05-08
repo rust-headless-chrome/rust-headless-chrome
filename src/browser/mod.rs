@@ -345,10 +345,17 @@ impl Drop for Browser {
     }
 }
 
+/// Returns the path to Chrome's executable.
+/// 
+/// If the `CHROME` environment variable is set, `default_executable` will
+/// use it as the default path. Otherwise, the following filenames will searched:
+/// 
+/// * google-chrome-stable
+/// * chromium
+/// * chromium-browser
+/// * chrome
+/// * chrome-browser
 pub fn default_executable() -> Result<std::path::PathBuf, String> {
-    // TODO Look at $BROWSER and if it points to a chrome binary
-    // $BROWSER may also provide default arguments, which we may
-    // or may not override later on.
     if let Ok(path) = std::env::var("CHROME") {
         if std::path::Path::new(&path).exists() {
             return Ok(path.into());
