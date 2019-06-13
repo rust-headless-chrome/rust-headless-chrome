@@ -69,6 +69,8 @@ fn returns_actual_coverage() -> Result<(), Error> {
 
     let script_coverages = tab.take_precise_js_coverage()?;
 
+    dbg!(&script_coverages);
+
     // our fixtures HTML file (basic_page_with_js_scripts.html) includes two external scripts
     assert_eq!(2, script_coverages.len());
 
@@ -95,7 +97,15 @@ fn returns_actual_coverage() -> Result<(), Error> {
     let button = tab.wait_for_element("#incrementor")?;
     button.click()?;
 
-    let updated_script_coverages = tab.take_precise_js_coverage()?;
+    let result = tab.take_precise_js_coverage()?;
+
+    let updated_script_coverages: Vec<_> = result
+        .iter()
+        // discludes 'anonymous' scripts we inject into the page
+        .filter(|script_cov| script_cov.url.starts_with("http://"))
+        .collect();
+
+    dbg!(&updated_script_coverages);
 
     // when we clicked the button, code in only one of the scripts was executed, and Chrome
     // only sends back info about code that's been executed since you last "took" the coverage:
