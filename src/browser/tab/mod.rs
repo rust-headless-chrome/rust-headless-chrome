@@ -163,9 +163,11 @@ impl<'a> Tab {
                                     interception_id: &id,
                                     ..Default::default()
                                 };
-                                transport
-                                    .call_method_on_target(session_id.clone(), method)
-                                    .expect("couldn't continue intercepted request");
+                                if let Err(e) =
+                                    transport.call_method_on_target(session_id.clone(), method)
+                                {
+                                    trace!("Couldn't continue intercepted request: {:?}", e);
+                                }
                             }
                             RequestInterceptionDecision::Response(response_str) => {
                                 let method = network::methods::ContinueInterceptedRequest {
@@ -173,9 +175,11 @@ impl<'a> Tab {
                                     raw_response: Some(&response_str),
                                     ..Default::default()
                                 };
-                                transport
-                                    .call_method_on_target(session_id.clone(), method)
-                                    .expect("couldn't continue intercepted request");
+                                if let Err(e) =
+                                    transport.call_method_on_target(session_id.clone(), method)
+                                {
+                                    trace!("Couldn't continue intercepted request: {:?}", e);
+                                }
                             }
                         }
                     }

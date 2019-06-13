@@ -19,7 +19,7 @@ pub use crate::protocol::browser::methods::VersionInformationReturnObject;
 use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::protocol::{self, Event};
 use crate::util;
-use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
+use std::sync::mpsc::{RecvError, RecvTimeoutError, TryRecvError};
 
 pub mod context;
 #[cfg(feature = "fetch")]
@@ -252,22 +252,12 @@ impl Browser {
                     Err(TryRecvError::Empty) => {}
                 }
 
-                match events_rx.recv_timeout(Duration::from_millis(20_000)) {
-                    Err(recv_timeout_error) => {
-                        match recv_timeout_error {
-                            RecvTimeoutError::Timeout => {
-                                error!(
-                                    "Got a timeout while listening for browser events (Chrome #{:?})",
-                                    process_id
-                                );
-                            }
-                            RecvTimeoutError::Disconnected => {
-                                debug!(
-                                    "Browser event sender disconnected while loop was waiting (Chrome #{:?})",
-                                    process_id
-                                );
-                            }
-                        }
+                match events_rx.recv() {
+                    Err(recv_error) => {
+                        debug!(
+                            "Browser event sender disconnected while loop was waiting (Chrome #{:?})",
+                            process_id
+                        );
                         break;
                     }
                     Ok(event) => {
