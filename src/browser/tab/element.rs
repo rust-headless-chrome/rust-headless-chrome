@@ -1,4 +1,4 @@
-use failure::Error;
+use failure::{Error, Fail};
 use log::*;
 
 use super::point::Point;
@@ -14,6 +14,12 @@ pub struct ElementQuad {
     pub top_right: Point,
     pub bottom_left: Point,
     pub bottom_right: Point,
+}
+
+#[derive(Debug, Fail)]
+#[fail(display = "Scrolling element into view failed: {}", error_text)]
+struct ScrollFailed {
+    error_text: String,
 }
 
 impl ElementQuad {
@@ -245,12 +251,14 @@ impl<'a> Element<'a> {
 
     /// Moves the mouse to the middle of this element
     pub fn move_mouse_over(&self) -> Result<&Self, Error> {
+        self.scroll_into_view()?;
         let midpoint = self.get_midpoint()?;
         self.parent.move_mouse_to_point(midpoint)?;
         Ok(self)
     }
 
     pub fn click(&self) -> Result<&Self, Error> {
+        self.scroll_into_view()?;
         debug!("Clicking element {:?}", &self);
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
@@ -288,6 +296,7 @@ impl<'a> Element<'a> {
     }
 
     pub fn focus(&self) -> Result<&Self, Error> {
+        self.scroll_into_view()?;
         self.parent.call_method(dom::methods::Focus {
             backend_node_id: Some(self.backend_node_id),
             ..Default::default()
@@ -326,6 +335,7 @@ impl<'a> Element<'a> {
     /// # }
     /// ```
     pub fn capture_screenshot(&self, format: page::ScreenshotFormat) -> Result<Vec<u8>, Error> {
+        self.scroll_into_view()?;
         self.parent
             .capture_screenshot(format, Some(self.get_box_model()?.content_viewport()), true)
     }
@@ -337,6 +347,44 @@ impl<'a> Element<'a> {
             node_id: None,
             object_id: None,
         })?;
+        Ok(self)
+    }
+
+    /// Scrolls the current element into view
+    ///
+    /// Used prior to any action applied to the current element to ensure action is duable.
+    pub fn scroll_into_view(&self) -> Result<&Self, Error> {
+        let result = self.call_js_fn(
+            "async function() {
+                if (!this.isConnected)
+                    return 'Node is detached from document';
+                if (this.nodeType !== Node.ELEMENT_NODE)
+                    return 'Node is not of type HTMLElement';
+                
+                const visibleRatio = await new Promise(resolve => {
+                    const observer = new IntersectionObserver(entries => {
+                        resolve(entries[0].intersectionRatio);
+                        observer.disconnect();
+                    });
+                    observer.observe(this);
+                });
+
+                if (visibleRatio !== 1.0)
+                    this.scrollIntoView({
+                        block: 'center', 
+                        inline: 'center', 
+                        behavior: 'instant'
+                    });
+                return false; 
+            }",
+            true,
+        )?;
+
+        if result.object_type == "string" {
+            let error_text = result.value.unwrap().as_str().unwrap().to_string();
+            return Err(ScrollFailed { error_text }.into());
+        }
+
         Ok(self)
     }
 
