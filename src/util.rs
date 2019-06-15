@@ -1,4 +1,5 @@
-use failure::Fail;
+use crate::browser::tab::NoElementFound;
+use failure::{Error, Fail};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -49,6 +50,9 @@ impl Wait {
     }
 
     /// Wait until the given predicate returns `Some(G)` or timeout arrives.
+    ///
+    /// Note: If your predicate function shadows potential unexpected
+    ///   errors you should consider using `#strict_until`.
     pub fn until<F, G>(&self, predicate: F) -> Result<G, Timeout>
     where
         F: FnMut() -> Option<G>,
@@ -61,6 +65,37 @@ impl Wait {
             }
             if start.elapsed() > self.timeout {
                 return Err(Timeout);
+            }
+            sleep(self.sleep);
+        }
+    }
+
+    /// Wait until the given predicate returns `Ok(G)`, an unexpected error occurs or timeout arrives.
+    ///
+    /// Errors produced by the predicate are downcasted by the additional provided closure.
+    /// If the downcast is successful - the error is ignored, otherwise the wait is terminated
+    /// and `Err(error)` containing the unexpected failure is returned to the caller.
+    ///
+    /// You can use `failure::Error::downcast::<YourStructName>` out-of-the-box,
+    /// if you need to ignore one expected error, or you can implement a matching closure
+    /// that responds to multiple error types.
+    pub fn strict_until<F, D, E, G>(&self, predicate: F, downcast: D) -> Result<G, Error>
+    where
+        F: FnMut() -> Result<G, Error>,
+        D: FnMut(Error) -> Result<E, Error>,
+        E: Fail,
+    {
+        let mut predicate = predicate;
+        let mut downcast = downcast;
+        let start = Instant::now();
+        loop {
+            match predicate() {
+                Ok(value) => return Ok(value),
+                Err(error) => downcast(error)?,
+            };
+
+            if start.elapsed() > self.timeout {
+                return Err(Timeout.into());
             }
             sleep(self.sleep);
         }
