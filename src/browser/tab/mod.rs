@@ -250,14 +250,18 @@ impl<'a> Tab {
         timeout: std::time::Duration,
     ) -> Result<Element<'_>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        util::Wait::with_timeout(timeout)
-            .strict_until(|| self.find_element(selector), Error::downcast::<NoElementFound>)
+        util::Wait::with_timeout(timeout).strict_until(
+            || self.find_element(selector),
+            Error::downcast::<NoElementFound>,
+        )
     }
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
-        util::Wait::with_timeout(Duration::from_secs(3))
-            .strict_until(|| self.find_elements(selector), Error::downcast::<NoElementFound>)
+        util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
+            || self.find_elements(selector),
+            Error::downcast::<NoElementFound>,
+        )
     }
 
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {

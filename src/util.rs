@@ -1,4 +1,3 @@
-use crate::browser::tab::NoElementFound;
 use failure::{Error, Fail};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
