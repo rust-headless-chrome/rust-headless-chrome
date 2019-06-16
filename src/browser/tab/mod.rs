@@ -251,27 +251,13 @@ impl<'a> Tab {
     ) -> Result<Element<'_>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(timeout)
-            .until(|| {
-                if let Ok(element) = self.find_element(selector) {
-                    Some(element)
-                } else {
-                    None
-                }
-            })
-            .map_err(Into::into)
+            .strict_until(|| self.find_element(selector), Error::downcast::<NoElementFound>)
     }
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(Duration::from_secs(3))
-            .until(|| {
-                if let Ok(elements) = self.find_elements(selector) {
-                    Some(elements)
-                } else {
-                    None
-                }
-            })
-            .map_err(Into::into)
+            .strict_until(|| self.find_elements(selector), Error::downcast::<NoElementFound>)
     }
 
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {
