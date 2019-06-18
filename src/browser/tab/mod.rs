@@ -15,7 +15,7 @@ use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
 use crate::protocol::{dom, input, page, profiler, target};
-use crate::protocol::{network, Event};
+use crate::protocol::{network, Event, RemoteError};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
@@ -267,17 +267,26 @@ impl<'a> Tab {
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {
         trace!("Looking up element via selector: {}", selector);
 
-        let node_id = {
-            let root_node_id = self.get_document()?.node_id;
+        let root_node_id = self.get_document()?.node_id;
+        let result = self.call_method(dom::methods::QuerySelector {
+            node_id: root_node_id,
+            selector,
+        });
 
-            self.call_method(dom::methods::QuerySelector {
-                node_id: root_node_id,
-                selector,
-            })?
-            .node_id
-        };
+        match result {
+            Ok(node) => Element::new(&self, node.node_id),
+            Err(err) => {
+                let remote_error = err.downcast::<RemoteError>()?;
+                match remote_error.message.as_ref() {
+                    // This error is expected and occurs while the page is still loading,
+                    // hence we shadow it and respond the element is not found
+                    "Could not find node with given id" => return Err(NoElementFound {}.into()),
 
-        Element::new(&self, node_id)
+                    // Any other error is unexpected and should be reported
+                    _ => return Err(remote_error.into()),
+                }
+            }
+        }
     }
 
     pub fn get_document(&self) -> Result<Node, Error> {
@@ -294,12 +303,25 @@ impl<'a> Tab {
 
         let node_ids = {
             let root_node_id = self.get_document()?.node_id;
-
-            self.call_method(dom::methods::QuerySelectorAll {
+            let result = self.call_method(dom::methods::QuerySelectorAll {
                 node_id: root_node_id,
                 selector,
-            })?
-            .node_ids
+            });
+
+            match result {
+                Ok(node) => node.node_ids,
+                Err(err) => {
+                    let remote_error = err.downcast::<RemoteError>()?;
+                    match remote_error.message.as_ref() {
+                        // This error is expected and occurs while the page is still loading,
+                        // hence we shadow it and respond the element is not found
+                        "Could not find node with given id" => return Err(NoElementFound {}.into()),
+
+                        // Any other error is unexpected and should be reported
+                        _ => return Err(remote_error.into()),
+                    }
+                }
+            }
         };
 
         if node_ids.is_empty() {
