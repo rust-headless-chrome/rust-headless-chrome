@@ -2,6 +2,7 @@ use failure::{Error, Fail};
 use log::*;
 
 use super::point::Point;
+use crate::browser::tab::NoElementFound;
 use crate::protocol::dom;
 use crate::protocol::page;
 use crate::protocol::runtime;
@@ -228,10 +229,13 @@ impl<'a> Element<'a> {
     /// We use these two when making various calls to the API because of that.
     pub fn new(parent: &'a super::Tab, node_id: dom::NodeId) -> Result<Self, Error> {
         if node_id == 0 {
-            return Err(super::NoElementFound {}.into());
+            return Err(NoElementFound {}.into());
         }
 
-        let backend_node_id = parent.describe_node(node_id)?.backend_node_id;
+        let backend_node_id = parent
+            .describe_node(node_id)
+            .map_err(NoElementFound::map)?
+            .backend_node_id;
 
         let remote_object_id = {
             let object = parent
