@@ -64,6 +64,23 @@ pub struct NavigationFailed {
     error_text: String,
 }
 
+fn handle_find_errors(error: Error) -> Error {
+    match error.downcast::<RemoteError>() {
+        Ok(remote_error) => {
+            match remote_error.message.as_ref() {
+                // This error is expected and occurs while the page is still loading,
+                // hence we shadow it and respond the element is not found
+                "Could not find node with given id" => NoElementFound {}.into(),
+
+                // Any other error is unexpected and should be reported
+                _ => remote_error.into(),
+            }
+        }
+        // Return original error if downcasting to RemoteError fails
+        Err(original_error) => original_error,
+    }
+}
+
 impl<'a> Tab {
     pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
         let target_id = target_info.target_id.clone();
@@ -268,25 +285,15 @@ impl<'a> Tab {
         trace!("Looking up element via selector: {}", selector);
 
         let root_node_id = self.get_document()?.node_id;
-        let result = self.call_method(dom::methods::QuerySelector {
-            node_id: root_node_id,
-            selector,
-        });
+        let node_id = self
+            .call_method(dom::methods::QuerySelector {
+                node_id: root_node_id,
+                selector,
+            })
+            .map_err(handle_find_errors)?
+            .node_id;
 
-        match result {
-            Ok(node) => Element::new(&self, node.node_id),
-            Err(err) => {
-                let remote_error = err.downcast::<RemoteError>()?;
-                match remote_error.message.as_ref() {
-                    // This error is expected and occurs while the page is still loading,
-                    // hence we shadow it and respond the element is not found
-                    "Could not find node with given id" => return Err(NoElementFound {}.into()),
-
-                    // Any other error is unexpected and should be reported
-                    _ => return Err(remote_error.into()),
-                }
-            }
-        }
+        Element::new(&self, node_id)
     }
 
     pub fn get_document(&self) -> Result<Node, Error> {
@@ -301,28 +308,14 @@ impl<'a> Tab {
     pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
         trace!("Looking up elements via selector: {}", selector);
 
-        let node_ids = {
-            let root_node_id = self.get_document()?.node_id;
-            let result = self.call_method(dom::methods::QuerySelectorAll {
+        let root_node_id = self.get_document()?.node_id;
+        let node_ids = self
+            .call_method(dom::methods::QuerySelectorAll {
                 node_id: root_node_id,
                 selector,
-            });
-
-            match result {
-                Ok(node) => node.node_ids,
-                Err(err) => {
-                    let remote_error = err.downcast::<RemoteError>()?;
-                    match remote_error.message.as_ref() {
-                        // This error is expected and occurs while the page is still loading,
-                        // hence we shadow it and respond the element is not found
-                        "Could not find node with given id" => return Err(NoElementFound {}.into()),
-
-                        // Any other error is unexpected and should be reported
-                        _ => return Err(remote_error.into()),
-                    }
-                }
-            }
-        };
+            })
+            .map_err(handle_find_errors)?
+            .node_ids;
 
         if node_ids.is_empty() {
             return Err(NoElementFound {}.into());
