@@ -64,20 +64,22 @@ pub struct NavigationFailed {
     error_text: String,
 }
 
-fn handle_find_errors(error: Error) -> Error {
-    match error.downcast::<RemoteError>() {
-        Ok(remote_error) => {
-            match remote_error.message.as_ref() {
-                // This error is expected and occurs while the page is still loading,
-                // hence we shadow it and respond the element is not found
-                "Could not find node with given id" => NoElementFound {}.into(),
+impl NoElementFound {
+    pub fn map(error: Error) -> Error {
+        match error.downcast::<RemoteError>() {
+            Ok(remote_error) => {
+                match remote_error.message.as_ref() {
+                    // This error is expected and occurs while the page is still loading,
+                    // hence we shadow it and respond the element is not found
+                    "Could not find node with given id" => Self {}.into(),
 
-                // Any other error is unexpected and should be reported
-                _ => remote_error.into(),
+                    // Any other error is unexpected and should be reported
+                    _ => remote_error.into(),
+                }
             }
+            // Return original error if downcasting to RemoteError fails
+            Err(original_error) => original_error,
         }
-        // Return original error if downcasting to RemoteError fails
-        Err(original_error) => original_error,
     }
 }
 
@@ -290,7 +292,7 @@ impl<'a> Tab {
                 node_id: root_node_id,
                 selector,
             })
-            .map_err(handle_find_errors)?
+            .map_err(NoElementFound::map)?
             .node_id;
 
         Element::new(&self, node_id)
@@ -314,7 +316,7 @@ impl<'a> Tab {
                 node_id: root_node_id,
                 selector,
             })
-            .map_err(handle_find_errors)?
+            .map_err(NoElementFound::map)?
             .node_ids;
 
         if node_ids.is_empty() {
