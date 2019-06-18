@@ -8,12 +8,14 @@ use rand::prelude::*;
 
 use headless_chrome::browser::tab::RequestInterceptionDecision;
 use headless_chrome::protocol::network::methods::RequestPattern;
+use headless_chrome::protocol::RemoteError;
 use headless_chrome::{
     browser::default_executable, browser::tab::Tab, protocol::page::ScreenshotFormat, Browser,
     LaunchOptionsBuilder,
 };
+
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 mod logging;
 mod server;
@@ -266,6 +268,20 @@ fn find_elements() -> Result<(), failure::Error> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let divs = tab.wait_for_elements("div")?;
     assert_eq!(8, divs.len());
+    Ok(())
+}
+
+#[test]
+fn wait_for_element_returns_unexpected_errors_early() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let start = Instant::now();
+    let remote_error = tab
+        .wait_for_element("") // pass an invalid selector
+        .unwrap_err()
+        .downcast::<RemoteError>()?;
+    assert_eq!(remote_error.message, "DOM Error while querying");
+    assert!(start.elapsed() < Duration::from_secs(1));
     Ok(())
 }
 
