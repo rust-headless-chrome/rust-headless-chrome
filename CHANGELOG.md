@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 
-## 0.1.5 - 2018-06-19
+## 0.1.5 - 2019-06-19
 
 ### Added
 
@@ -30,7 +30,7 @@ All notable changes to this project will be documented in this file.
 * [Use ureq instead of reqwest for fetching Chromium binaries](https://github.com/atroche/rust-headless-chrome/commit/acf336707759b646f59d68b05465a0e0ef2a0fa7)
 
 
-## 0.1.4 - 2018-03-21
+## 0.1.4 - 2019-03-21
 
 ### Added
 * [Tab.capture_screenshot](https://github.com/atroche/rust-headless-chrome/pull/48)
