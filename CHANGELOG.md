@@ -1,13 +1,33 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.4...HEAD)
+## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.5...HEAD)
+
 ### Added
-
-* Tab.get_script_source, Tab.enable_debugger, Tab.disable_debugger
-
 ### Removed
 ### Changed
+
+
+## 0.1.5 - 2018-06-19
+
+### Added
+
+* [Tab.get_script_source, Tab.enable_debugger, Tab.disable_debugger](https://github.com/atroche/rust-headless-chrome/commit/625c59f9957d3ffa1853164d1d77e9c252d116ee)
+* [Add ability to set window size of browser on launch](https://github.com/atroche/rust-headless-chrome/pull/123)
+* [Scroll elements into view before clicking, mousing over or focusing on them](https://github.com/atroche/rust-headless-chrome/pull/128)
+* [FrameTree.child_frames field](https://github.com/atroche/rust-headless-chrome/commit/9c86817fdbf8fa63620cad3700f7063781335d20)
+* [When waiting for elements, return most errors early instead of retrying and timing out](https://github.com/atroche/rust-headless-chrome/pull/129)
+* [Add `await_promise` argument to Tab.call_js_fn](https://github.com/atroche/rust-headless-chrome/commit/d82ffa8fd4c3efaed1721d8721068d2c6d6c7c9c)
+* [Search for existing Chrome / Chromium binaries in more locations](https://github.com/atroche/rust-headless-chrome/pull/126/files)
+
+### Removed
+
+* [Remove some out-dated examples, along with a couple of dependencies](https://github.com/atroche/rust-headless-chrome/commit/7e99bb861bf8476192b6402a12e9c7d06f15911f)
+
+### Changed
+
+* [Fix Windows build](https://github.com/atroche/rust-headless-chrome/pull/118)
+* [Use ureq instead of reqwest for fetching Chromium binaries](https://github.com/atroche/rust-headless-chrome/commit/acf336707759b646f59d68b05465a0e0ef2a0fa7)
 
 
 ## 0.1.4 - 2018-03-21
