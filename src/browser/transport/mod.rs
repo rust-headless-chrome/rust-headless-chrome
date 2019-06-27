@@ -272,10 +272,10 @@ impl Transport {
                                     let session_id = target_message_event.params.session_id.into();
                                     let raw_message = target_message_event.params.message;
 
-                                    if let Ok(target_message) =
-                                        protocol::parse_raw_message(&raw_message)
-                                    {
-                                        match target_message {
+                                    let msg_res = protocol::parse_raw_message(&raw_message);
+
+                                    match msg_res {
+                                        Ok(target_message) => match target_message {
                                             Message::Event(target_event) => {
                                                 if let Some(tx) = listeners
                                                     .lock()
@@ -295,12 +295,14 @@ impl Transport {
                                                 }
                                             }
                                             Message::ConnectionShutdown => {}
+                                        },
+                                        Err(e) => {
+                                            trace!(
+                                                "Message from target isn't recognised: {:?} - {}",
+                                                &raw_message,
+                                                e,
+                                            );
                                         }
-                                    } else {
-                                        trace!(
-                                            "Message from target isn't recognised: {:?}",
-                                            &raw_message
-                                        );
                                     }
                                 }
 

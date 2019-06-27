@@ -43,6 +43,18 @@ pub type RequestInterceptor = Box<
         + Sync,
 >;
 
+#[rustfmt::skip]
+pub type ResponseHandler = Box<
+    Fn(
+            protocol::network::events::ResponseReceivedEventParams,
+            &dyn Fn() -> Result<
+                protocol::network::methods::GetResponseBodyReturnObject,
+                failure::Error,
+            >,
+        ) + Send
+        + Sync,
+>;
+
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
 pub struct Tab {
@@ -52,6 +64,7 @@ pub struct Tab {
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
+    response_handler: Arc<Mutex<Option<ResponseHandler>>>,
 }
 
 #[derive(Debug, Fail)]
@@ -108,6 +121,7 @@ impl<'a> Tab {
             request_interceptor: Arc::new(Mutex::new(Box::new(
                 |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
             ))),
+            response_handler: Arc::new(Mutex::new(None)),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -152,6 +166,7 @@ impl<'a> Tab {
             .listen_to_target_events(self.session_id.clone());
         let navigating = Arc::clone(&self.navigating);
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
+        let response_handler_mutex = self.response_handler.clone();
         let session_id = self.session_id.clone();
 
         thread::spawn(move || {
@@ -196,6 +211,21 @@ impl<'a> Tab {
                                     .call_method_on_target(session_id.clone(), method)
                                     .expect("couldn't continue intercepted request");
                             }
+                        }
+                    }
+                    Event::ResponseReceived(ev) => {
+                        match response_handler_mutex.lock().unwrap().as_ref() {
+                            Some(handler) => {
+                                let request_id = ev.params.request_id.clone();
+                                let retrieve_body = || {
+                                    let method = network::methods::GetResponseBody {
+                                        request_id: &request_id,
+                                    };
+                                    transport.call_method_on_target(session_id.clone(), method)
+                                };
+                                handler(ev.params, &retrieve_body);
+                            }
+                            None => {}
                         }
                     }
                     _ => {
@@ -601,6 +631,12 @@ impl<'a> Tab {
             headers: None,
             auth_challenge_response: None,
         })?;
+        Ok(())
+    }
+
+    pub fn enable_response_handling(&self, handler: ResponseHandler) -> Result<(), Error> {
+        self.call_method(network::methods::Enable {})?;
+        *(self.response_handler.lock().unwrap()) = Some(handler);
         Ok(())
     }
 

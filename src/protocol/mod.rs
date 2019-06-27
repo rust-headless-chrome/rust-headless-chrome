@@ -107,6 +107,8 @@ pub enum Event {
     Lifecycle(page::events::LifecycleEvent),
     #[serde(rename = "Network.requestIntercepted")]
     RequestIntercepted(network::events::RequestInterceptedEvent),
+    #[serde(rename = "Network.responseReceived")]
+    ResponseReceived(network::events::ResponseReceivedEvent),
 }
 
 #[derive(Deserialize, Debug, Clone)]

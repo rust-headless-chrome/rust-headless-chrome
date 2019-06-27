@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use base64;
 use log::*;
@@ -394,6 +394,44 @@ fn set_request_interception() -> Result<(), failure::Error> {
 
     // There are two JS scripts that get loaded via network, they both append an element like this:
     assert_eq!(2, tab.wait_for_elements("hr")?.len());
+
+    Ok(())
+}
+
+#[test]
+fn response_handler() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let server = server::Server::with_dumb_html(include_str!(
+        "coverage_fixtures/basic_page_with_js_scripts.html"
+    ));
+
+    let browser = Browser::new(
+        LaunchOptionsBuilder::default()
+            .path(Some(default_executable().unwrap()))
+            .build()
+            .unwrap(),
+    )
+    .unwrap();
+
+    let tab = browser.wait_for_initial_tab().unwrap();
+
+    let responses = Arc::new(Mutex::new(Vec::new()));
+
+    let responses2 = responses.clone();
+    tab.enable_response_handling(Box::new(move |response, fetch_body| {
+        let body = fetch_body().unwrap();
+        responses2.lock().unwrap().push((response, body));
+    }))?;
+
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
+        .unwrap();
+
+    tab.wait_until_navigated()?;
+
+    let final_responses: Vec<_> = responses.lock().unwrap().clone();
+    assert_eq!(final_responses.len(), 3);
+    assert_eq!(final_responses[0].0.response.mime_type, "text/html");
+    assert!(final_responses[0].1.body.contains("Click me"));
 
     Ok(())
 }
