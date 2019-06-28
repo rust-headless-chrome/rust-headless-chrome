@@ -214,18 +214,15 @@ impl<'a> Tab {
                         }
                     }
                     Event::ResponseReceived(ev) => {
-                        match response_handler_mutex.lock().unwrap().as_ref() {
-                            Some(handler) => {
-                                let request_id = ev.params.request_id.clone();
-                                let retrieve_body = || {
-                                    let method = network::methods::GetResponseBody {
-                                        request_id: &request_id,
-                                    };
-                                    transport.call_method_on_target(session_id.clone(), method)
+                        if let Some(handler) = response_handler_mutex.lock().unwrap().as_ref() {
+                            let request_id = ev.params.request_id.clone();
+                            let retrieve_body = || {
+                                let method = network::methods::GetResponseBody {
+                                    request_id: &request_id,
                                 };
-                                handler(ev.params, &retrieve_body);
-                            }
-                            None => {}
+                                transport.call_method_on_target(session_id.clone(), method)
+                            };
+                            handler(ev.params, &retrieve_body);
                         }
                     }
                     _ => {
