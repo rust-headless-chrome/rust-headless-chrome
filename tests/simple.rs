@@ -440,7 +440,7 @@ fn get_script_source() -> Result<(), failure::Error> {
 
     tab.wait_until_navigated()?;
 
-    sleep(Duration::from_millis(100));
+    sleep(Duration::from_millis(500));
 
     let script_coverages = tab.take_precise_js_coverage()?;
 
