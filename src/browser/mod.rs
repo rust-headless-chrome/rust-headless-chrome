@@ -201,9 +201,13 @@ impl Browser {
         util::Wait::with_timeout(Duration::from_secs(20))
             .until(|| {
                 let tabs = self.tabs.lock().unwrap();
-                tabs.iter()
-                    .find(|tab| *tab.get_target_id() == target_id)
-                    .map(|tab_ref| Arc::clone(tab_ref))
+                tabs.iter().find_map(|tab| {
+                    if *tab.get_target_id() == target_id {
+                        Some(Arc::clone(tab))
+                    } else {
+                        None
+                    }
+                })
             })
             .map_err(Into::into)
     }
