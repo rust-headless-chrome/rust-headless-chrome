@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
+use std::time::Duration;
 
 use failure::{Error, Fail};
 use log::*;
@@ -11,6 +12,7 @@ use element::Element;
 use point::Point;
 
 use crate::browser::Transport;
+use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
@@ -156,7 +158,9 @@ impl<'a> Tab {
             for event in incoming_events_rx {
                 match event {
                     Event::Lifecycle(lifecycle_event) => {
-                        match lifecycle_event.params.name.as_ref() {
+                        let event_name = lifecycle_event.params.name.as_ref();
+                        trace!("Lifecycle event: {}", event_name);
+                        match event_name {
                             "networkAlmostIdle" => {
                                 navigating.store(false, Ordering::SeqCst);
                             }

@@ -422,6 +422,7 @@ fn get_script_source() -> Result<(), failure::Error> {
     let browser = Browser::new(
         LaunchOptionsBuilder::default()
             .path(Some(default_executable().unwrap()))
+            // TODO: does this need to be false?
             .headless(false)
             .build()
             .unwrap(),
