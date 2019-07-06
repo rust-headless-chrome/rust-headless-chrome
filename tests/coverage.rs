@@ -49,14 +49,7 @@ fn server_with_html_and_js() -> Server {
 fn returns_actual_coverage() -> Result<(), Error> {
     logging::enable_logging();
     let server = server_with_html_and_js();
-    let browser = Browser::new(
-        LaunchOptionsBuilder::default()
-            .headless(true)
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
+    let browser = Browser::default();
     let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
 
     tab.enable_profiler()?;

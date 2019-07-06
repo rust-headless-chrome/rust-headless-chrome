@@ -9,10 +9,7 @@ use rand::prelude::*;
 use headless_chrome::browser::tab::RequestInterceptionDecision;
 use headless_chrome::protocol::network::methods::RequestPattern;
 use headless_chrome::protocol::RemoteError;
-use headless_chrome::{
-    browser::default_executable, browser::tab::Tab, protocol::page::ScreenshotFormat, Browser,
-    LaunchOptionsBuilder,
-};
+use headless_chrome::{browser::tab::Tab, protocol::page::ScreenshotFormat, Browser};
 
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -32,13 +29,7 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
-    let browser = Browser::new(
-        LaunchOptionsBuilder::default()
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
+    let browser = Browser::default();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -326,21 +317,9 @@ fn call_js_fn_async_resolved() -> Result<(), failure::Error> {
 #[test]
 fn set_request_interception() -> Result<(), failure::Error> {
     logging::enable_logging();
-    let server = server::Server::with_dumb_html(include_str!(
+    let (server, browser, tab) = dumb_server(include_str!(
         "coverage_fixtures/basic_page_with_js_scripts.html"
     ));
-
-    let browser = Browser::new(
-        LaunchOptionsBuilder::default()
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
-
-    let tab = browser.wait_for_initial_tab().unwrap();
-
-    //    tab.call_method(network::methods::Enable{})?;
 
     let patterns = vec![
         RequestPattern {
@@ -419,13 +398,7 @@ fn incognito_contexts() -> Result<(), failure::Error> {
 fn get_script_source() -> Result<(), failure::Error> {
     logging::enable_logging();
     let server = server::file_server("tests/coverage_fixtures");
-    let browser = Browser::new(
-        LaunchOptionsBuilder::default()
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
+    let browser = Browser::default();
 
     let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
 
