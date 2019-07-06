@@ -2,7 +2,6 @@
 #![deny(clippy::pedantic)]
 #![warn(renamed_and_removed_lints)]
 #![allow(
-    bare_trait_objects, // TODO: Remove this and refactor the noncomplying traits
     clippy::unknown_clippy_lints,
     clippy::module_name_repetitions,
     clippy::doc_markdown, // a number of false positives here

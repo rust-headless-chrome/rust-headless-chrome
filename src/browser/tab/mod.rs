@@ -34,7 +34,7 @@ pub enum RequestInterceptionDecision {
 }
 
 pub type RequestInterceptor = Box<
-    Fn(
+    dyn Fn(
             Arc<Transport>,
             SessionId,
             protocol::network::events::RequestInterceptedEventParams,
