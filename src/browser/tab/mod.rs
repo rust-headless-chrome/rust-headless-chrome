@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
+use std::time::Duration;
 
 use failure::{Error, Fail};
 use log::*;
@@ -11,6 +12,7 @@ use element::Element;
 use point::Point;
 
 use crate::browser::Transport;
+use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
@@ -19,8 +21,6 @@ use crate::protocol::{network, Event, RemoteError};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
-use crate::protocol::dom::Node;
-use std::time::Duration;
 
 pub mod element;
 mod keys;
@@ -158,7 +158,9 @@ impl<'a> Tab {
             for event in incoming_events_rx {
                 match event {
                     Event::Lifecycle(lifecycle_event) => {
-                        match lifecycle_event.params.name.as_ref() {
+                        let event_name = lifecycle_event.params.name.as_ref();
+                        trace!("Lifecycle event: {}", event_name);
+                        match event_name {
                             "networkAlmostIdle" => {
                                 navigating.store(false, Ordering::SeqCst);
                             }
@@ -224,17 +226,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
-        debug!("waiting to start navigating");
-        // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
-            if navigating.load(Ordering::SeqCst) {
-                Some(true)
-            } else {
-                None
-            }
-        })?;
-        debug!("A tab started navigating");
 
         util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             if navigating.load(Ordering::SeqCst) {
@@ -253,6 +245,9 @@ impl<'a> Tab {
         if let Some(error_text) = return_object.error_text {
             return Err(NavigationFailed { error_text }.into());
         }
+
+        let navigating = Arc::clone(&self.navigating);
+        navigating.store(true, Ordering::SeqCst);
 
         info!("Navigating a tab to {}", url);
 
