@@ -460,3 +460,23 @@ fn get_script_source() -> Result<(), failure::Error> {
 
     Ok(())
 }
+
+#[test]
+fn wait_until_navigated_does_not_hang() -> Result<(), failure::Error> {
+    logging::enable_logging();
+    let server = server::file_server("tests/coverage_fixtures");
+
+    // TODO: extract this oft-repeated call. default?
+    let browser = Browser::new(
+        LaunchOptionsBuilder::default()
+            .path(Some(default_executable().unwrap()))
+            .build()
+            .unwrap(),
+    )
+    .unwrap();
+
+    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+
+    tab.wait_until_navigated()?;
+    Ok(())
+}

@@ -19,8 +19,6 @@ use crate::protocol::{network, Event, RemoteError};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
-use crate::protocol::dom::Node;
-use std::time::Duration;
 
 pub mod element;
 mod keys;
@@ -224,17 +222,7 @@ impl<'a> Tab {
     }
 
     pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
-        debug!("waiting to start navigating");
-        // wait for navigating to go to true
         let navigating = Arc::clone(&self.navigating);
-        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
-            if navigating.load(Ordering::SeqCst) {
-                Some(true)
-            } else {
-                None
-            }
-        })?;
-        debug!("A tab started navigating");
 
         util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             if navigating.load(Ordering::SeqCst) {
@@ -253,6 +241,9 @@ impl<'a> Tab {
         if let Some(error_text) = return_object.error_text {
             return Err(NavigationFailed { error_text }.into());
         }
+
+        let navigating = Arc::clone(&self.navigating);
+        navigating.store(true, Ordering::SeqCst);
 
         info!("Navigating a tab to {}", url);
 
