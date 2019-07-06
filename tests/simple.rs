@@ -422,7 +422,6 @@ fn get_script_source() -> Result<(), failure::Error> {
     let browser = Browser::new(
         LaunchOptionsBuilder::default()
             .path(Some(default_executable().unwrap()))
-            .headless(false)
             .build()
             .unwrap(),
     )
