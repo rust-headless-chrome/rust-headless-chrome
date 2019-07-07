@@ -8,14 +8,10 @@
 [Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
 
 ```rust
-use headless_chrome::{browser::default_executable, Browser,
-                      LaunchOptionsBuilder, protocol::page::ScreenshotFormat};
+use headless_chrome::{Browser, protocol::page::ScreenshotFormat};
 
 fn browse_wikipedia() -> Result<(), failure::Error> {
-    let options = LaunchOptionsBuilder::default()
-                      .path(Some(default_executable().unwrap()))
-                      .build().unwrap();
-    let browser = Browser::new(options)?;
+    let browser = Browser::default()?;
 
     let tab = browser.wait_for_initial_tab()?;
 

@@ -35,7 +35,7 @@ mod transport;
 ///
 /// A Browser can either manage its own Chrome process or connect to a remote one.
 ///
-/// `Browser::default()` will return a headless instance of whatever browser can be found using
+/// `Browser::default().unwrap()` will return a headless instance of whatever browser can be found using
 /// `default_executable`, which will search on your PATH for relevant binaries or use the path
 /// specified in the `CHROME` env var.
 ///
@@ -50,7 +50,7 @@ mod transport;
 /// # fn main() -> Result<(), Error> {
 /// #
 /// use headless_chrome::Browser;
-/// let browser = Browser::default();
+/// let browser = Browser::default()?;
 /// let first_tab = browser.wait_for_initial_tab()?;
 /// assert_eq!("about:blank", first_tab.get_url());
 /// #
@@ -89,6 +89,17 @@ impl Browser {
         Self::create_browser(Some(process), transport)
     }
 
+    /// Calls [`new`] with options to launch a headless browser using whatever Chrome / Chromium
+    /// binary can be found on the system.
+    pub fn default() -> Result<Self, Error> {
+        let launch_options = LaunchOptionsBuilder::default()
+            .path(Some(default_executable().unwrap()))
+            .build()
+            .unwrap();
+        Ok(Self::new(launch_options).unwrap())
+    }
+
+    /// Allows you to drive an externally-launched Chrome process instead of launch one via [`new`].
     pub fn connect(debug_ws_url: String) -> Result<Self, Error> {
         let transport = Arc::new(Transport::new(debug_ws_url, None)?);
         trace!("created transport");
@@ -158,7 +169,7 @@ impl Browser {
     /// # fn main() -> Result<(), Error> {
     /// #
     /// # use headless_chrome::Browser;
-    /// # let browser = Browser::default();
+    /// # let browser = Browser::default()?;
     /// let first_tab = browser.wait_for_initial_tab()?;
     /// let new_tab = browser.new_tab()?;
     /// let num_tabs = browser.get_tabs().lock().unwrap().len();
@@ -184,7 +195,7 @@ impl Browser {
     /// # fn main() -> Result<(), Error> {
     /// #
     /// # use headless_chrome::{Browser, protocol::target::methods::CreateTarget};
-    /// # let browser = Browser::default();
+    /// # let browser = Browser::default()?;
     ///    let new_tab = browser.new_tab_with_options(CreateTarget {
     ///    url: "chrome://version",
     ///    width: Some(1024),
@@ -229,7 +240,7 @@ impl Browser {
     /// # fn main() -> Result<(), Error> {
     /// #
     /// # use headless_chrome::Browser;
-    /// # let browser = Browser::default();
+    /// # let browser = Browser::default()?;
     /// let version_info = browser.get_version()?;
     /// println!("User-Agent is `{}`", version_info.user_agent);
     /// #
@@ -346,16 +357,6 @@ impl Drop for Browser {
         info!("Dropping browser");
         let _ = self.loop_shutdown_tx.send(());
         self.transport.shutdown();
-    }
-}
-
-impl Default for Browser {
-    fn default() -> Self {
-        let launch_options = LaunchOptionsBuilder::default()
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap();
-        Self::new(launch_options).unwrap()
     }
 }
 

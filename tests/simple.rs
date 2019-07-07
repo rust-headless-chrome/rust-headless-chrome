@@ -29,7 +29,7 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
-    let browser = Browser::default();
+    let browser = Browser::default().unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -398,7 +398,7 @@ fn incognito_contexts() -> Result<(), failure::Error> {
 fn get_script_source() -> Result<(), failure::Error> {
     logging::enable_logging();
     let server = server::file_server("tests/coverage_fixtures");
-    let browser = Browser::default();
+    let browser = Browser::default()?;
 
     let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
 
