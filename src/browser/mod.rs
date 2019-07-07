@@ -91,7 +91,7 @@ impl Browser {
 
     /// Calls [`new`] with options to launch a headless browser using whatever Chrome / Chromium
     /// binary can be found on the system.
-    pub fn default() -> Result<Self, Error> {
+    pub fn default() -> Fallible<Self> {
         let launch_options = LaunchOptionsBuilder::default()
             .path(Some(default_executable().unwrap()))
             .build()

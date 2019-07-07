@@ -380,19 +380,9 @@ fn set_request_interception() -> Fallible<()> {
 #[test]
 fn response_handler() -> Fallible<()> {
     logging::enable_logging();
-    let server = server::Server::with_dumb_html(include_str!(
+    let (server, browser, tab) = dumb_server(include_str!(
         "coverage_fixtures/basic_page_with_js_scripts.html"
     ));
-
-    let browser = Browser::new(
-        LaunchOptionsBuilder::default()
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
-
-    let tab = browser.wait_for_initial_tab().unwrap();
 
     let responses = Arc::new(Mutex::new(Vec::new()));
 
