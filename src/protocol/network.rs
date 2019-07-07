@@ -21,6 +21,32 @@ pub struct Request {
     pub is_link_preload: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Response {
+    pub url: String,
+    pub status: u32,
+    pub status_text: String,
+    pub headers: Headers,
+    pub headers_text: Option<String>,
+    pub mime_type: String,
+    pub request_headers: Option<Headers>,
+    pub request_headers_text: Option<String>,
+    pub connection_reused: bool,
+    pub connection_id: u64,
+    #[serde(rename = "remoteIPAddress")]
+    pub remote_ip_address: Option<String>,
+    pub remote_port: Option<u32>,
+    pub from_disk_cache: Option<bool>,
+    pub from_service_worker: Option<bool>,
+    pub from_prefetch_cache: Option<bool>,
+    pub encoded_data_length: u64,
+    pub protocol: Option<String>,
+    // pub timing: Option<ResourceTiming>,
+    // pub security_state: SecurityState,
+    // pub security_details: Option<SecurityDetails>,
+}
+
 pub mod events {
     use serde::{Deserialize, Serialize};
 
@@ -54,10 +80,48 @@ pub mod events {
         pub response_headers: Option<super::Headers>,
     }
 
+    #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum ResourceType {
+        Document,
+        Stylesheet,
+        Image,
+        Media,
+        Font,
+        Script,
+        TextTrack,
+        XHR,
+        Fetch,
+        EventSource,
+        WebSocket,
+        Manifest,
+        SignedExchange,
+        Ping,
+        CSPViolationReport,
+        Other,
+    }
+
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct RequestInterceptedEvent {
         pub params: RequestInterceptedEventParams,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ResponseReceivedEventParams {
+        pub request_id: String,
+        pub loader_id: String,
+        pub timestamp: f64,
+        #[serde(rename = "type")]
+        pub _type: ResourceType,
+        pub response: super::Response,
+        pub frame_id: Option<String>,
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ResponseReceivedEvent {
+        pub params: ResponseReceivedEventParams,
     }
 
     #[test]
@@ -197,6 +261,24 @@ pub mod methods {
     impl<'a> Method for GetResponseBodyForInterception<'a> {
         const NAME: &'static str = "Network.getResponseBodyForInterception";
         type ReturnObject = GetResponseBodyForInterceptionReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetResponseBody<'a> {
+        pub request_id: &'a str,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetResponseBodyReturnObject {
+        pub body: String,
+        pub base64_encoded: bool,
+    }
+
+    impl<'a> Method for GetResponseBody<'a> {
+        const NAME: &'static str = "Network.getResponseBody";
+        type ReturnObject = GetResponseBodyReturnObject;
     }
 
 }

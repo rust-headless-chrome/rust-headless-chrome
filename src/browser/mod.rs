@@ -203,7 +203,7 @@ impl Browser {
                 let tabs = self.tabs.lock().unwrap();
                 tabs.iter().find_map(|tab| {
                     if *tab.get_target_id() == target_id {
-                        Some(Arc::clone(tab))
+                        Some(tab.clone())
                     } else {
                         None
                     }
