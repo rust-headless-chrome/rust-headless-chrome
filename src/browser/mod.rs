@@ -1,4 +1,5 @@
 use std::sync::mpsc;
+use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -6,12 +7,12 @@ use std::time::Duration;
 use failure::Fallible;
 use log::*;
 use serde;
-use which::which;
 
 pub use process::LaunchOptionsBuilder;
 use process::{LaunchOptions, Process};
 pub use tab::Tab;
 use transport::Transport;
+use which::which;
 
 use crate::browser::context::Context;
 use crate::protocol::browser::methods::GetVersion;
@@ -19,7 +20,6 @@ pub use crate::protocol::browser::methods::VersionInformationReturnObject;
 use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::protocol::{self, Event};
 use crate::util;
-use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
 
 pub mod context;
 #[cfg(feature = "fetch")]

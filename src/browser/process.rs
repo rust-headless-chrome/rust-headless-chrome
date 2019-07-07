@@ -1,9 +1,3 @@
-use failure::{format_err, Fail, Fallible};
-use log::*;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-use regex::Regex;
-
 use std::{
     borrow::BorrowMut,
     ffi::OsStr,
@@ -13,15 +7,20 @@ use std::{
     time::Duration,
 };
 
+use failure::{format_err, Fail, Fallible};
+use log::*;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use regex::Regex;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-#[cfg(feature = "fetch")]
-use super::fetcher::{self, Fetcher};
 #[cfg(not(feature = "fetch"))]
 use crate::browser::default_executable;
-
 use crate::util;
+
+#[cfg(feature = "fetch")]
+use super::fetcher::{self, Fetcher};
 
 pub struct Process {
     child_process: TemporaryProcess,
@@ -293,10 +292,12 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::browser::default_executable;
     use std::sync::{Once, ONCE_INIT};
     use std::thread;
+
+    use crate::browser::default_executable;
+
+    use super::*;
 
     static INIT: Once = ONCE_INIT;
     fn setup() {

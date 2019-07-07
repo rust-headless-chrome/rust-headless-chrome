@@ -1,6 +1,7 @@
 pub mod methods {
-    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
+
+    use crate::protocol::Method;
 
     #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]

@@ -1,15 +1,14 @@
 use std::sync::mpsc;
+use std::sync::Mutex;
 
 use failure::Fallible;
 use log::*;
-
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 use websocket::{ClientBuilder, OwnedMessage};
 
 use crate::protocol;
-use std::sync::Mutex;
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,

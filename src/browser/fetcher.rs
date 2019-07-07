@@ -1,15 +1,15 @@
-use directories::ProjectDirs;
-use failure::{format_err, Fallible};
-use log::*;
-use ureq;
-use zip;
-
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, BufWriter},
     path::{Path, PathBuf},
     str::FromStr,
 };
+
+use directories::ProjectDirs;
+use failure::{format_err, Fallible};
+use log::*;
+use ureq;
+use zip;
 
 pub const CUR_REV: &str = "634997";
 

@@ -1,6 +1,7 @@
-use failure::{Error, Fail, Fallible};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+
+use failure::{Error, Fail, Fallible};
 
 #[derive(Debug, Fail)]
 #[fail(display = "The event waited for never came")]

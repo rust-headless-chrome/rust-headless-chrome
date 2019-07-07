@@ -1,13 +1,14 @@
-mod logging;
-mod server;
+use std::sync::Arc;
 
 use failure::Fallible;
-use headless_chrome::{Browser, LaunchOptionsBuilder};
 
 use headless_chrome::browser::default_executable;
 use headless_chrome::browser::tab::Tab;
+use headless_chrome::{Browser, LaunchOptionsBuilder};
 use server::Server;
-use std::sync::Arc;
+
+mod logging;
+mod server;
 
 fn basic_http_response(
     body: &'static str,

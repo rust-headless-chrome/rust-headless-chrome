@@ -1,6 +1,8 @@
-type Headers = HashMap<String, String>;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
+type Headers = HashMap<String, String>;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -158,10 +160,11 @@ pub mod events {
 }
 
 pub mod methods {
+    use std::collections::HashMap;
+
     use serde::{Deserialize, Serialize};
 
     use crate::protocol::Method;
-    use std::collections::HashMap;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]

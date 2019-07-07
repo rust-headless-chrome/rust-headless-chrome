@@ -1,10 +1,11 @@
 //! For (de)serializing method calls and events from the Chrome DevTools Protocol.
 
+use std::fmt::Debug;
+
 use failure::{Fail, Fallible};
 use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::fmt::Debug;
 
 pub mod browser;
 pub mod debugger;

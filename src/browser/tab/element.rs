@@ -1,13 +1,15 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+
 use failure::{Fail, Fallible};
 use log::*;
 
-use super::point::Point;
 use crate::browser::tab::NoElementFound;
 use crate::protocol::dom;
 use crate::protocol::page;
 use crate::protocol::runtime;
-use std::collections::HashMap;
-use std::fmt::Debug;
+
+use super::point::Point;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ElementQuad {
