@@ -1,12 +1,20 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.5...HEAD)
+## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.3.0...HEAD)
+
+### Added
+### Removed
+### Changed
+
+## 0.3.0 - 2019-07-07
 
 ### Added
 
 * Re-export Element struct in top level module
 * Better crate-level docs, and also docs for the Element struct
+* Browser::default convenience method for quickly getting a headless browser with default options
 
 ### Removed
 ### Changed
