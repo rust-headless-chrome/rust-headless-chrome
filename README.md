@@ -53,6 +53,10 @@ For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`e
 
 If you're looking to do general browser testing or scraping (rather than anything specific to Chrome / DevTools), you're probably better off with [fantoccini](https://github.com/jonhoo/fantoccini) for now. It's a lot more feature-complete and stable.
 
+## Version numbers
+
+Starting with v0.2.0, we're trying to follow SemVar strictly.
+
 ## Troubleshooting
 
 If you get errors related to timeouts, you likely need to enable sandboxing either in the kernel or as a setuid sandbox. Puppeteer has some information about how to do that [here](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md)
