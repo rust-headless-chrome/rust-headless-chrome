@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use failure::{Error, Fail};
+use failure::{Fail, Fallible};
 use log::*;
 use serde;
 
@@ -66,7 +66,7 @@ pub struct Transport {
 pub struct ConnectionClosed {}
 
 impl Transport {
-    pub fn new(ws_url: String, process_id: Option<u32>) -> Result<Self, Error> {
+    pub fn new(ws_url: String, process_id: Option<u32>) -> Fallible<Self> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let web_socket_connection =
             Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
@@ -111,7 +111,7 @@ impl Transport {
         &self,
         method: C,
         destination: MethodDestination,
-    ) -> Result<C::ReturnObject, Error>
+    ) -> Fallible<C::ReturnObject>
     where
         C: protocol::Method + serde::Serialize,
     {
@@ -171,7 +171,7 @@ impl Transport {
         &self,
         session_id: SessionId,
         method: C,
-    ) -> Result<C::ReturnObject, Error>
+    ) -> Fallible<C::ReturnObject>
     where
         C: protocol::Method + serde::Serialize,
     {
@@ -179,7 +179,7 @@ impl Transport {
         self.call_method(method, MethodDestination::Target(session_id))
     }
 
-    pub fn call_method_on_browser<C>(&self, method: C) -> Result<C::ReturnObject, Error>
+    pub fn call_method_on_browser<C>(&self, method: C) -> Fallible<C::ReturnObject>
     where
         C: protocol::Method + serde::Serialize,
     {

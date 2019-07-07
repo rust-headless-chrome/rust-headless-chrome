@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
+use failure::Fallible;
+
 use crate::browser::tab::Tab;
 use crate::protocol::target::methods::CreateTarget;
-use failure;
-use std::sync::Arc;
 
 /// Equivalent to a new incognito window
 pub struct Context<'a> {
@@ -19,7 +21,7 @@ impl<'a> Context<'a> {
 
     /// Opens a new tab in this context. It will not share cookies or a cache with the default
     /// browsing context or any other contexts created
-    pub fn new_tab(&self) -> Result<Arc<Tab>, failure::Error> {
+    pub fn new_tab(&self) -> Fallible<Arc<Tab>> {
         let tab_in_context = CreateTarget {
             url: "about:blank",
             width: None,
@@ -36,7 +38,7 @@ impl<'a> Context<'a> {
     }
 
     /// Any tabs created in this context
-    pub fn get_tabs(&self) -> Result<Vec<Arc<Tab>>, failure::Error> {
+    pub fn get_tabs(&self) -> Fallible<Vec<Arc<Tab>>> {
         let browser_tabs = self.browser.get_tabs().lock().unwrap();
         let mut tabs = vec![];
         for tab in browser_tabs.iter() {

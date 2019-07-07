@@ -1,7 +1,7 @@
 mod logging;
 mod server;
 
-use failure::Error;
+use failure::Fallible;
 use headless_chrome::{Browser, LaunchOptionsBuilder};
 
 use headless_chrome::browser::default_executable;
@@ -46,7 +46,7 @@ fn server_with_html_and_js() -> Server {
 }
 
 #[test]
-fn returns_actual_coverage() -> Result<(), Error> {
+fn returns_actual_coverage() -> Fallible<()> {
     logging::enable_logging();
     let server = server_with_html_and_js();
     let browser = Browser::new(

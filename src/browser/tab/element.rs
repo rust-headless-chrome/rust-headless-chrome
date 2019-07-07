@@ -1,4 +1,4 @@
-use failure::{Error, Fail};
+use failure::{Fail, Fallible};
 use log::*;
 
 use super::point::Point;
@@ -227,7 +227,7 @@ impl<'a> Element<'a> {
     /// Using a 'node_id', of the type returned by QuerySelector and QuerySelectorAll, this finds
     /// the 'backend_node_id' and 'remote_object_id' which are stable identifiers, unlike node_id.
     /// We use these two when making various calls to the API because of that.
-    pub fn new(parent: &'a super::Tab, node_id: dom::NodeId) -> Result<Self, Error> {
+    pub fn new(parent: &'a super::Tab, node_id: dom::NodeId) -> Fallible<Self> {
         if node_id == 0 {
             return Err(NoElementFound {}.into());
         }
@@ -254,14 +254,14 @@ impl<'a> Element<'a> {
     }
 
     /// Moves the mouse to the middle of this element
-    pub fn move_mouse_over(&self) -> Result<&Self, Error> {
+    pub fn move_mouse_over(&self) -> Fallible<&Self> {
         self.scroll_into_view()?;
         let midpoint = self.get_midpoint()?;
         self.parent.move_mouse_to_point(midpoint)?;
         Ok(self)
     }
 
-    pub fn click(&self) -> Result<&Self, Error> {
+    pub fn click(&self) -> Fallible<&Self> {
         self.scroll_into_view()?;
         debug!("Clicking element {:?}", &self);
         let midpoint = self.get_midpoint()?;
@@ -269,7 +269,7 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
-    pub fn type_into(&self, text: &str) -> Result<&Self, Error> {
+    pub fn type_into(&self, text: &str) -> Fallible<&Self> {
         self.click()?;
 
         debug!("Typing into element ( {:?} ): {}", &self, text);
@@ -283,7 +283,7 @@ impl<'a> Element<'a> {
         &self,
         function_declaration: &str,
         await_promise: bool,
-    ) -> Result<runtime::methods::RemoteObject, Error> {
+    ) -> Fallible<runtime::methods::RemoteObject> {
         let result = self
             .parent
             .call_method(runtime::methods::CallFunctionOn {
@@ -299,7 +299,7 @@ impl<'a> Element<'a> {
         Ok(result)
     }
 
-    pub fn focus(&self) -> Result<&Self, Error> {
+    pub fn focus(&self) -> Fallible<&Self> {
         self.scroll_into_view()?;
         self.parent.call_method(dom::methods::Focus {
             backend_node_id: Some(self.backend_node_id),
@@ -308,7 +308,7 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
-    pub fn get_description(&self) -> Result<dom::Node, Error> {
+    pub fn get_description(&self) -> Fallible<dom::Node> {
         let node = self
             .parent
             .call_method(dom::methods::DescribeNode {
@@ -325,8 +325,8 @@ impl<'a> Element<'a> {
     /// The screenshot is taken from the surface using this element's content-box.
     ///
     /// ```rust,no_run
-    /// # use failure::Error;
-    /// # fn main() -> Result<(), Error> {
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
     /// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
@@ -338,13 +338,13 @@ impl<'a> Element<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn capture_screenshot(&self, format: page::ScreenshotFormat) -> Result<Vec<u8>, Error> {
+    pub fn capture_screenshot(&self, format: page::ScreenshotFormat) -> Fallible<Vec<u8>> {
         self.scroll_into_view()?;
         self.parent
             .capture_screenshot(format, Some(self.get_box_model()?.content_viewport()), true)
     }
 
-    pub fn set_input_files(&self, file_paths: &[&str]) -> Result<&Self, Error> {
+    pub fn set_input_files(&self, file_paths: &[&str]) -> Fallible<&Self> {
         self.parent.call_method(dom::methods::SetFileInputFiles {
             files: file_paths,
             backend_node_id: Some(self.backend_node_id),
@@ -357,14 +357,14 @@ impl<'a> Element<'a> {
     /// Scrolls the current element into view
     ///
     /// Used prior to any action applied to the current element to ensure action is duable.
-    pub fn scroll_into_view(&self) -> Result<&Self, Error> {
+    pub fn scroll_into_view(&self) -> Fallible<&Self> {
         let result = self.call_js_fn(
             "async function() {
                 if (!this.isConnected)
                     return 'Node is detached from document';
                 if (this.nodeType !== Node.ELEMENT_NODE)
                     return 'Node is not of type HTMLElement';
-                
+
                 const visibleRatio = await new Promise(resolve => {
                     const observer = new IntersectionObserver(entries => {
                         resolve(entries[0].intersectionRatio);
@@ -375,11 +375,11 @@ impl<'a> Element<'a> {
 
                 if (visibleRatio !== 1.0)
                     this.scrollIntoView({
-                        block: 'center', 
-                        inline: 'center', 
+                        block: 'center',
+                        inline: 'center',
                         behavior: 'instant'
                     });
-                return false; 
+                return false;
             }",
             true,
         )?;
@@ -392,13 +392,13 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
-    pub fn get_attributes(&self) -> Result<Option<dom::NodeAttributes>, Error> {
+    pub fn get_attributes(&self) -> Fallible<Option<dom::NodeAttributes>> {
         let description = self.get_description()?;
         Ok(description.attributes)
     }
 
     /// Get boxes for this element
-    pub fn get_box_model(&self) -> Result<BoxModel, Error> {
+    pub fn get_box_model(&self) -> Fallible<BoxModel> {
         let model = self
             .parent
             .call_method(dom::methods::GetBoxModel {
@@ -417,7 +417,7 @@ impl<'a> Element<'a> {
         })
     }
 
-    pub fn get_midpoint(&self) -> Result<Point, Error> {
+    pub fn get_midpoint(&self) -> Fallible<Point> {
         let return_object = self.parent.call_method(dom::methods::GetContentQuads {
             node_id: None,
             backend_node_id: Some(self.backend_node_id),
@@ -429,7 +429,7 @@ impl<'a> Element<'a> {
         Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
     }
 
-    pub fn get_js_midpoint(&self) -> Result<Point, Error> {
+    pub fn get_js_midpoint(&self) -> Fallible<Point> {
         let result =
             self.call_js_fn("function(){ return this.getBoundingClientRect(); }", false)?;
 

@@ -4,7 +4,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
-use failure::{Error, Fail};
+use failure::{Error, Fail, Fallible};
 use log::*;
 use serde;
 
@@ -46,13 +46,13 @@ pub type RequestInterceptor = Box<
 #[rustfmt::skip]
 pub type ResponseHandler = Box<
     Fn(
-            protocol::network::events::ResponseReceivedEventParams,
-            &dyn Fn() -> Result<
-                protocol::network::methods::GetResponseBodyReturnObject,
-                failure::Error,
-            >,
-        ) + Send
-        + Sync,
+        protocol::network::events::ResponseReceivedEventParams,
+        &dyn Fn() -> Result<
+            protocol::network::methods::GetResponseBodyReturnObject,
+            failure::Error,
+        >,
+    ) + Send
+    + Sync,
 >;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
@@ -97,7 +97,7 @@ impl NoElementFound {
 }
 
 impl<'a> Tab {
-    pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self, Error> {
+    pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Fallible<Self> {
         let target_id = target_info.target_id.clone();
 
         let session_id = transport
@@ -142,7 +142,7 @@ impl<'a> Tab {
     }
 
     /// Fetches the most recent info about this target
-    pub fn get_target_info(&self) -> Result<TargetInfo, failure::Error> {
+    pub fn get_target_info(&self) -> Fallible<TargetInfo> {
         Ok(self
             .call_method(target::methods::GetTargetInfo {
                 target_id: self.get_target_id(),
@@ -150,7 +150,7 @@ impl<'a> Tab {
             .target_info)
     }
 
-    pub fn get_browser_context_id(&self) -> Result<Option<String>, failure::Error> {
+    pub fn get_browser_context_id(&self) -> Fallible<Option<String>> {
         Ok(self.get_target_info()?.browser_context_id)
     }
 
@@ -238,7 +238,7 @@ impl<'a> Tab {
         });
     }
 
-    pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject, Error>
+    pub fn call_method<C>(&self, method: C) -> Fallible<C::ReturnObject>
     where
         C: protocol::Method + serde::Serialize + std::fmt::Debug,
     {
@@ -252,7 +252,7 @@ impl<'a> Tab {
         result
     }
 
-    pub fn wait_until_navigated(&self) -> Result<&Self, Error> {
+    pub fn wait_until_navigated(&self) -> Fallible<&Self> {
         let navigating = Arc::clone(&self.navigating);
 
         util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
@@ -267,7 +267,7 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn navigate_to(&self, url: &str) -> Result<&Self, Error> {
+    pub fn navigate_to(&self, url: &str) -> Fallible<&Self> {
         let return_object = self.call_method(Navigate { url })?;
         if let Some(error_text) = return_object.error_text {
             return Err(NavigationFailed { error_text }.into());
@@ -281,7 +281,7 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>, Error> {
+    pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
         self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(3))
     }
 
@@ -289,7 +289,7 @@ impl<'a> Tab {
         &self,
         selector: &str,
         timeout: std::time::Duration,
-    ) -> Result<Element<'_>, Error> {
+    ) -> Fallible<Element<'_>> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element(selector),
@@ -297,7 +297,7 @@ impl<'a> Tab {
         )
     }
 
-    pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
+    pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
         debug!("Waiting for element with selector: {}", selector);
         util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
             || self.find_elements(selector),
@@ -305,7 +305,7 @@ impl<'a> Tab {
         )
     }
 
-    pub fn find_element(&self, selector: &str) -> Result<Element<'_>, Error> {
+    pub fn find_element(&self, selector: &str) -> Fallible<Element<'_>> {
         trace!("Looking up element via selector: {}", selector);
 
         let root_node_id = self.get_document()?.node_id;
@@ -320,7 +320,7 @@ impl<'a> Tab {
         Element::new(&self, node_id)
     }
 
-    pub fn get_document(&self) -> Result<Node, Error> {
+    pub fn get_document(&self) -> Fallible<Node> {
         Ok(self
             .call_method(dom::methods::GetDocument {
                 depth: Some(0),
@@ -329,7 +329,7 @@ impl<'a> Tab {
             .root)
     }
 
-    pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>, Error> {
+    pub fn find_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
         trace!("Looking up elements via selector: {}", selector);
 
         let root_node_id = self.get_document()?.node_id;
@@ -351,7 +351,7 @@ impl<'a> Tab {
             .collect()
     }
 
-    pub fn describe_node(&self, node_id: dom::NodeId) -> Result<dom::Node, Error> {
+    pub fn describe_node(&self, node_id: dom::NodeId) -> Fallible<dom::Node> {
         let node = self
             .call_method(dom::methods::DescribeNode {
                 node_id: Some(node_id),
@@ -362,7 +362,7 @@ impl<'a> Tab {
         Ok(node)
     }
 
-    pub fn type_str(&self, string_to_type: &str) -> Result<&Self, Error> {
+    pub fn type_str(&self, string_to_type: &str) -> Fallible<&Self> {
         for c in string_to_type.split("") {
             // split call above will have empty string at start and end which we won't type
             if c == "" {
@@ -373,7 +373,7 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn press_key(&self, key: &str) -> Result<&Self, Error> {
+    pub fn press_key(&self, key: &str) -> Fallible<&Self> {
         let definition = keys::get_key_definition(key)?;
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
@@ -415,7 +415,7 @@ impl<'a> Tab {
     }
 
     /// Moves the mouse to this point (dispatches a mouseMoved event)
-    pub fn move_mouse_to_point(&self, point: Point) -> Result<&Self, Error> {
+    pub fn move_mouse_to_point(&self, point: Point) -> Fallible<&Self> {
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
         }
@@ -429,7 +429,7 @@ impl<'a> Tab {
         Ok(self)
     }
 
-    pub fn click_point(&self, point: Point) -> Result<&Self, Error> {
+    pub fn click_point(&self, point: Point) -> Fallible<&Self> {
         trace!("Clicking point: {:?}", point);
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
@@ -464,8 +464,8 @@ impl<'a> Tab {
     /// the view.
     ///
     /// ```rust,no_run
-    /// # use failure::Error;
-    /// # fn main() -> Result<(), Error> {
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
     /// let browser = Browser::new(LaunchOptionsBuilder::default().build().unwrap())?;
@@ -484,7 +484,7 @@ impl<'a> Tab {
         format: page::ScreenshotFormat,
         clip: Option<page::Viewport>,
         from_surface: bool,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Fallible<Vec<u8>> {
         let (format, quality) = match format {
             page::ScreenshotFormat::JPEG(quality) => {
                 (page::InternalScreenshotFormat::JPEG, quality)
@@ -502,7 +502,7 @@ impl<'a> Tab {
         base64::decode(&data).map_err(Into::into)
     }
 
-    pub fn print_to_pdf(&self, options: Option<page::PrintToPdfOptions>) -> Result<Vec<u8>, Error> {
+    pub fn print_to_pdf(&self, options: Option<page::PrintToPdfOptions>) -> Fallible<Vec<u8>> {
         let data = self
             .call_method(page::methods::PrintToPdf { options })?
             .data;
@@ -514,11 +514,7 @@ impl<'a> Tab {
     /// If `ignore_cache` is true, the browser cache is ignored (as if the user pressed Shift+F5).
     /// If `script_to_evaluate` is given, the script will be injected into all frames of the
     /// inspected page after reload. Argument will be ignored if reloading dataURL origin.
-    pub fn reload(
-        &self,
-        ignore_cache: bool,
-        script_to_evaluate: Option<&str>,
-    ) -> Result<&Self, Error> {
+    pub fn reload(&self, ignore_cache: bool, script_to_evaluate: Option<&str>) -> Fallible<&Self> {
         self.call_method(page::methods::Reload {
             ignore_cache,
             script_to_evaluate,
@@ -527,14 +523,14 @@ impl<'a> Tab {
     }
 
     /// Enables the profiler
-    pub fn enable_profiler(&self) -> Result<&Self, Error> {
+    pub fn enable_profiler(&self) -> Fallible<&Self> {
         self.call_method(profiler::methods::Enable {})?;
 
         Ok(self)
     }
 
     /// Disables the profiler
-    pub fn disable_profiler(&self) -> Result<&Self, Error> {
+    pub fn disable_profiler(&self) -> Fallible<&Self> {
         self.call_method(profiler::methods::Disable {})?;
 
         Ok(self)
@@ -550,7 +546,7 @@ impl<'a> Tab {
     /// By default we enable the 'detailed' flag on StartPreciseCoverage, which enables block-level
     /// granularity, and also enable 'call_count' (which when disabled always sets count to 1 or 0).
     ///
-    pub fn start_js_coverage(&self) -> Result<&Self, Error> {
+    pub fn start_js_coverage(&self) -> Fallible<&Self> {
         self.call_method(profiler::methods::StartPreciseCoverage {
             call_count: Some(true),
             detailed: Some(true),
@@ -560,7 +556,7 @@ impl<'a> Tab {
 
     /// Stops tracking which lines of JS have been executed
     /// If you're finished with the profiler, don't forget to call `disable_profiler`.
-    pub fn stop_js_coverage(&self) -> Result<&Self, Error> {
+    pub fn stop_js_coverage(&self) -> Fallible<&Self> {
         self.call_method(profiler::methods::StopPreciseCoverage {})?;
         Ok(self)
     }
@@ -576,7 +572,7 @@ impl<'a> Tab {
     ///
     /// The format of the data is a little unintuitive, see here for details:
     /// https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
-    pub fn take_precise_js_coverage(&self) -> Result<Vec<profiler::ScriptCoverage>, Error> {
+    pub fn take_precise_js_coverage(&self) -> Fallible<Vec<profiler::ScriptCoverage>> {
         let script_coverages = self
             .call_method(profiler::methods::TakePreciseCoverage {})?
             .result;
@@ -595,7 +591,7 @@ impl<'a> Tab {
         &self,
         patterns: &[network::methods::RequestPattern],
         interceptor: RequestInterceptor,
-    ) -> Result<(), Error> {
+    ) -> Fallible<()> {
         let mut current_interceptor = self.request_interceptor.lock().unwrap();
         *current_interceptor = interceptor;
         self.call_method(network::methods::SetRequestInterception {
@@ -612,7 +608,7 @@ impl<'a> Tab {
         &self,
         interception_id: &str,
         modified_response: Option<&str>,
-    ) -> Result<(), Error> {
+    ) -> Fallible<()> {
         self.call_method(network::methods::ContinueInterceptedRequest {
             interception_id,
             error_reason: None,
@@ -626,20 +622,20 @@ impl<'a> Tab {
         Ok(())
     }
 
-    pub fn enable_response_handling(&self, handler: ResponseHandler) -> Result<(), Error> {
+    pub fn enable_response_handling(&self, handler: ResponseHandler) -> Fallible<()> {
         self.call_method(network::methods::Enable {})?;
         *(self.response_handler.lock().unwrap()) = Some(handler);
         Ok(())
     }
 
     /// Enables Debugger
-    pub fn enable_debugger(&self) -> Result<(), Error> {
+    pub fn enable_debugger(&self) -> Fallible<()> {
         self.call_method(protocol::debugger::methods::Enable {})?;
         Ok(())
     }
 
     /// Disables Debugger
-    pub fn disable_debugger(&self) -> Result<(), Error> {
+    pub fn disable_debugger(&self) -> Fallible<()> {
         self.call_method(protocol::debugger::methods::Disable {})?;
         Ok(())
     }
@@ -647,7 +643,7 @@ impl<'a> Tab {
     /// Returns source for the script with given id.
     ///
     /// Debugger must be enabled.
-    pub fn get_script_source(&self, script_id: &str) -> Result<String, Error> {
+    pub fn get_script_source(&self, script_id: &str) -> Fallible<String> {
         Ok(self
             .call_method(protocol::debugger::methods::GetScriptSource { script_id })?
             .script_source)

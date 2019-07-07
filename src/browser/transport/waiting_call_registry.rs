@@ -1,11 +1,13 @@
-use failure::Error;
-use log::*;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
-use super::ConnectionClosed;
+use failure::Fallible;
+use log::*;
+
 use crate::protocol::{CallId, Response};
+
+use super::ConnectionClosed;
 
 trait IdentifiableResponse {
     fn call_id(&self) -> CallId;
@@ -13,7 +15,7 @@ trait IdentifiableResponse {
 
 #[derive(Debug)]
 pub struct WaitingCallRegistry {
-    calls: Mutex<HashMap<CallId, mpsc::Sender<Result<Response, Error>>>>,
+    calls: Mutex<HashMap<CallId, mpsc::Sender<Fallible<Response>>>>,
 }
 
 impl IdentifiableResponse for Response {
@@ -35,9 +37,9 @@ impl WaitingCallRegistry {
         Default::default()
     }
 
-    pub fn resolve_call(&self, response: Response) -> Result<(), Error> {
+    pub fn resolve_call(&self, response: Response) -> Fallible<()> {
         trace!("Resolving call");
-        let waiting_call_tx: mpsc::Sender<Result<Response, Error>> = {
+        let waiting_call_tx: mpsc::Sender<Fallible<Response>> = {
             let mut waiting_calls = self.calls.lock().unwrap();
             waiting_calls.remove(&response.call_id()).unwrap()
         };
@@ -45,8 +47,8 @@ impl WaitingCallRegistry {
         Ok(())
     }
 
-    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Result<Response, Error>> {
-        let (tx, rx) = mpsc::channel::<Result<Response, Error>>();
+    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Fallible<Response>> {
+        let (tx, rx) = mpsc::channel::<Fallible<Response>>();
         let mut calls = self.calls.lock().unwrap();
         calls.insert(call_id, tx);
         trace!("registered {:?}", call_id);
@@ -82,8 +84,9 @@ impl WaitingCallRegistry {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn register_and_receive_calls() {

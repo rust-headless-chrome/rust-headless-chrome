@@ -1,7 +1,10 @@
-use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
 use std::fs;
 
-fn main() -> Result<(), failure::Error> {
+use failure::Fallible;
+
+use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
+
+fn main() -> Fallible<()> {
     // Create a headless browser, navigate to wikipedia.org, wait for the page
     // to render completely, take a screenshot of the entire page
     // in JPEG-format using 75% quality.
