@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use failure::Fallible;
 
-use headless_chrome::browser::default_executable;
 use headless_chrome::browser::tab::Tab;
-use headless_chrome::{Browser, LaunchOptionsBuilder};
+use headless_chrome::Browser;
 use server::Server;
 
 mod logging;
@@ -50,14 +49,7 @@ fn server_with_html_and_js() -> Server {
 fn returns_actual_coverage() -> Fallible<()> {
     logging::enable_logging();
     let server = server_with_html_and_js();
-    let browser = Browser::new(
-        LaunchOptionsBuilder::default()
-            .headless(true)
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
+    let browser = Browser::default()?;
     let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
 
     tab.enable_profiler()?;
