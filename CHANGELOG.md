@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.5...HEAD)
 
 ### Added
+
+* Re-export Element struct in top level module
+* Better crate-level docs, and also docs for the Element struct
+
 ### Removed
 ### Changed
 
