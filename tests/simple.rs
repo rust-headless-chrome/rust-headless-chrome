@@ -495,6 +495,5 @@ fn get_script_source() -> Result<(), failure::Error> {
         contents
     );
 
-
     Ok(())
 }
