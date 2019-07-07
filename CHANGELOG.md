@@ -4,10 +4,26 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.1.5...HEAD)
 
 ### Added
+
+* Re-export Element struct in top level module
+* Better crate-level docs, and also docs for the Element struct
+
+### Removed
+### Changed
+
+## 0.2.0 - 2019-07-07
+
+Note: starting with this release we're going to bump the minor version whenever anything new is added to the public API.
+
+### Added
+
+* [Response handling callback for tabs (`Tab.enable_response_handler`)](https://github.com/atroche/rust-headless-chrome/pull/133)
+
 ### Removed
 ### Changed
 
 * [Fixed a race condition in Tab.wait_until_navigated](https://github.com/atroche/rust-headless-chrome/pull/135)
+* [Bump dependencies (rand, ureq, directories) and remove base64 dev dep](https://github.com/atroche/rust-headless-chrome/pull/134)
 
 
 ## 0.1.5 - 2019-06-19

@@ -1,15 +1,14 @@
 use std::sync::mpsc;
+use std::sync::Mutex;
 
-use failure::Error;
+use failure::Fallible;
 use log::*;
-
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
 use websocket::WebSocketError;
 use websocket::{ClientBuilder, OwnedMessage};
 
 use crate::protocol;
-use std::sync::Mutex;
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
@@ -28,7 +27,7 @@ impl WebSocketConnection {
         ws_url: &str,
         process_id: Option<u32>,
         messages_tx: mpsc::Sender<protocol::Message>,
-    ) -> Result<Self, Error> {
+    ) -> Fallible<Self> {
         let connection = Self::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
@@ -106,7 +105,7 @@ impl WebSocketConnection {
         }
     }
 
-    pub fn websocket_connection(ws_url: &str) -> Result<Client<TcpStream>, Error> {
+    pub fn websocket_connection(ws_url: &str) -> Fallible<Client<TcpStream>> {
         let client = ClientBuilder::new(ws_url)?.connect_insecure()?;
 
         debug!("Successfully connected to WebSocket: {}", ws_url);
@@ -114,7 +113,7 @@ impl WebSocketConnection {
         Ok(client)
     }
 
-    pub fn send_message(&self, message_text: &str) -> Result<(), Error> {
+    pub fn send_message(&self, message_text: &str) -> Fallible<()> {
         let message = websocket::Message::text(message_text);
         let mut sender = self.sender.lock().unwrap();
         sender.send_message(&message)?;

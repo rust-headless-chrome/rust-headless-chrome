@@ -1,15 +1,15 @@
-use directories::ProjectDirs;
-use failure::{format_err, Error};
-use log::*;
-use ureq;
-use zip;
-
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, BufWriter},
     path::{Path, PathBuf},
     str::FromStr,
 };
+
+use directories::ProjectDirs;
+use failure::{format_err, Fallible};
+use log::*;
+use ureq;
+use zip;
 
 pub const CUR_REV: &str = "634997";
 
@@ -29,7 +29,7 @@ pub struct Fetcher<'a> {
 }
 
 impl<'a> Fetcher<'a> {
-    pub fn new(rev: &'a str) -> Result<Self, Error> {
+    pub fn new(rev: &'a str) -> Fallible<Self> {
         let dirs = get_project_dirs()?;
         info!(
             "Creating XDG_DATA_DIR if it doesn't exist: {}",
@@ -39,7 +39,7 @@ impl<'a> Fetcher<'a> {
         Ok(Self { rev, dirs })
     }
 
-    fn local_revisions(&self) -> Result<Vec<String>, Error> {
+    fn local_revisions(&self) -> Fallible<Vec<String>> {
         trace!(
             "Enumerating contents of XDG_DATA_DIR: {}",
             self.dirs.data_dir().display()
@@ -71,7 +71,7 @@ impl<'a> Fetcher<'a> {
         path
     }
 
-    fn chrome_path(&self, rev: &str) -> Result<PathBuf, Error> {
+    fn chrome_path(&self, rev: &str) -> Fallible<PathBuf> {
         let mut path = self.base_path(rev);
         path.push(archive_name(rev)?);
 
@@ -94,7 +94,7 @@ impl<'a> Fetcher<'a> {
         Ok(path)
     }
 
-    pub fn run(&self) -> Result<PathBuf, Error> {
+    pub fn run(&self) -> Fallible<PathBuf> {
         let revisions = self.local_revisions()?;
         if let Some(revision) = revisions.into_iter().find(|r| r == self.rev) {
             info!("No need to download, we have the correct revision");
@@ -118,7 +118,7 @@ impl<'a> Fetcher<'a> {
         Ok(self.chrome_path(self.rev)?)
     }
 
-    pub fn unzip<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
+    pub fn unzip<P: AsRef<Path>>(&self, path: P) -> Fallible<()> {
         let mut archive = zip::ZipArchive::new(File::open(path.as_ref())?)?;
         let extract_path = self.base_path(self.rev);
         fs::create_dir_all(&extract_path)?;
@@ -181,7 +181,7 @@ impl<'a> Fetcher<'a> {
     }
 }
 
-fn get_size<U: AsRef<str>>(url: U) -> Result<u64, Error> {
+fn get_size<U: AsRef<str>>(url: U) -> Fallible<u64> {
     let resp = ureq::get(url.as_ref()).call();
     match resp.header("Content-Length") {
         Some(len) => Ok(u64::from_str(len)? / 2_u64.pow(20)),
@@ -189,7 +189,7 @@ fn get_size<U: AsRef<str>>(url: U) -> Result<u64, Error> {
     }
 }
 
-fn get_project_dirs() -> Result<ProjectDirs, Error> {
+fn get_project_dirs() -> Fallible<ProjectDirs> {
     info!("Getting project dir");
     match ProjectDirs::from("", "", APP_NAME) {
         Some(dirs) => Ok(dirs),
@@ -197,7 +197,7 @@ fn get_project_dirs() -> Result<ProjectDirs, Error> {
     }
 }
 
-fn dl_url<R>(revision: R) -> Result<String, Error>
+fn dl_url<R>(revision: R) -> Fallible<String>
 where
     R: AsRef<str>,
 {
@@ -232,7 +232,7 @@ where
     }
 }
 
-fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str, Error> {
+fn archive_name<R: AsRef<str>>(revision: R) -> Fallible<&'static str> {
     #[cfg(target_os = "linux")]
     {
         drop(revision);

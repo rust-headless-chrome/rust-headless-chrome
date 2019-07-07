@@ -1,9 +1,3 @@
-use failure::{format_err, Error, Fail};
-use log::*;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-use regex::Regex;
-
 use std::{
     borrow::BorrowMut,
     ffi::OsStr,
@@ -13,15 +7,20 @@ use std::{
     time::Duration,
 };
 
+use failure::{format_err, Fail, Fallible};
+use log::*;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use regex::Regex;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
-#[cfg(feature = "fetch")]
-use super::fetcher::{self, Fetcher};
 #[cfg(not(feature = "fetch"))]
 use crate::browser::default_executable;
-
 use crate::util;
+
+#[cfg(feature = "fetch")]
+use super::fetcher::{self, Fetcher};
 
 pub struct Process {
     child_process: TemporaryProcess,
@@ -105,7 +104,7 @@ impl<'a> LaunchOptionsBuilder<'a> {
 }
 
 impl Process {
-    pub fn new(mut launch_options: LaunchOptions) -> Result<Self, Error> {
+    pub fn new(mut launch_options: LaunchOptions) -> Fallible<Self> {
         if launch_options.path.is_none() {
             #[cfg(feature = "fetch")]
             {
@@ -158,7 +157,7 @@ impl Process {
         })
     }
 
-    fn start_process(launch_options: &LaunchOptions) -> Result<TemporaryProcess, Error> {
+    fn start_process(launch_options: &LaunchOptions) -> Fallible<TemporaryProcess> {
         let debug_port = if let Some(port) = launch_options.port {
             port
         } else {
@@ -224,7 +223,7 @@ impl Process {
         Ok(process)
     }
 
-    fn ws_url_from_reader<R>(reader: BufReader<R>) -> Result<Option<String>, Error>
+    fn ws_url_from_reader<R>(reader: BufReader<R>) -> Fallible<Option<String>>
     where
         R: Read,
     {
@@ -254,7 +253,7 @@ impl Process {
         Ok(None)
     }
 
-    fn ws_url_from_output(child_process: &mut Child) -> Result<String, Error> {
+    fn ws_url_from_output(child_process: &mut Child) -> Fallible<String> {
         let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(10)).until(|| {
             let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
             match Self::ws_url_from_reader(my_stderr) {
@@ -293,10 +292,12 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::browser::default_executable;
     use std::sync::{Once, ONCE_INIT};
     use std::thread;
+
+    use crate::browser::default_executable;
+
+    use super::*;
 
     static INIT: Once = ONCE_INIT;
     fn setup() {

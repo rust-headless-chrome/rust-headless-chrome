@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use failure::Error;
+use failure::Fallible;
 
 use headless_chrome::browser::tab::Tab;
 use headless_chrome::Browser;
@@ -46,7 +46,7 @@ fn server_with_html_and_js() -> Server {
 }
 
 #[test]
-fn returns_actual_coverage() -> Result<(), Error> {
+fn returns_actual_coverage() -> Fallible<()> {
     logging::enable_logging();
     let server = server_with_html_and_js();
     let browser = Browser::default()?;

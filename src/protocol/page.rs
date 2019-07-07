@@ -80,6 +80,7 @@ pub struct PrintToPdfOptions {
 
 pub mod events {
     use serde::Deserialize;
+
     #[derive(Deserialize, Debug, Clone)]
     pub struct LifecycleEvent {
         pub params: LifecycleParams,
@@ -125,9 +126,11 @@ pub mod events {
 }
 
 pub mod methods {
-    use super::PrintToPdfOptions;
-    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
+
+    use crate::protocol::Method;
+
+    use super::PrintToPdfOptions;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]

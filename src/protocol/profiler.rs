@@ -41,8 +41,9 @@ pub struct ScriptCoverage {
 }
 
 pub mod methods {
-    use crate::protocol::Method;
     use serde::{Deserialize, Serialize};
+
+    use crate::protocol::Method;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]

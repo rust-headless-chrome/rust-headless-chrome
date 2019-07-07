@@ -1,9 +1,12 @@
-use headless_chrome::{protocol::page::PrintToPdfOptions, Browser};
 use std::{env, fs};
+
+use failure::Fallible;
+
+use headless_chrome::{protocol::page::PrintToPdfOptions, Browser};
 
 /// Run the example as follows:
 /// ./print_to_pdf {debug_ws_url} /rust-headless-chrome/tests/pdfassets/index.html
-fn main() -> Result<(), failure::Error> {
+fn main() -> Fallible<()> {
     // Create a headless browser, navigate to index.html file, wait for the page
     // to render completely, render a PDF of the page and save it to the filesystem.
 
