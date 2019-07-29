@@ -45,7 +45,7 @@ pub type RequestInterceptor = Box<
 
 #[rustfmt::skip]
 pub type ResponseHandler = Box<
-    Fn(
+    dyn Fn(
         protocol::network::events::ResponseReceivedEventParams,
         &dyn Fn() -> Result<
             protocol::network::methods::GetResponseBodyReturnObject,
@@ -157,6 +157,21 @@ impl<'a> Tab {
     pub fn get_url(&self) -> String {
         let info = self.target_info.lock().unwrap();
         info.url.clone()
+    }
+
+    /// Allows overriding user agent with the given string.
+    pub fn set_user_agent(
+        &self,
+        user_agent: &str,
+        accept_language: Option<&str>,
+        platform: Option<&str>,
+    ) -> Fallible<()> {
+        self.call_method(network::methods::SetUserAgentOverride {
+            user_agent,
+            accept_language,
+            platform,
+        })
+        .map(|_| ())
     }
 
     fn start_event_handler_thread(&self) {
