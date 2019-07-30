@@ -85,6 +85,7 @@ impl Browser {
         let transport = Arc::new(Transport::new(
             process.debug_ws_url.clone(),
             Some(process_id),
+            idle_browser_timeout
         )?);
 
         Self::create_browser(Some(process), transport, idle_browser_timeout)
@@ -102,7 +103,7 @@ impl Browser {
 
     /// Allows you to drive an externally-launched Chrome process instead of launch one via [`new`].
     pub fn connect(debug_ws_url: String) -> Fallible<Self> {
-        let transport = Arc::new(Transport::new(debug_ws_url, None)?);
+        let transport = Arc::new(Transport::new(debug_ws_url, None, Duration::from_secs(30))?);
         trace!("created transport");
 
         Self::create_browser(None, transport, Duration::from_secs(30))
