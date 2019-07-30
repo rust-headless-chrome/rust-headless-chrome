@@ -126,6 +126,20 @@ pub mod events {
         pub params: ResponseReceivedEventParams,
     }
 
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct LoadingFinishedEventParams {
+        pub request_id: String,
+        pub timestamp: f64,
+        pub encoded_data_length: i32,
+        pub should_report_corb_blocking: bool,
+    }
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct LoadingFinishedEvent {
+        pub params: LoadingFinishedEventParams,
+    }
+
     #[test]
     fn can_parse_request_intercepted_event() {
         use crate::protocol;

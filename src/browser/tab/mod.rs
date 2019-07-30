@@ -21,6 +21,7 @@ use crate::protocol::{network, Event, RemoteError};
 use crate::{protocol, util};
 
 use super::transport::SessionId;
+use std::thread::sleep;
 
 pub mod element;
 mod keys;
@@ -45,8 +46,8 @@ pub type RequestInterceptor = Box<
 
 #[rustfmt::skip]
 pub type ResponseHandler = Box<
-    Fn(
-        protocol::network::events::ResponseReceivedEventParams,
+    dyn Fn(
+        protocol::network::events::LoadingFinishedEventParams,
         &dyn Fn() -> Result<
             protocol::network::methods::GetResponseBodyReturnObject,
             failure::Error,
@@ -215,7 +216,7 @@ impl<'a> Tab {
                             }
                         }
                     }
-                    Event::ResponseReceived(ev) => {
+                    Event::LoadingFinished(ev) => {
                         if let Some(handler) = response_handler_mutex.lock().unwrap().as_ref() {
                             let request_id = ev.params.request_id.clone();
                             let retrieve_body = || {

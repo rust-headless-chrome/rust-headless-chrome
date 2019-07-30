@@ -112,6 +112,8 @@ pub enum Event {
     RequestIntercepted(network::events::RequestInterceptedEvent),
     #[serde(rename = "Network.responseReceived")]
     ResponseReceived(network::events::ResponseReceivedEvent),
+    #[serde(rename = "Network.loadingFinished")]
+    LoadingFinished(network::events::LoadingFinishedEvent),
 }
 
 #[derive(Deserialize, Debug, Clone)]
