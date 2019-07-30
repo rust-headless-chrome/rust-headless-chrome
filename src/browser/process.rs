@@ -94,6 +94,11 @@ pub struct LaunchOptions<'a> {
     #[cfg(feature = "fetch")]
     #[builder(default = "self.default_revision()")]
     revision: &'static str,
+
+    /// How long to keep the WebSocket to the browser for after not receiving any events from it
+    /// Defaults to 30 seconds
+    #[builder(default = "Duration::from_secs(30)")]
+    pub idle_browser_timeout: Duration
 }
 
 #[cfg(feature = "fetch")]

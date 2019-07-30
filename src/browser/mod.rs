@@ -78,6 +78,7 @@ impl Browser {
     /// The browser will have its user data (aka "profile") directory stored in a temporary directory.
     /// The browser process will be killed when this struct is dropped.
     pub fn new(launch_options: LaunchOptions) -> Fallible<Self> {
+        let idle_browser_timeout = launch_options.idle_browser_timeout;
         let process = Process::new(launch_options)?;
         let process_id = process.get_id();
 
@@ -86,7 +87,7 @@ impl Browser {
             Some(process_id),
         )?);
 
-        Self::create_browser(Some(process), transport)
+        Self::create_browser(Some(process), transport, idle_browser_timeout)
     }
 
     /// Calls [`new`] with options to launch a headless browser using whatever Chrome / Chromium
@@ -104,10 +105,14 @@ impl Browser {
         let transport = Arc::new(Transport::new(debug_ws_url, None)?);
         trace!("created transport");
 
-        Self::create_browser(None, transport)
+        Self::create_browser(None, transport, Duration::from_secs(30))
     }
 
-    fn create_browser(process: Option<Process>, transport: Arc<Transport>) -> Fallible<Self> {
+    fn create_browser(
+        process: Option<Process>,
+        transport: Arc<Transport>,
+        idle_browser_timeout: Duration,
+    ) -> Fallible<Self> {
         let tabs = Arc::new(Mutex::new(vec![]));
 
         let (shutdown_tx, shutdown_rx) = mpsc::channel();
@@ -125,6 +130,7 @@ impl Browser {
             incoming_events_rx,
             browser.get_process_id(),
             shutdown_rx,
+            idle_browser_timeout
         );
         trace!("created browser event listener");
 
@@ -257,6 +263,7 @@ impl Browser {
         events_rx: mpsc::Receiver<Event>,
         process_id: Option<u32>,
         shutdown_rx: mpsc::Receiver<()>,
+        idle_browser_timeout: Duration,
     ) {
         let tabs = Arc::clone(&self.tabs);
         let transport = Arc::clone(&self.transport);
@@ -272,7 +279,7 @@ impl Browser {
                     Err(TryRecvError::Empty) => {}
                 }
 
-                match events_rx.recv_timeout(Duration::from_millis(20_000)) {
+                match events_rx.recv_timeout(idle_browser_timeout) {
                     Err(recv_timeout_error) => {
                         match recv_timeout_error {
                             RecvTimeoutError::Timeout => {
