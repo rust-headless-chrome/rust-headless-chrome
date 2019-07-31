@@ -215,7 +215,7 @@ impl Transport {
         let _ = shutdown_tx.send(());
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[allow(clippy::too_many_arguments)]
     fn handle_incoming_messages(
         messages_rx: Receiver<protocol::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
