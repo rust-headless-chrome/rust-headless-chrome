@@ -49,6 +49,12 @@ For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`e
 
 If you're looking to do general browser testing or scraping (rather than anything specific to Chrome / DevTools), you're probably better off with [fantoccini](https://github.com/jonhoo/fantoccini) for now. It's a lot more feature-complete and stable.
 
+## Testing
+
+For debug output, set these environment variables before running `cargo test`:
+
+```RUST_BACKTRACE=1 RUST_LOG=headless_chrome=trace```
+
 ## Version numbers
 
 Starting with v0.2.0, we're trying to follow SemVar strictly.
