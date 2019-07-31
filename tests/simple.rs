@@ -263,6 +263,34 @@ fn find_elements() -> Fallible<()> {
 }
 
 #[test]
+fn set_user_agent() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(
+        r#"
+<html>
+<body>
+<script>
+document.write(navigator.userAgent + ";" + navigator.platform + ";" + navigator.language);
+</script>
+</body>
+</html>
+"#,
+    );
+    tab.set_user_agent("UnitTestClient", Some("de-DE-1996"), Some("UnitTest"))?;
+    // The test-tab has already navigated once, so reload to ensure that js
+    // environment is using the correct values.
+    tab.reload(true, None)?;
+    assert!(tab
+        .wait_for_element("body")?
+        .get_description()?
+        .find(|n| n
+            .node_value
+            .starts_with("UnitTestClient;UnitTest;de-DE-1996"))
+        .is_some());
+    Ok(())
+}
+
+#[test]
 fn wait_for_element_returns_unexpected_errors_early() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
