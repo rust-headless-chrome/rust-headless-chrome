@@ -1,7 +1,7 @@
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
-    use crate::protocol::Method;
+    use crate::Method;
 
     #[derive(Serialize, Debug)]
     pub struct GetVersion {}

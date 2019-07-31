@@ -128,7 +128,7 @@ pub mod events {
 
     #[test]
     fn can_parse_request_intercepted_event() {
-        use crate::protocol;
+        use crate::Message;
         use serde_json::json;
 
         let json_message = json!({
@@ -155,7 +155,7 @@ pub mod events {
         let _request =
             serde_json::from_value::<super::Request>(json_message["params"]["request"].clone())
                 .unwrap();
-        let _event = serde_json::from_value::<protocol::Message>(json_message).unwrap();
+        let _event = serde_json::from_value::<Message>(json_message).unwrap();
     }
 }
 
@@ -164,7 +164,7 @@ pub mod methods {
 
     use serde::{Deserialize, Serialize};
 
-    use crate::protocol::Method;
+    use crate::Method;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]

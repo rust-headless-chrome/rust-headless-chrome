@@ -15,7 +15,7 @@ pub struct Frame {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum InternalScreenshotFormat {
+pub enum InternalScreenshotFormat {
     JPEG,
     PNG,
 }
@@ -128,13 +128,13 @@ pub mod events {
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
-    use crate::protocol::Method;
+    use crate::Method;
 
     use super::PrintToPdfOptions;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub(crate) struct CaptureScreenshot {
+    pub struct CaptureScreenshot {
         pub format: super::InternalScreenshotFormat,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub quality: Option<u8>,
@@ -154,7 +154,7 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
-    pub(crate) struct PrintToPdf {
+    pub struct PrintToPdf {
         #[serde(flatten)]
         pub options: Option<PrintToPdfOptions>,
     }

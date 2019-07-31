@@ -68,13 +68,14 @@ clippy::needless_pass_by_value // would stop us creating and passing in LaunchOp
 extern crate derive_builder;
 extern crate log;
 
+pub extern crate devtools_proto as protocol;
+
 pub use browser::{
     tab::{element::Element, Tab},
     Browser, LaunchOptionsBuilder,
 };
 
 pub mod browser;
-pub mod protocol;
 pub mod util;
 
 #[cfg(feature = "nightly")]
