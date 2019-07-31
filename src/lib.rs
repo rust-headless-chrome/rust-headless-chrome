@@ -68,7 +68,7 @@ clippy::needless_pass_by_value // would stop us creating and passing in LaunchOp
 extern crate derive_builder;
 extern crate log;
 
-pub extern crate devtools_proto as protocol;
+pub extern crate chrome_devtools_protocol as protocol;
 
 pub use browser::{
     tab::{element::Element, Tab},

@@ -27,7 +27,7 @@ ureq = { version = "0.11", optional = true }
 directories = { version = "2.0", optional = true }
 zip = { version = "0.5", optional = true }
 
-devtools_proto = { version = "0.3", path = "devtools-proto" }
+chrome_devtools_protocol = { version = "0.3", path = "devtools-proto" }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"
