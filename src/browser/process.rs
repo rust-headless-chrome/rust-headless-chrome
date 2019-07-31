@@ -292,14 +292,14 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Once, ONCE_INIT};
+    use std::sync::Once;
     use std::thread;
 
     use crate::browser::default_executable;
 
     use super::*;
 
-    static INIT: Once = ONCE_INIT;
+    static INIT: Once = Once::new();
     fn setup() {
         INIT.call_once(|| {
             env_logger::try_init().unwrap_or(());

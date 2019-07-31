@@ -284,4 +284,20 @@ pub mod methods {
         type ReturnObject = GetResponseBodyReturnObject;
     }
 
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetUserAgentOverride<'a, 'b, 'c> {
+        pub user_agent: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub accept_language: Option<&'b str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub platform: Option<&'c str>,
+    }
+    #[derive(Deserialize, Debug)]
+    pub struct SetUserAgentOverrideReturnObject {}
+    impl<'a, 'b, 'c> Method for SetUserAgentOverride<'a, 'b, 'c> {
+        const NAME: &'static str = "Network.setUserAgentOverride";
+        type ReturnObject = SetUserAgentOverrideReturnObject;
+    }
+
 }
