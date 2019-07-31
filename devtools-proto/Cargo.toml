@@ -1,5 +1,5 @@
 [package]
-name = "devtools_proto"
+name = "chrome_devtools_protocol"
 version = "0.3.0"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2018"
