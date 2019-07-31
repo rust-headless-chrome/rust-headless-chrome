@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
