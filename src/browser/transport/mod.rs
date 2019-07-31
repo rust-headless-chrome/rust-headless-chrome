@@ -66,7 +66,11 @@ pub struct Transport {
 pub struct ConnectionClosed {}
 
 impl Transport {
-    pub fn new(ws_url: String, process_id: Option<u32>) -> Fallible<Self> {
+    pub fn new(
+        ws_url: String,
+        process_id: Option<u32>,
+        idle_browser_timeout: Duration,
+    ) -> Fallible<Self> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let web_socket_connection =
             Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
@@ -89,6 +93,7 @@ impl Transport {
             Arc::clone(&web_socket_connection),
             shutdown_rx,
             process_id,
+            idle_browser_timeout,
         );
 
         Ok(Self {
@@ -210,6 +215,7 @@ impl Transport {
         let _ = shutdown_tx.send(());
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn handle_incoming_messages(
         messages_rx: Receiver<protocol::Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
@@ -218,6 +224,7 @@ impl Transport {
         conn: Arc<WebSocketConnection>,
         shutdown_rx: Receiver<()>,
         process_id: Option<u32>,
+        idle_browser_timeout: Duration,
     ) {
         trace!("Starting handle_incoming_messages");
         std::thread::spawn(move || {
@@ -232,7 +239,7 @@ impl Transport {
                     }
                     Err(TryRecvError::Empty) => {}
                 }
-                match messages_rx.recv_timeout(Duration::from_millis(30_000)) {
+                match messages_rx.recv_timeout(idle_browser_timeout) {
                     Err(recv_timeout_error) => {
                         match recv_timeout_error {
                             RecvTimeoutError::Timeout => {
