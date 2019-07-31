@@ -85,7 +85,7 @@ impl Browser {
         let transport = Arc::new(Transport::new(
             process.debug_ws_url.clone(),
             Some(process_id),
-            idle_browser_timeout
+            idle_browser_timeout,
         )?);
 
         Self::create_browser(Some(process), transport, idle_browser_timeout)
@@ -131,7 +131,7 @@ impl Browser {
             incoming_events_rx,
             browser.get_process_id(),
             shutdown_rx,
-            idle_browser_timeout
+            idle_browser_timeout,
         );
         trace!("created browser event listener");
 

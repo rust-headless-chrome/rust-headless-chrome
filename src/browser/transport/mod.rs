@@ -66,7 +66,11 @@ pub struct Transport {
 pub struct ConnectionClosed {}
 
 impl Transport {
-    pub fn new(ws_url: String, process_id: Option<u32>, idle_browser_timeout: Duration) -> Fallible<Self> {
+    pub fn new(
+        ws_url: String,
+        process_id: Option<u32>,
+        idle_browser_timeout: Duration,
+    ) -> Fallible<Self> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let web_socket_connection =
             Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
