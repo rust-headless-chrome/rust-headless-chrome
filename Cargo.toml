@@ -33,7 +33,7 @@ winreg = "0.6"
 [dev-dependencies]
 chrono = { version = "0.4", default_features = false }
 tiny_http = "0.6"
-png = { version = "0.14", default_features = false }
+png = { version = "0.14" }
 jpeg-decoder = { version = "0.1", default_features = false }
 
 [lib]
