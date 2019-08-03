@@ -663,6 +663,28 @@ impl<'a> Tab {
             .call_method(protocol::debugger::methods::GetScriptSource { script_id })?
             .script_source)
     }
+
+    /// Executes javascript
+    ///
+    /// See Devtools protocol doc: https://chromedevtools.github.io/devtools-protocol/tot/Runtime#method-evaluate
+    pub fn evaluate(
+        &self,
+        expression: &str,
+        await_promise: bool,
+    ) -> Fallible<protocol::runtime::methods::RemoteObject> {
+        let result = self
+            .call_method(protocol::runtime::methods::Evaluate {
+                expression,
+                return_by_value: false,
+                generate_preview: true,
+                silent: false,
+                await_promise,
+                include_command_line_api: false,
+                user_gesture: false
+            })?
+            .result;
+        Ok(result)
+    }
 }
 
 impl Drop for Tab {
