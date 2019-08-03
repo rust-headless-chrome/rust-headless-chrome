@@ -680,7 +680,7 @@ impl<'a> Tab {
                 silent: false,
                 await_promise,
                 include_command_line_api: false,
-                user_gesture: false
+                user_gesture: false,
             })?
             .result;
         Ok(result)

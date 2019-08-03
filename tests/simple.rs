@@ -343,6 +343,41 @@ fn call_js_fn_async_resolved() -> Fallible<()> {
 }
 
 #[test]
+fn evaluate_sync() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let result = tab.evaluate("(function () { return 42 })();", false)?;
+    assert_eq!(result.object_type, "number");
+    assert_eq!(result.description, Some("42".to_owned()));
+    assert_eq!(result.value, Some((42).into()));
+    Ok(())
+}
+
+#[test]
+fn evaluate_async_unresolved() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let result = tab.evaluate("(async function () { return 42 })();", false)?;
+    assert_eq!(result.object_type, "object");
+    assert_eq!(result.description, Some("Promise".to_owned()));
+    assert_eq!(result.subtype, Some("promise".to_owned()));
+    assert_eq!(result.value, None);
+    Ok(())
+}
+
+#[test]
+fn evaluate_async_resolved() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let result = tab.evaluate("(async function () { return 42 })();", true)?;
+    assert_eq!(result.object_type, "number");
+    assert_eq!(result.subtype, None);
+    assert_eq!(result.description, Some("42".to_owned()));
+    assert_eq!(result.value, Some((42).into()));
+    Ok(())
+}
+
+#[test]
 fn set_request_interception() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!(
