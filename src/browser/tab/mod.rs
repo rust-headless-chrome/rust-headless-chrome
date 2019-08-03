@@ -665,8 +665,6 @@ impl<'a> Tab {
     }
 
     /// Evaluates expression on global object.
-    ///
-    /// See Devtools protocol doc: https://chromedevtools.github.io/devtools-protocol/tot/Runtime#method-evaluate
     pub fn evaluate(
         &self,
         expression: &str,
