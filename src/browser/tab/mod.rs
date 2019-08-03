@@ -664,7 +664,7 @@ impl<'a> Tab {
             .script_source)
     }
 
-    /// Executes javascript
+    /// Evaluates expression on global object.
     ///
     /// See Devtools protocol doc: https://chromedevtools.github.io/devtools-protocol/tot/Runtime#method-evaluate
     pub fn evaluate(
