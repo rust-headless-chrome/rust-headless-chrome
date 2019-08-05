@@ -57,4 +57,25 @@ pub mod methods {
         const NAME: &'static str = "Runtime.callFunctionOn";
         type ReturnObject = CallFunctionOnReturnObject;
     }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Evaluate<'a> {
+        pub expression: &'a str,
+        pub include_command_line_api: bool,
+        pub silent: bool,
+        pub return_by_value: bool,
+        pub generate_preview: bool,
+        pub user_gesture: bool,
+        pub await_promise: bool,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct EvaluateReturnObject {
+        pub result: RemoteObject,
+    }
+    impl<'a> Method for Evaluate<'a> {
+        const NAME: &'static str = "Runtime.evaluate";
+        type ReturnObject = EvaluateReturnObject;
+    }
 }

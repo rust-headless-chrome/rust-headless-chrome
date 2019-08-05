@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer};
 
-pub type NodeId = u16;
+pub type NodeId = u32;
 
 pub type NodeAttributes = HashMap<String, String>;
 

@@ -244,5 +244,4 @@ pub mod methods {
         const NAME: &'static str = "Page.enable";
         type ReturnObject = EnableReturnObject;
     }
-
 }
