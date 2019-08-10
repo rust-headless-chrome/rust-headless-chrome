@@ -16,6 +16,8 @@ pub mod page;
 pub mod profiler;
 pub mod runtime;
 pub mod target;
+pub mod logs;
+pub mod types;
 
 pub type CallId = usize;
 
@@ -112,6 +114,8 @@ pub enum Event {
     RequestIntercepted(network::events::RequestInterceptedEvent),
     #[serde(rename = "Network.responseReceived")]
     ResponseReceived(network::events::ResponseReceivedEvent),
+    #[serde(rename = "Log.entryAdded")]
+    LogEntryAdded(logs::events::EntryAddedEvent),
 }
 
 #[derive(Deserialize, Debug, Clone)]
