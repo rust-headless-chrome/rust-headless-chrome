@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.4.0...HEAD)
 
+## 0.5.0 - 2019-08-12
+
+### Added
+
+* [`Tab.evaluate`](https://github.com/atroche/rust-headless-chrome/pull/150)
+
+### Removed
+### Changed
+
+* [Fixed problem with compiling project with --no-default-features](https://github.com/atroche/rust-headless-chrome/pull/152)
+
 ## 0.4.0 - 2019-08-02
 
 ### Added
