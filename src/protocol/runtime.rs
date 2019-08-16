@@ -78,8 +78,10 @@ pub mod methods {
         pub preview: Option<ObjectPreview>,
     }
 
-    /// Experimental
-/// See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#type-StackTraceId
+    /// If debuggerId is set stack trace comes from another debugger and can be resolved there.
+    /// This allows to track cross-debugger calls. See Runtime.StackTrace and Debugger.paused for usages.
+    /// Experimental feature of DevTools
+    /// See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#type-StackTraceId
     #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
     pub struct StackTraceId {
         id: String,
@@ -94,7 +96,9 @@ pub mod methods {
         description: Option<String>,
         call_frames: Vec<CallFrame>,
         // parent: Option<StackTrace>,
-        /// Experimental
+        /// Asynchronous JavaScript stack trace that preceded this stack, if available.
+        /// Experimental feature of DevTools
+        /// See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#type-StackTraceId
         parent_id: Option<StackTraceId>,
     }
 
