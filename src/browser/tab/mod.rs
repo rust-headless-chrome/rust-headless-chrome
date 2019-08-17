@@ -14,7 +14,9 @@ use crate::browser::Transport;
 use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::{TargetId, TargetInfo};
-use crate::protocol::{dom, input, logs, network, page, profiler, runtime, target, Event, RemoteError};
+use crate::protocol::{
+    dom, input, logs, network, page, profiler, runtime, target, Event, RemoteError,
+};
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
@@ -53,6 +55,8 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
+type EventListener = Box<dyn Fn(&Event) -> () + Send + Sync>;
+
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
 pub struct Tab {
@@ -64,6 +68,7 @@ pub struct Tab {
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
     default_timeout: Arc<RwLock<Duration>>,
+    event_listeners: Arc<Mutex<Vec<EventListener>>>,
 }
 
 #[derive(Debug, Fail)]
@@ -122,6 +127,7 @@ impl<'a> Tab {
             ))),
             response_handler: Arc::new(Mutex::new(None)),
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
+            event_listeners: Arc::new(Mutex::new(Vec::new())),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -183,9 +189,15 @@ impl<'a> Tab {
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
         let response_handler_mutex = self.response_handler.clone();
         let session_id = self.session_id.clone();
+        let listeners_mutex = Arc::clone(&self.event_listeners);
 
         thread::spawn(move || {
             for event in incoming_events_rx {
+                let listeners = listeners_mutex.lock().unwrap();
+                listeners.iter().for_each(|listener| {
+                    listener(&event);
+                });
+
                 match event {
                     Event::Lifecycle(lifecycle_event) => {
                         let event_name = lifecycle_event.params.name.as_ref();
@@ -773,6 +785,40 @@ impl<'a> Tab {
             })?
             .result;
         Ok(result)
+    }
+
+    /// Adds event listener to Event
+    ///
+    /// Make sure you are enabled domain you are listening events to.
+    ///
+    /// ## Usage example
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// # use headless_chrome::Browser;
+    /// # use headless_chrome::protocol::Event;
+    /// # let browser = Browser::default()?;
+    /// # let tab = browser.wait_for_initial_tab()?;
+    /// tab.enable_log()?;
+    /// tab.add_event_listener(Box::new(move |event| {
+    ///     match event {
+    ///         Event::LogEntryAdded(_) => {
+    ///             // process event here
+    ///         }
+    ///         _ => {}
+    ///       }
+    ///     }))?;
+    /// #
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    pub fn add_event_listener(&self, listener: EventListener) -> Fallible<()> {
+        let mut listeners = self.event_listeners.lock().unwrap();
+        listeners.push(listener);
+        Ok(())
     }
 
     /// Get position and size of the browser window associated with this `Tab`.

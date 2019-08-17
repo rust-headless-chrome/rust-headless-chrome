@@ -179,9 +179,9 @@ pub mod methods {
 }
 
 pub mod events {
-    use serde::{Deserialize, Serialize};
-    use super::methods::{StackTrace, RemoteObject};
+    use super::methods::{RemoteObject, StackTrace};
     use crate::protocol::types::{JsInt, ScriptId};
+    use serde::{Deserialize, Serialize};
 
     /// Issued when exception was thrown and unhandled
     /// See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#event-exceptionThrown
