@@ -4,7 +4,6 @@ use failure::Fallible;
 
 use headless_chrome::browser::tab::Tab;
 use headless_chrome::Browser;
-use server::Server;
 
 mod logging;
 mod server;

@@ -54,7 +54,7 @@ pub mod events {
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct EntryAddedParams {
-        entry: LogEntry,
+        pub entry: LogEntry,
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
