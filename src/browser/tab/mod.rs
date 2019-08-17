@@ -14,7 +14,7 @@ use crate::browser::Transport;
 use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::{TargetId, TargetInfo};
-use crate::protocol::{dom, input, logs, network, page, profiler, target, Event, RemoteError};
+use crate::protocol::{dom, input, logs, network, page, profiler, runtime, target, Event, RemoteError};
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
@@ -680,6 +680,20 @@ impl<'a> Tab {
         self.call_method(network::methods::Enable {})?;
         *(self.response_handler.lock().unwrap()) = Some(handler);
         Ok(())
+    }
+
+    /// Enables runtime domain.
+    pub fn enable_runtime(&self) -> Fallible<&Self> {
+        self.call_method(runtime::methods::Enable {})?;
+
+        Ok(self)
+    }
+
+    /// Disables runtime domain
+    pub fn disable_runtime(&self) -> Fallible<&Self> {
+        self.call_method(runtime::methods::Disable {})?;
+
+        Ok(self)
     }
 
     /// Enables Debugger
