@@ -16,9 +16,9 @@ use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
-use crate::protocol::{dom, input, page, profiler, target};
+use crate::protocol::{dom, input, logs, page, profiler, target};
 use crate::protocol::{network, Event, RemoteError};
-use crate::{protocol, util};
+use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
 
@@ -662,6 +662,44 @@ impl<'a> Tab {
         Ok(self
             .call_method(protocol::debugger::methods::GetScriptSource { script_id })?
             .script_source)
+    }
+
+    /// Enables log domain.
+    ///
+    /// Sends the entries collected so far to the client by means of the entryAdded notification.
+    ///
+    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-enable
+    pub fn enable_log(&self) -> Fallible<&Self> {
+        self.call_method(logs::methods::Enable {})?;
+
+        Ok(self)
+    }
+
+    /// Disables log domain
+    ///
+    /// Prevents further log entries from being reported to the client
+    ///
+    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-disable
+    pub fn disable_log(&self) -> Fallible<&Self> {
+        self.call_method(logs::methods::Disable {})?;
+
+        Ok(self)
+    }
+
+    /// Starts violation reporting
+    ///
+    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-startViolationsReport
+    pub fn start_violations_report(&self, config: Vec<ViolationSetting>) -> Fallible<&Self> {
+        self.call_method(logs::methods::StartViolationsReport { config })?;
+        Ok(self)
+    }
+
+    /// Stop violation reporting
+    ///
+    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-stopViolationsReport
+    pub fn stop_violations_report(&self) -> Fallible<&Self> {
+        self.call_method(logs::methods::StopViolationsReport {})?;
+        Ok(self)
     }
 
     /// Evaluates expression on global object.

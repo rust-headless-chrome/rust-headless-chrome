@@ -12,6 +12,7 @@ use crate::protocol::runtime;
 
 mod box_model;
 
+use crate::protocol::runtime::methods::RemoteObjectType;
 pub use box_model::{BoxModel, ElementQuad};
 
 /// A handle to a [DOM Element](https://developer.mozilla.org/en-US/docs/Web/API/Element).
@@ -194,7 +195,7 @@ impl<'a> Element<'a> {
             true,
         )?;
 
-        if result.object_type == "string" {
+        if result.object_type == RemoteObjectType::String {
             let error_text = result.value.unwrap().as_str().unwrap().to_string();
             return Err(ScrollFailed { error_text }.into());
         }
