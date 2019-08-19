@@ -31,14 +31,14 @@ pub mod methods {
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
     #[serde(rename_all = "lowercase")]
     pub enum RemoteObjectType {
-        OBJECT,
-        FUNCTION,
-        UNDEFINED,
-        STRING,
-        NUMBER,
-        BOOLEAN,
-        SYMBOL,
-        BIGINT,
+        Object,
+        Function,
+        Undefined,
+        String,
+        Number,
+        Boolean,
+        Symbol,
+        Bigint,
     }
 
     /// Object subtype hint. Specified for object type values only
@@ -46,23 +46,23 @@ pub mod methods {
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
     #[serde(rename_all = "lowercase")]
     pub enum RemoteObjectSubtype {
-        ARRAY,
-        NULL,
-        NODE,
-        REGEXP,
-        DATE,
-        MAP,
-        SET,
-        WEAKMAP,
-        WEAKSET,
-        ITERATOR,
-        GENERATOR,
-        ERROR,
-        PROXY,
-        PROMISE,
-        TYPEDARRAY,
-        ARRAYBUFFER,
-        DATAVIEW,
+        Array,
+        Null,
+        Node,
+        RegExp,
+        Date,
+        Map,
+        Set,
+        WeakMap,
+        WeakSet,
+        Iterator,
+        Generator,
+        Error,
+        Proxy,
+        Promise,
+        TypedArray,
+        ArrayBuffer,
+        DataView,
     }
 
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]

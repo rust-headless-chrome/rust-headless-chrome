@@ -7,27 +7,27 @@ pub mod events {
     #[serde(rename_all = "lowercase")]
     pub enum  LogEntrySource {
         XML,
-        JAVASCRIPT,
-        NETWORK,
-        STORAGE,
-        APPCACHE,
-        RENDERING,
-        SECURITY,
-        DEPRECATION,
-        WORKER,
-        VIOLATION,
-        INTERVENTION,
-        RECOMMENDATION,
-        OTHER,
+        JavaScript,
+        Network,
+        Storage,
+        AppCache,
+        Rendering,
+        Security,
+        Deprecation,
+        Worker,
+        Violation,
+        Intervention,
+        Recommendation,
+        Other,
     }
 
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
     #[serde(rename_all = "lowercase")]
     pub enum  LogEntryLevel {
-        VERBOSE,
-        INFO,
-        WARNING,
-        ERROR,
+        Verbose,
+        Info,
+        Warning,
+        Error,
     }
 
     /// Log entry for a logs

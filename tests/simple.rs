@@ -311,7 +311,7 @@ fn call_js_fn_sync() -> Fallible<()> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let element = tab.wait_for_element("#foobar")?;
     let result = element.call_js_fn("function() { return 42 }", false)?;
-    assert_eq!(result.object_type, RemoteObjectType::NUMBER);
+    assert_eq!(result.object_type, RemoteObjectType::Number);
     assert_eq!(result.description, Some("42".to_owned()));
     assert_eq!(result.value, Some((42).into()));
     Ok(())
@@ -323,8 +323,8 @@ fn call_js_fn_async_unresolved() -> Fallible<()> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let element = tab.wait_for_element("#foobar")?;
     let result = element.call_js_fn("async function() { return 42 }", false)?;
-    assert_eq!(result.object_type, RemoteObjectType::OBJECT);
-    assert_eq!(result.subtype, Some(RemoteObjectSubtype::PROMISE));
+    assert_eq!(result.object_type, RemoteObjectType::Object);
+    assert_eq!(result.subtype, Some(RemoteObjectSubtype::Promise));
     assert_eq!(result.description, Some("Promise".to_owned()));
     assert_eq!(result.value, None);
     Ok(())
@@ -336,7 +336,7 @@ fn call_js_fn_async_resolved() -> Fallible<()> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let element = tab.wait_for_element("#foobar")?;
     let result = element.call_js_fn("async function() { return 42 }", true)?;
-    assert_eq!(result.object_type, RemoteObjectType::NUMBER);
+    assert_eq!(result.object_type, RemoteObjectType::Number);
     assert_eq!(result.subtype, None);
     assert_eq!(result.description, Some("42".to_owned()));
     assert_eq!(result.value, Some((42).into()));
@@ -348,7 +348,7 @@ fn evaluate_sync() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let result = tab.evaluate("(function () { return 42 })();", false)?;
-    assert_eq!(result.object_type, RemoteObjectType::NUMBER);
+    assert_eq!(result.object_type, RemoteObjectType::Number);
     assert_eq!(result.description, Some("42".to_owned()));
     assert_eq!(result.value, Some((42).into()));
     Ok(())
@@ -359,9 +359,9 @@ fn evaluate_async_unresolved() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let result = tab.evaluate("(async function () { return 42 })();", false)?;
-    assert_eq!(result.object_type, RemoteObjectType::OBJECT);
+    assert_eq!(result.object_type, RemoteObjectType::Object);
     assert_eq!(result.description, Some("Promise".to_owned()));
-    assert_eq!(result.subtype, Some(RemoteObjectSubtype::PROMISE));
+    assert_eq!(result.subtype, Some(RemoteObjectSubtype::Promise));
     assert_eq!(result.value, None);
     Ok(())
 }
@@ -371,7 +371,7 @@ fn evaluate_async_resolved() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let result = tab.evaluate("(async function () { return 42 })();", true)?;
-    assert_eq!(result.object_type, RemoteObjectType::NUMBER);
+    assert_eq!(result.object_type, RemoteObjectType::Number);
     assert_eq!(result.subtype, None);
     assert_eq!(result.description, Some("42".to_owned()));
     assert_eq!(result.value, Some((42).into()));

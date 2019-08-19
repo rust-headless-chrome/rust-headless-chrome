@@ -195,7 +195,7 @@ impl<'a> Element<'a> {
             true,
         )?;
 
-        if result.object_type == RemoteObjectType::STRING {
+        if result.object_type == RemoteObjectType::String {
             let error_text = result.value.unwrap().as_str().unwrap().to_string();
             return Err(ScrollFailed { error_text }.into());
         }
