@@ -1,11 +1,5 @@
+use crate::protocol::types::{JsUInt, ScriptId};
 use serde::{Deserialize, Serialize};
-
-// TODO: use these aliases in other parts of the protocol module
-// From experimentation, it seems the protocol's integers are i32s.
-#[allow(dead_code)]
-type JsInt = i32;
-// For when we specifically want to guard against negative numbers.
-type JsUInt = u32;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -33,7 +27,7 @@ pub struct FunctionCoverage {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptCoverage {
-    pub script_id: String,
+    pub script_id: ScriptId,
     /// Either the name or URL of a script loaded by the page
     pub url: String,
     /// Functions contained in the script that has coverage data
