@@ -61,7 +61,8 @@ clippy::unknown_clippy_lints,
 clippy::module_name_repetitions,
 clippy::doc_markdown, // a number of false positives here
 clippy::default_trait_access, // fails on output of derive_builder
-clippy::needless_pass_by_value // would stop us creating and passing in LaunchOptions to browser in one statement
+clippy::needless_pass_by_value, // would stop us creating and passing in LaunchOptions to browser in one statement
+clippy::unreadable_literal, // not really applicable for timestamps
 )]
 
 #[macro_use]
