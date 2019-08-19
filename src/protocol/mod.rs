@@ -11,12 +11,12 @@ pub mod browser;
 pub mod debugger;
 pub mod dom;
 pub mod input;
+pub mod logs;
 pub mod network;
 pub mod page;
 pub mod profiler;
 pub mod runtime;
 pub mod target;
-pub mod logs;
 pub mod types;
 
 pub type CallId = usize;

@@ -1,11 +1,11 @@
 pub mod events {
+    use crate::protocol::runtime::methods::{RemoteObject, StackTrace};
+    use crate::protocol::types::JsInt;
     use serde::{Deserialize, Serialize};
-    use crate::protocol::runtime::methods::{StackTrace, RemoteObject};
-    use crate::protocol::types::{JsInt};
 
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
     #[serde(rename_all = "lowercase")]
-    pub enum  LogEntrySource {
+    pub enum LogEntrySource {
         XML,
         JavaScript,
         Network,
@@ -23,7 +23,7 @@ pub mod events {
 
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
     #[serde(rename_all = "lowercase")]
-    pub enum  LogEntryLevel {
+    pub enum LogEntryLevel {
         Verbose,
         Info,
         Warning,
@@ -48,7 +48,6 @@ pub mod events {
         pub network_request_id: Option<String>,
         pub worker_id: Option<String>,
         pub args: Option<Vec<RemoteObject>>,
-
     }
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -110,8 +109,7 @@ pub mod events {
           }
         });
 
-        let _log_entry = serde_json::from_value::<LogEntry>(json_message["entry"].clone())
-            .unwrap();
+        let _log_entry = serde_json::from_value::<LogEntry>(json_message["entry"].clone()).unwrap();
 
         let json_message = json!({
           "entry": {
@@ -122,16 +120,15 @@ pub mod events {
           }
         });
 
-        let _log_entry = serde_json::from_value::<LogEntry>(json_message["entry"].clone())
-            .unwrap();
+        let _log_entry = serde_json::from_value::<LogEntry>(json_message["entry"].clone()).unwrap();
     }
 }
 
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
-    use crate::protocol::Method;
     use crate::protocol::types::JsUInt;
+    use crate::protocol::Method;
 
     #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
     #[serde(rename_all = "camelCase")]

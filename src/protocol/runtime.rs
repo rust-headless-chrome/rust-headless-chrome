@@ -1,8 +1,8 @@
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
+    use crate::protocol::types::{JsInt, ScriptId, UniqueDebuggerId};
     use crate::protocol::Method;
-    use crate::protocol::types::{UniqueDebuggerId, ScriptId, JsInt};
 
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]

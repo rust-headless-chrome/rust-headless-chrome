@@ -11,9 +11,9 @@ use rand::prelude::*;
 
 use headless_chrome::browser::tab::RequestInterceptionDecision;
 use headless_chrome::protocol::network::methods::RequestPattern;
+use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
 use headless_chrome::{browser::tab::Tab, protocol::page::ScreenshotFormat, Browser};
-use headless_chrome::protocol::runtime::methods::{RemoteObjectType, RemoteObjectSubtype};
 
 mod logging;
 mod server;

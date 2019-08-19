@@ -16,9 +16,9 @@ use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::TargetId;
 use crate::protocol::target::TargetInfo;
-use crate::protocol::{dom, input, page, profiler, target, logs};
+use crate::protocol::{dom, input, logs, page, profiler, target};
 use crate::protocol::{network, Event, RemoteError};
-use crate::{protocol, util, protocol::logs::methods::ViolationSetting};
+use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
 
@@ -690,9 +690,7 @@ impl<'a> Tab {
     ///
     /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-startViolationsReport
     pub fn start_violations_report(&self, config: Vec<ViolationSetting>) -> Fallible<&Self> {
-        self.call_method(logs::methods::StartViolationsReport {
-            config,
-        })?;
+        self.call_method(logs::methods::StartViolationsReport { config })?;
         Ok(self)
     }
 

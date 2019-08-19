@@ -11,9 +11,9 @@ mod server;
 #[test]
 fn enable_and_disable_logs() -> Fallible<()> {
     logging::enable_logging();
-    let server = server::Server::with_dumb_html(
-        include_str!("logs_fixtures/basic_page_with_console_messages.html")
-    );
+    let server = server::Server::with_dumb_html(include_str!(
+        "logs_fixtures/basic_page_with_console_messages.html"
+    ));
     let browser = Browser::default()?;
     let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
 

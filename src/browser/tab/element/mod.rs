@@ -12,8 +12,8 @@ use crate::protocol::runtime;
 
 mod box_model;
 
-pub use box_model::{BoxModel, ElementQuad};
 use crate::protocol::runtime::methods::RemoteObjectType;
+pub use box_model::{BoxModel, ElementQuad};
 
 /// A handle to a [DOM Element](https://developer.mozilla.org/en-US/docs/Web/API/Element).
 ///
