@@ -27,7 +27,7 @@ before_install:
     fi
 
 before_cache:
-  - cargo install cargo-prune
+  - cargo install cargo-prune || echo "already installed"
   - cargo prune
 
 cache:
