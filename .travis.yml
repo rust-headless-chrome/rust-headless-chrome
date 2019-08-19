@@ -26,6 +26,10 @@ before_install:
     cargo clippy --version;
     fi
 
+before_cache:
+  - cargo install cargo-prune
+  - cargo prune
+
 cache:
   cargo: true
   directories:
