@@ -301,9 +301,16 @@ impl<'a> Tab {
     /// This will be applied to all [wait_for_element](Tab::wait_for_element) and [wait_for_elements](Tab::wait_for_elements) calls for this tab
     ///
     /// ```rust
-    /// # ...snip
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// # use headless_chrome::Browser;
+    /// # let browser = Browser::default()?;
     /// let tab = browser.wait_for_initial_tab()?;
     /// tab.set_default_timeout(std::time::Duration::from_secs(5));
+    /// #
+    /// # Ok(())
+    /// # }
+
     /// ```
     pub fn set_default_timeout(&self, timeout: Duration) -> &Self {
         let mut current_timeout = self.default_timeout.write().unwrap();
