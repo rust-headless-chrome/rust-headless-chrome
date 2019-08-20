@@ -64,6 +64,7 @@ pub struct Tab {
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
+    default_timeout: Duration,
 }
 
 #[derive(Debug, Fail)]
@@ -121,6 +122,7 @@ impl<'a> Tab {
                 |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
             ))),
             response_handler: Arc::new(Mutex::new(None)),
+            default_timeout: Duration::from_secs(3),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -295,8 +297,22 @@ impl<'a> Tab {
         Ok(self)
     }
 
+    /// Set default timeout for the tab
+    ///
+    /// This will be applied to all [wait_for_element](Tab::wait_for_element) and [wait_for_elements](Tab::wait_for_elements) calls for this tab
+    ///
+    /// ```rust
+    /// # ...snip
+    /// let tab = browser.wait_for_initial_tab()?;
+    /// tab.set_default_timeout(std::time::Duration::from_secs(5));
+    /// ```
+    pub fn set_default_timeout(&mut self, timeout: Duration) -> &Self {
+        self.default_timeout = timeout;
+        self
+    }
+
     pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
-        self.wait_for_element_with_custom_timeout(selector, std::time::Duration::from_secs(3))
+        self.wait_for_element_with_custom_timeout(selector, self.default_timeout)
     }
 
     pub fn wait_for_element_with_custom_timeout(
@@ -313,7 +329,7 @@ impl<'a> Tab {
 
     pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
         debug!("Waiting for element with selector: {}", selector);
-        util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
+        util::Wait::with_timeout(self.default_timeout).strict_until(
             || self.find_elements(selector),
             Error::downcast::<NoElementFound>,
         )
