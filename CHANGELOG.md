@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.4.0...HEAD)
 
+### Added
+### Removed
+### Changed
+
+## 0.6.0 - 2019-08-20
+
+### Added
+
+* [Support for Log domain](https://github.com/atroche/rust-headless-chrome/pull/155) (`tab.enable_logging()` and `tab.disable_logging()`, `tab.start_violations_report()` and `tab.stop_violations_report()`)
+* [`protocol::runtime::StackTrace`](https://github.com/atroche/rust-headless-chrome/pull/155/files#diff-b42bc2ad3d82a3891748fd549d3e0a50R95) and `protocol::runtime::CallFrame`.
+
+### Removed
+### Changed
+
+* `procotol::runtime::RemoteObject.object_type` is now an enum rather than any string.
+
+
 ## 0.5.0 - 2019-08-12
 
 ### Added
