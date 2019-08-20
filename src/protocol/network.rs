@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::protocol::types::{JsFloat, JsUInt};
+
 type Headers = HashMap<String, String>;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -47,6 +49,29 @@ pub struct Response {
     // pub timing: Option<ResourceTiming>,
     // pub security_state: SecurityState,
     // pub security_details: Option<SecurityDetails>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum CookieSameSite {
+    Strict,
+    Lax,
+    Extended,
+    None,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Cookie {
+    pub name: String,
+    pub value: String,
+    pub domain: String,
+    pub path: String,
+    pub expires: JsFloat,
+    pub size: JsUInt,
+    pub http_only: bool,
+    pub secure: bool,
+    pub session: bool,
+    pub same_site: Option<CookieSameSite>,
 }
 
 pub mod events {
@@ -164,14 +189,17 @@ pub mod methods {
 
     use serde::{Deserialize, Serialize};
 
+    use crate::protocol::network::Cookie;
     use crate::protocol::Method;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct Enable {}
+
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct EnableReturnObject {}
+
     impl Method for Enable {
         const NAME: &'static str = "Network.enable";
         type ReturnObject = EnableReturnObject;
@@ -205,9 +233,11 @@ pub mod methods {
     pub struct SetRequestInterception<'a> {
         pub patterns: &'a [RequestPattern<'a>],
     }
+
     #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct SetRequestInterceptionReturnObject {}
+
     impl<'a> Method for SetRequestInterception<'a> {
         const NAME: &'static str = "Network.setRequestInterception";
         type ReturnObject = SetRequestInterceptionReturnObject;
@@ -242,9 +272,11 @@ pub mod methods {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub auth_challenge_response: Option<AuthChallengeResponse<'a>>,
     }
+
     #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct ContinueInterceptedRequestReturnObject {}
+
     impl<'a> Method for ContinueInterceptedRequest<'a> {
         const NAME: &'static str = "Network.continueInterceptedRequest";
         type ReturnObject = ContinueInterceptedRequestReturnObject;
@@ -255,12 +287,14 @@ pub mod methods {
     pub struct GetResponseBodyForInterception<'a> {
         pub interception_id: &'a str,
     }
+
     #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct GetResponseBodyForInterceptionReturnObject {
         pub body: String,
         pub base64_encoded: bool,
     }
+
     impl<'a> Method for GetResponseBodyForInterception<'a> {
         const NAME: &'static str = "Network.getResponseBodyForInterception";
         type ReturnObject = GetResponseBodyForInterceptionReturnObject;
@@ -293,11 +327,30 @@ pub mod methods {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub platform: Option<&'c str>,
     }
+
     #[derive(Deserialize, Debug)]
     pub struct SetUserAgentOverrideReturnObject {}
+
     impl<'a, 'b, 'c> Method for SetUserAgentOverride<'a, 'b, 'c> {
         const NAME: &'static str = "Network.setUserAgentOverride";
         type ReturnObject = SetUserAgentOverrideReturnObject;
     }
 
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetCookies {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub urls: Option<Vec<String>>,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetCookiesReturnObject {
+        pub cookies: Vec<Cookie>,
+    }
+
+    impl<'a> Method for GetCookies {
+        const NAME: &'static str = "Network.getCookies";
+        type ReturnObject = GetCookiesReturnObject;
+    }
 }

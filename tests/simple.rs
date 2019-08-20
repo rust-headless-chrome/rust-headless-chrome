@@ -11,6 +11,7 @@ use rand::prelude::*;
 
 use headless_chrome::browser::tab::RequestInterceptionDecision;
 use headless_chrome::protocol::network::methods::RequestPattern;
+use headless_chrome::protocol::network::Cookie;
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
 use headless_chrome::{
@@ -72,7 +73,6 @@ fn bounds_changed() -> Result<(), failure::Error> {
         width: None,
         height: None,
     })?;
-    sleep(Duration::from_millis(1000));
     let new_bounds = tab.get_bounds()?;
     assert_eq!(new_bounds.state, WindowState::Normal);
     assert_eq!(new_bounds.left, 5);
@@ -86,7 +86,6 @@ fn bounds_changed() -> Result<(), failure::Error> {
         width: Some(200),
         height: Some(100),
     })?;
-    sleep(Duration::from_millis(1000));
     let new_bounds = tab.get_bounds()?;
     assert_eq!(new_bounds.state, WindowState::Normal);
     assert_eq!(new_bounds.left, 5);
@@ -617,6 +616,42 @@ fn get_script_source() -> Fallible<()> {
         include_str!("coverage_fixtures/coverage_fixture2.js"),
         contents
     );
+
+    Ok(())
+}
+
+#[test]
+fn get_cookies() -> Fallible<()> {
+    logging::enable_logging();
+    let responder = move |r: tiny_http::Request| {
+        let response = tiny_http::Response::new(
+            200.into(),
+            vec![
+                tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..]).unwrap(),
+                tiny_http::Header::from_bytes(&b"Set-Cookie"[..], &b"testing=1; Max-Age=100;"[..])
+                    .unwrap(),
+            ],
+            std::io::Cursor::new("<div></div>"),
+            None,
+            None,
+        );
+        r.respond(response)
+    };
+    let server = server::Server::new(responder);
+    let (browser, tab) = dumb_client(&server);
+
+    tab.navigate_to(&server.url())?;
+
+    tab.wait_until_navigated()?;
+
+    let cookies = tab.get_cookies()?;
+
+    assert_eq!(cookies.len(), 1);
+
+    let Cookie { name, value, .. } = cookies.first().unwrap();
+
+    assert_eq!(name, "testing");
+    assert_eq!(value, "1");
 
     Ok(())
 }

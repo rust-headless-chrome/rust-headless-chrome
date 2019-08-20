@@ -19,6 +19,7 @@ use crate::protocol::{dom, input, logs, network, page, profiler, target, Event, 
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
+use crate::protocol::network::Cookie;
 
 pub mod element;
 mod keys;
@@ -778,5 +779,12 @@ impl<'a> Tab {
                 bounds: bounds.into(),
             })?;
         Ok(self)
+    }
+
+    /// Returns all cookies that match the tab's current URL.
+    pub fn get_cookies(&self) -> Fallible<Vec<Cookie>> {
+        Ok(self
+            .call_method(network::methods::GetCookies { urls: None })?
+            .cookies)
     }
 }
