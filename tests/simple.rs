@@ -54,7 +54,8 @@ fn simple() -> Fallible<()> {
 }
 
 #[test]
-fn bounds() -> Result<(), failure::Error> {
+fn bounds_changed() -> Result<(), failure::Error> {
+    logging::enable_logging();
     let browser = browser();
     let tab = browser.wait_for_initial_tab().unwrap();
 
@@ -69,6 +70,7 @@ fn bounds() -> Result<(), failure::Error> {
         width: None,
         height: None,
     })?;
+    sleep(Duration::from_millis(1000));
     let new_bounds = tab.get_bounds()?;
     assert_eq!(new_bounds.state, WindowState::Normal);
     assert_eq!(new_bounds.left, 5);
@@ -82,6 +84,7 @@ fn bounds() -> Result<(), failure::Error> {
         width: Some(200),
         height: Some(100),
     })?;
+    sleep(Duration::from_millis(1000));
     let new_bounds = tab.get_bounds()?;
     assert_eq!(new_bounds.state, WindowState::Normal);
     assert_eq!(new_bounds.left, 5);
@@ -93,6 +96,7 @@ fn bounds() -> Result<(), failure::Error> {
 
 #[test]
 fn bounds_unchanged() -> Result<(), failure::Error> {
+    logging::enable_logging();
     let browser = browser();
     let tab = browser.wait_for_initial_tab().unwrap();
     let bounds = tab.get_bounds()?;
