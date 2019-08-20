@@ -69,11 +69,19 @@ For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`e
 
 The [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Browser) is huge. Currently, Puppeteer supports way more of it than we do. Some of the missing features include:
 
--  Manipulating cookies
+-  Viewing / manipulating cookies
 -  Dealing with frames
 -  Handling file picker / chooser interactions
 -  Tapping touchscreens
+-  Emulating different network conditions (DevTools can alter latency, throughput, offline status, 'connection type')
+-  Viewing timing information about network requests
+-  Reading the SSL certificate
+-  Replaying XHRs
+-  HTTP Basic Auth
+-  Inspecting `EventSource`s (aka server-sent events or SSEs)
+-  WebSocket inspection
 
+If you're interested in adding one of these features but would like some advice about how to start, please reach out by creating an issue or sending me an email at [`alistair@sunburnt.country`](mailto:alistair@sunburnt.country).
 
 ## Related crates
 
