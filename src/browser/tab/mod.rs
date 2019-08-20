@@ -637,6 +637,19 @@ impl<'a> Tab {
         Ok(())
     }
 
+    /// Lets you listen for responses, and gives you a way to get the response body too.
+    ///
+    /// Please note that the 'response' does not include the *body* of the response -- Chrome tells
+    /// us about them seperately (because you might quickly get the status code and headers from a
+    /// server well before you receive the entire response body which could, after all, be gigabytes
+    /// long).
+    ///
+    /// Currently we leave it up to the caller to decide when to call `fetch_body` (the second
+    /// argument to the response handler), although ideally it wouldn't be possible until Chrome has
+    /// sent the `Network.loadingFinished` event.
+    ///
+    /// Currently you can only have one handler registered, but ideally there would be no limit and
+    /// we'd give you a mechanism to deregister the handler too.
     pub fn enable_response_handling(&self, handler: ResponseHandler) -> Fallible<()> {
         self.call_method(network::methods::Enable {})?;
         *(self.response_handler.lock().unwrap()) = Some(handler);

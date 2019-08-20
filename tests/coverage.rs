@@ -7,7 +7,7 @@ use headless_chrome::Browser;
 use server::Server;
 
 mod logging;
-mod server;
+pub mod server;
 
 fn basic_http_response(
     body: &'static str,
