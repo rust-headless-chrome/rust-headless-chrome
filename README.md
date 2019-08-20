@@ -7,6 +7,24 @@
 
 [Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
 
+A high-level API to control headless Chrome or Chromium over the DevTools Protocol. It is the
+Rust equivalent of [Puppeteer](https://github.com/GoogleChrome/puppeteer), a Node library
+maintained by the Chrome DevTools team.
+
+It is not 100% feature compatible with Puppeteer, but there's enough here to satisfy most
+browser testing / web crawling use cases, and there are several 'advanced' features such as:
+
+- [network request interception](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.enable_request_interception)
+- [JavaScript coverage monitoring](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.take_precise_js_coverage)
+- Opening incognito windows
+- [taking screenshots of elements or the entire page](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.capture_screenshot)
+- [saving pages to PDF](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.print_to_pdf)
+- ['headful' browsing](https://docs.rs/headless_chrome/latest/headless_chrome/struct.LaunchOptionsBuilder.html#method.headless)
+- automatic downloading of 'known good' Chromium binaries for Linux / Mac / Windows
+- [extension pre-loading](https://docs.rs/headless_chrome/latest/headless_chrome/struct.LaunchOptionsBuilder.html#method.extensions)
+
+## Quick Start
+
 ```rust
 use headless_chrome::{Browser, protocol::page::ScreenshotFormat};
 
@@ -47,7 +65,19 @@ assert!(browse_wikipedia().is_ok());
 
 For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples/real_world.rs`](examples/real_world.rs).
 
-If you're looking to do general browser testing or scraping (rather than anything specific to Chrome / DevTools), you're probably better off with [fantoccini](https://github.com/jonhoo/fantoccini) for now. It's a lot more feature-complete and stable.
+## What can't it do?
+
+The [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Browser) is huge. Currently, Puppeteer supports way more of it than we do. Some of the missing features include:
+
+-  Manipulating cookies
+-  Dealing with frames
+-  Handling file picker / chooser interactions
+-  Tapping touchscreens
+
+
+## Related crates
+
+-  [fantoccini](https://github.com/jonhoo/fantoccini) uses WebDriver, so it works with browsers other than Chrome. It's also asynchronous and based on Tokio, unlike `headless_chrome`, which has a synchronous API and is just implemented using plain old threads. Fantoccini has also been around longer and is more battle-tested. It doesn't support Chrome DevTools-specific functionality like JS Coverage.
 
 ## Testing
 
