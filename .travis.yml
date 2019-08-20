@@ -2,6 +2,7 @@ language: rust
 
 rust:
   - stable
+  - nightly
 
 addons:
   chrome: stable
@@ -10,6 +11,7 @@ addons:
       - libnss3
 
 os:
+  - linux
   - osx
 
 services:

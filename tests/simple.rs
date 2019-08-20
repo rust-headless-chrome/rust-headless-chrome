@@ -53,6 +53,8 @@ fn simple() -> Fallible<()> {
     Ok(())
 }
 
+// NOTE: we disable this test for Mac, because Travis doesn't support xvfb as a 'service'
+#[cfg(target_os = "linux")]
 #[test]
 fn bounds_changed() -> Result<(), failure::Error> {
     logging::enable_logging();
