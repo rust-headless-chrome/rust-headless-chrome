@@ -2,9 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.4.0...HEAD)
+## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.7.0...HEAD)
 
 ### Added
+### Removed
+### Changed
+
+## 0.7.0 - 2019-08-20
+
+### Added
+
+* [`Tab.get_cookies()`](https://github.com/atroche/rust-headless-chrome/pull/159)
+* [`Browser.getWindowBounds()`, `Tab.setWindowBounds()`](https://github.com/atroche/rust-headless-chrome/pull/102)
+
 ### Removed
 ### Changed
 
