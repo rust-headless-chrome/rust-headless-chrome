@@ -19,6 +19,16 @@ pub mod runtime;
 pub mod target;
 pub mod types;
 
+// TODO: use these aliases in other parts of the protocol module
+// From experimentation, it seems the protocol's integers are i32s.
+#[allow(dead_code)]
+type JsInt = i32;
+// For when we specifically want to guard against negative numbers.
+type JsUInt = u32;
+
+/// Browser window Id
+type WindowId = JsUInt;
+
 pub type CallId = usize;
 
 #[derive(Serialize, Debug)]

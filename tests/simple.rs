@@ -13,7 +13,11 @@ use headless_chrome::browser::tab::RequestInterceptionDecision;
 use headless_chrome::protocol::network::methods::RequestPattern;
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
-use headless_chrome::{browser::tab::Tab, protocol::page::ScreenshotFormat, Browser};
+use headless_chrome::{
+    protocol::browser::{Bounds, WindowState},
+    protocol::page::ScreenshotFormat,
+    Browser, Tab,
+};
 
 mod logging;
 mod server;
@@ -29,8 +33,12 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
     (server, browser, tab)
 }
 
+fn browser() -> Browser {
+    Browser::default().unwrap()
+}
+
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
-    let browser = Browser::default().unwrap();
+    let browser = browser();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -42,6 +50,80 @@ fn simple() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     tab.wait_for_element("div#foobar")?;
+    Ok(())
+}
+
+#[test]
+fn bounds() -> Result<(), failure::Error> {
+    let browser = browser();
+    let tab = browser.wait_for_initial_tab().unwrap();
+
+    // New browser windows start in normal (windowed) state
+    let bounds = tab.get_bounds()?;
+    assert_eq!(bounds.state, WindowState::Normal);
+
+    // Return to normal window size, setting only the coordinates
+    tab.set_bounds(Bounds::Normal {
+        left: Some(5),
+        top: Some(5),
+        width: None,
+        height: None,
+    })?;
+    let new_bounds = tab.get_bounds()?;
+    assert_eq!(new_bounds.state, WindowState::Normal);
+    assert_eq!(new_bounds.left, 5);
+    assert_eq!(new_bounds.top, 5);
+    assert_eq!(new_bounds.width, bounds.width);
+    assert_eq!(new_bounds.height, bounds.height);
+
+    tab.set_bounds(Bounds::Normal {
+        left: None,
+        top: None,
+        width: Some(200),
+        height: Some(100),
+    })?;
+    let new_bounds = tab.get_bounds()?;
+    assert_eq!(new_bounds.state, WindowState::Normal);
+    assert_eq!(new_bounds.left, 5);
+    assert_eq!(new_bounds.top, 5);
+    assert_eq!(new_bounds.width, 200);
+    assert_eq!(new_bounds.height, 100);
+    Ok(())
+}
+
+#[test]
+fn bounds_unchanged() -> Result<(), failure::Error> {
+    let browser = browser();
+    let tab = browser.wait_for_initial_tab().unwrap();
+    let bounds = tab.get_bounds()?;
+
+    // Minimizing a window does *not* change it's bounds
+    tab.set_bounds(Bounds::Minimized)?;
+    let min_bounds = tab.get_bounds()?;
+    assert_eq!(min_bounds.state, WindowState::Minimized);
+    assert_eq!(min_bounds.left, bounds.left);
+    assert_eq!(min_bounds.top, bounds.top);
+    assert_eq!(min_bounds.width, bounds.width);
+    assert_eq!(min_bounds.height, bounds.height);
+
+    // Maximizing a window does *not* change it's bounds
+    tab.set_bounds(Bounds::Maximized)?;
+    let max_bounds = tab.get_bounds()?;
+    assert_eq!(max_bounds.state, WindowState::Maximized);
+    assert_eq!(max_bounds.left, bounds.left);
+    assert_eq!(max_bounds.top, bounds.top);
+    assert!(max_bounds.width >= bounds.width);
+    assert!(max_bounds.height >= bounds.height);
+
+    // Setting a window to fullscreen does *not* change it's bounds
+    tab.set_bounds(Bounds::Fullscreen)?;
+    let fs_bounds = tab.get_bounds()?;
+    assert_eq!(fs_bounds.state, WindowState::Fullscreen);
+    assert_eq!(fs_bounds.left, bounds.left);
+    assert_eq!(fs_bounds.top, bounds.top);
+    assert!(fs_bounds.width >= bounds.width);
+    assert!(fs_bounds.height >= bounds.height);
+
     Ok(())
 }
 
