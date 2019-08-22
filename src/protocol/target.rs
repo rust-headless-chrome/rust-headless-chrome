@@ -100,6 +100,7 @@ pub mod events {
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
+    use crate::protocol::types::JsInt;
     use crate::protocol::Method;
 
     #[derive(Serialize, Debug)]
@@ -146,10 +147,10 @@ pub mod methods {
         pub url: &'a str,
         #[serde(skip_serializing_if = "Option::is_none")]
         #[doc = "Frame width in DIP \\(headless chrome only\\)."]
-        pub width: Option<i32>,
+        pub width: Option<JsInt>,
         #[serde(skip_serializing_if = "Option::is_none")]
         #[doc = "Frame height in DIP \\(headless chrome only\\)."]
-        pub height: Option<i32>,
+        pub height: Option<JsInt>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub browser_context_id: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]

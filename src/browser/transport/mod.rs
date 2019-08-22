@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, TryRecvError};
@@ -57,7 +57,7 @@ pub struct Transport {
     waiting_call_registry: Arc<WaitingCallRegistry>,
     listeners: Listeners,
     open: Arc<AtomicBool>,
-    call_id_counter: Arc<AtomicUsize>,
+    call_id_counter: Arc<AtomicU32>,
     loop_shutdown_tx: Mutex<mpsc::Sender<()>>,
 }
 
@@ -101,7 +101,7 @@ impl Transport {
             waiting_call_registry,
             listeners,
             open,
-            call_id_counter: Arc::new(AtomicUsize::new(0)),
+            call_id_counter: Arc::new(AtomicU32::new(0)),
             loop_shutdown_tx: guarded_shutdown_tx,
         })
     }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::protocol::types::{JsFloat, JsUInt};
+use crate::protocol::types::{JsFloat, JsInt, JsUInt};
 
 type Headers = HashMap<String, String>;
 
@@ -29,7 +29,7 @@ pub struct Request {
 #[serde(rename_all = "camelCase")]
 pub struct Response {
     pub url: String,
-    pub status: u32,
+    pub status: JsUInt,
     pub status_text: String,
     pub headers: Headers,
     pub headers_text: Option<String>,
@@ -37,14 +37,14 @@ pub struct Response {
     pub request_headers: Option<Headers>,
     pub request_headers_text: Option<String>,
     pub connection_reused: bool,
-    pub connection_id: u64,
+    pub connection_id: JsInt,
     #[serde(rename = "remoteIPAddress")]
     pub remote_ip_address: Option<String>,
-    pub remote_port: Option<u32>,
+    pub remote_port: Option<JsUInt>,
     pub from_disk_cache: Option<bool>,
     pub from_service_worker: Option<bool>,
     pub from_prefetch_cache: Option<bool>,
-    pub encoded_data_length: u64,
+    pub encoded_data_length: JsUInt,
     pub protocol: Option<String>,
     // pub timing: Option<ResourceTiming>,
     // pub security_state: SecurityState,
@@ -75,6 +75,7 @@ pub struct Cookie {
 }
 
 pub mod events {
+    use crate::protocol::types::{JsFloat, JsInt};
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -103,7 +104,7 @@ pub mod events {
         /// Allow values:
         /// Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused, ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable, BlockedByClient, BlockedByResponse
         pub response_error_reason: Option<String>,
-        pub response_status_code: Option<i32>,
+        pub response_status_code: Option<JsInt>,
         pub response_headers: Option<super::Headers>,
     }
 
@@ -138,7 +139,7 @@ pub mod events {
     pub struct ResponseReceivedEventParams {
         pub request_id: String,
         pub loader_id: String,
-        pub timestamp: f64,
+        pub timestamp: JsFloat,
         #[serde(rename = "type")]
         pub _type: ResourceType,
         pub response: super::Response,

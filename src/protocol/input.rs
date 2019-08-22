@@ -1,6 +1,7 @@
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
+    use crate::protocol::types::{JsFloat, JsUInt};
     use crate::protocol::Method;
 
     #[derive(Serialize, Debug)]
@@ -8,12 +9,12 @@ pub mod methods {
     pub struct DispatchMouseEvent<'a> {
         #[serde(rename = "type")]
         pub event_type: &'a str,
-        pub x: f64,
-        pub y: f64,
+        pub x: JsFloat,
+        pub y: JsFloat,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub button: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub click_count: Option<u8>,
+        pub click_count: Option<JsUInt>,
     }
     impl<'a> Default for DispatchMouseEvent<'a> {
         fn default() -> Self {
@@ -45,8 +46,8 @@ pub mod methods {
         pub text: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub code: Option<&'a str>,
-        pub windows_virtual_key_code: u8,
-        pub native_virtual_key_code: u8,
+        pub windows_virtual_key_code: JsUInt,
+        pub native_virtual_key_code: JsUInt,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
