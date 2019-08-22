@@ -214,9 +214,11 @@ impl<'a> Tab {
                                     interception_id: &id,
                                     ..Default::default()
                                 };
-                                transport
-                                    .call_method_on_target(session_id.clone(), method)
-                                    .expect("couldn't continue intercepted request");
+                                let result =
+                                    transport.call_method_on_target(session_id.clone(), method);
+                                if result.is_err() {
+                                    warn!("Tried to continue request after connection was closed");
+                                }
                             }
                             RequestInterceptionDecision::Response(response_str) => {
                                 let method = network::methods::ContinueInterceptedRequest {
@@ -224,9 +226,11 @@ impl<'a> Tab {
                                     raw_response: Some(&response_str),
                                     ..Default::default()
                                 };
-                                transport
-                                    .call_method_on_target(session_id.clone(), method)
-                                    .expect("couldn't continue intercepted request");
+                                let result =
+                                    transport.call_method_on_target(session_id.clone(), method);
+                                if result.is_err() {
+                                    warn!("Tried to continue request after connection was closed");
+                                }
                             }
                         }
                     }

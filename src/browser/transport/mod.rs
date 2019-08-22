@@ -142,7 +142,7 @@ impl Transport {
                 raw.truncate(300);
                 trace!("Msg to tab: {}", &raw);
                 if let Err(e) = self.call_method_on_browser(target_method) {
-                    error!("Failed to call method on browser: {:?}", e);
+                    warn!("Failed to call method on browser: {:?}", e);
                     self.waiting_call_registry.unregister_call(call.id);
                     trace!("Unregistered callback: {:?}", call.id);
                     return Err(e);
