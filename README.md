@@ -5,8 +5,6 @@
 [![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
 [![Discord channel](https://img.shields.io/discord/557374784233799681.svg?logo=discord)](https://discord.gg/yyGEzcc)
 
-[Puppeteer](https://github.com/GoogleChrome/puppeteer) for Rust. It looks a little something like this:
-
 A high-level API to control headless Chrome or Chromium over the DevTools Protocol. It is the
 Rust equivalent of [Puppeteer](https://github.com/GoogleChrome/puppeteer), a Node library
 maintained by the Chrome DevTools team.
@@ -107,12 +105,6 @@ By default, `headless_chrome` will download a compatible version of chrome to `X
 [dependencies.headless_chrome]
 default-features = false
 ```
-
-## Missing features
-
-- Frame / iframe support
-- `window.alert` handlers
-- Frankly, most of what's possible using the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot)
 
 ## Contributing
 
