@@ -108,6 +108,35 @@ impl<'a> LaunchOptionsBuilder<'a> {
     }
 }
 
+/// These are passed to the Chrome binary by default.
+/// Via https://github.com/GoogleChrome/puppeteer/blob/master/lib/Launcher.js#L38
+static DEFAULT_ARGS: [&str; 23] = [
+    "--disable-background-networking",
+    "--enable-features=NetworkService,NetworkServiceInProcess",
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-breakpad",
+    "--disable-client-side-phishing-detection",
+    "--disable-component-extensions-with-background-pages",
+    "--disable-default-apps",
+    "--disable-dev-shm-usage",
+    "--disable-extensions",
+    // BlinkGenPropertyTrees disabled due to crbug.com/937609
+    "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+    "--disable-hang-monitor",
+    "--disable-ipc-flooding-protection",
+    "--disable-popup-blocking",
+    "--disable-prompt-on-repost",
+    "--disable-renderer-backgrounding",
+    "--disable-sync",
+    "--force-color-profile=srgb",
+    "--metrics-recording-only",
+    "--no-first-run",
+    "--enable-automation",
+    "--password-store=basic",
+    "--use-mock-keychain",
+];
+
 impl Process {
     pub fn new(mut launch_options: LaunchOptions) -> Fallible<Self> {
         if launch_options.path.is_none() {
@@ -191,6 +220,8 @@ impl Process {
             "--no-first-run",
             data_dir_option.as_str(),
         ];
+
+        args.extend(&DEFAULT_ARGS);
 
         if !window_size_option.is_empty() {
             args.extend(&[window_size_option.as_str()]);
@@ -305,6 +336,7 @@ mod tests {
     use super::*;
 
     static INIT: Once = Once::new();
+
     fn setup() {
         INIT.call_once(|| {
             env_logger::try_init().unwrap_or(());
