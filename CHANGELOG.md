@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Changed
 
+*  **BREAKING CHANGE**: Remove the 'fetch' feature (which enables the fetcher module) from default features.
+
 ## 0.7.0 - 2019-08-20
 
 ### Added
