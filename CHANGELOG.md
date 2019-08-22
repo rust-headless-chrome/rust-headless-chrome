@@ -2,13 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.7.0...HEAD)
+## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.8.0...HEAD)
 
 ### Added
 ### Removed
 ### Changed
 
-*  **BREAKING CHANGE**: Remove the 'fetch' feature (which enables the fetcher module) from default features.
+## 0.8.0 - 2019-08-22
+
+### Added
+
+*  [tab.set_default_timeout](https://github.com/atroche/rust-headless-chrome/pull/161), a convenience method.
+
+### Removed
+### Changed
+
+*  [Run Chrome with same 'DEFAULT_ARGS' as puppeteer](https://github.com/atroche/rust-headless-chrome/pull/165)
+*  **BREAKING CHANGE**: [Remove the 'fetch' feature (which enables the fetcher module) from default features](https://github.com/atroche/rust-headless-chrome/pull/164).
+*  **BREAKING CHANGE**: [Use JsFloat / JsUInt / JsInt consistently in protocol module ](https://github.com/atroche/rust-headless-chrome/pull/166)
+   All 'integer' types in the protocol are now either i32 or u32, and all 'number' types are f64, via type aliases.
 
 ## 0.7.0 - 2019-08-20
 
