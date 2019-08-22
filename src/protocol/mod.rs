@@ -2,6 +2,7 @@
 
 use std::fmt::Debug;
 
+use crate::protocol::types::{JsInt, JsUInt};
 use failure::{Fail, Fallible};
 use serde;
 use serde::{Deserialize, Serialize};
@@ -19,17 +20,10 @@ pub mod runtime;
 pub mod target;
 pub mod types;
 
-// TODO: use these aliases in other parts of the protocol module
-// From experimentation, it seems the protocol's integers are i32s.
-#[allow(dead_code)]
-type JsInt = i32;
-// For when we specifically want to guard against negative numbers.
-type JsUInt = u32;
-
 /// Browser window Id
 type WindowId = JsUInt;
 
-pub type CallId = usize;
+pub type CallId = JsUInt;
 
 #[derive(Serialize, Debug)]
 pub struct MethodCall<T>
@@ -73,7 +67,7 @@ pub trait Method: Debug {
 #[derive(Deserialize, Debug, PartialEq, Clone, Fail)]
 #[fail(display = "Method call error {}: {}", code, message)]
 pub struct RemoteError {
-    pub code: i32,
+    pub code: JsInt,
     pub message: String,
 }
 

@@ -1,3 +1,4 @@
+use crate::protocol::types::{JsFloat, JsUInt};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Clone)]
@@ -24,22 +25,22 @@ pub(crate) enum InternalScreenshotFormat {
 #[derive(Debug, Clone, Serialize)]
 pub struct Viewport {
     /// X offset in device independent pixels
-    pub x: f64,
+    pub x: JsFloat,
     /// Y offset in device independent pixels
-    pub y: f64,
+    pub y: JsFloat,
     /// Rectangle width in device independent pixels
-    pub width: f64,
+    pub width: JsFloat,
     /// Rectangle height in device independent pixels
-    pub height: f64,
+    pub height: JsFloat,
     /// Page scale factor
-    pub scale: f64,
+    pub scale: JsFloat,
 }
 
 /// The format a screenshot will be captured in
 #[derive(Debug, Clone)]
 pub enum ScreenshotFormat {
     /// Optionally compression quality from range [0..100]
-    JPEG(Option<u8>),
+    JPEG(Option<JsUInt>),
     PNG,
 }
 
@@ -131,13 +132,14 @@ pub mod methods {
     use crate::protocol::Method;
 
     use super::PrintToPdfOptions;
+    use crate::protocol::types::JsUInt;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub(crate) struct CaptureScreenshot {
         pub format: super::InternalScreenshotFormat,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub quality: Option<u8>,
+        pub quality: Option<JsUInt>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub clip: Option<super::Viewport>,
         pub from_surface: bool,

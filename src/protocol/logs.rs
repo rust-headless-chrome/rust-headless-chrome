@@ -1,6 +1,6 @@
 pub mod events {
     use crate::protocol::runtime::methods::{RemoteObject, StackTrace};
-    use crate::protocol::types::JsInt;
+    use crate::protocol::types::{JsFloat, JsInt};
     use serde::{Deserialize, Serialize};
 
     #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
@@ -41,7 +41,7 @@ pub mod events {
         /// Timestamp when this entry was added
         /// Number of milliseconds since epoch
         /// See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#type-Timestamp
-        pub timestamp: f64,
+        pub timestamp: JsFloat,
         pub url: Option<String>,
         pub line_number: Option<JsInt>,
         pub stack_trace: Option<StackTrace>,

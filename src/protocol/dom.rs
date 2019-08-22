@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use crate::protocol::types::JsUInt;
 use serde::{Deserialize, Deserializer};
 
-pub type NodeId = u32;
+pub type NodeId = JsUInt;
 
 pub type NodeAttributes = HashMap<String, String>;
 
@@ -15,11 +16,11 @@ pub struct Node {
     pub parent_id: Option<NodeId>,
     pub node_value: String,
     pub node_name: String,
-    pub node_type: u8,
+    pub node_type: JsUInt,
     #[serde(default, deserialize_with = "attribute_deser")]
     pub attributes: Option<NodeAttributes>,
     pub local_name: String,
-    pub child_node_count: Option<u32>,
+    pub child_node_count: Option<JsUInt>,
     #[serde(rename = "documentURL")]
     pub document_url: Option<String>,
     #[serde(rename = "baseURL")]
@@ -131,12 +132,13 @@ impl<'a, F: FnMut(&Node) -> bool> SearchVisitor<'a, F> {
 pub mod methods {
     use serde::{Deserialize, Serialize};
 
+    use crate::protocol::types::{JsFloat, JsInt, JsUInt};
     use crate::protocol::Method;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct GetDocument {
-        pub depth: Option<u8>,
+        pub depth: Option<JsInt>,
         pub pierce: Option<bool>,
     }
     #[derive(Debug, Deserialize)]
@@ -156,7 +158,7 @@ pub mod methods {
         pub node_id: Option<super::NodeId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub backend_node_id: Option<super::NodeId>,
-        pub depth: Option<i8>,
+        pub depth: Option<JsInt>,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -270,7 +272,7 @@ pub mod methods {
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct GetContentQuadsReturnObject {
-        pub quads: Vec<[f64; 8]>,
+        pub quads: Vec<[JsFloat; 8]>,
     }
     impl<'a> Method for GetContentQuads<'a> {
         const NAME: &'static str = "DOM.getContentQuads";
@@ -289,12 +291,12 @@ pub mod methods {
     }
     #[derive(Debug, Deserialize)]
     pub struct BoxModel {
-        pub content: [f64; 8],
-        pub padding: [f64; 8],
-        pub border: [f64; 8],
-        pub margin: [f64; 8],
-        pub width: u64,
-        pub height: u64,
+        pub content: [JsFloat; 8],
+        pub padding: [JsFloat; 8],
+        pub border: [JsFloat; 8],
+        pub margin: [JsFloat; 8],
+        pub width: JsUInt,
+        pub height: JsUInt,
         // TODO shapeOutside
     }
     #[derive(Debug, Deserialize)]

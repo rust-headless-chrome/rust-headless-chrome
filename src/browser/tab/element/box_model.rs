@@ -1,5 +1,6 @@
 use crate::browser::tab::point::Point;
 use crate::protocol::page;
+use crate::protocol::types::JsUInt;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ElementQuad {
@@ -146,8 +147,8 @@ pub struct BoxModel {
     pub padding: ElementQuad,
     pub border: ElementQuad,
     pub margin: ElementQuad,
-    pub width: u64,
-    pub height: u64,
+    pub width: JsUInt,
+    pub height: JsUInt,
 }
 
 impl BoxModel {
