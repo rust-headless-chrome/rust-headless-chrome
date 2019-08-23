@@ -814,4 +814,26 @@ impl<'a> Tab {
             .call_method(network::methods::GetCookies { urls: None })?
             .cookies)
     }
+
+    /// Returns the title of the document.
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # use headless_chrome::Browser;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// # let browser = Browser::default()?;
+    /// # let tab = browser.wait_for_initial_tab()?;
+    /// tab.navigate_to("https://google.com")?;
+    /// tab.wait_until_navigated()?;
+    /// let title = tab.get_title()?;
+    /// assert_eq!(title, "Google");
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get_title(&self) -> Fallible<String> {
+        let remote_object = self.evaluate("document.title", false)?;
+        Ok(serde_json::from_value(remote_object.value.unwrap())?)
+    }
 }
