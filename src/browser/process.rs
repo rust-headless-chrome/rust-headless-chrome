@@ -21,6 +21,7 @@ use crate::util;
 
 #[cfg(feature = "fetch")]
 use super::fetcher::{self, Fetcher};
+use std::collections::HashMap;
 
 pub struct Process {
     child_process: TemporaryProcess,
@@ -99,6 +100,11 @@ pub struct LaunchOptions<'a> {
     /// Defaults to 30 seconds
     #[builder(default = "Duration::from_secs(30)")]
     pub idle_browser_timeout: Duration,
+
+    /// Environment variables to set for the Chromium process.
+    /// Passes value through to std::process::Command::envs.
+    #[builder(default = "None")]
+    pub process_envs: Option<HashMap<String, String>>,
 }
 
 #[cfg(feature = "fetch")]
@@ -249,13 +255,13 @@ impl Process {
             .ok_or_else(|| format_err!("Chrome path required"))?;
 
         info!("Launching Chrome binary at {:?}", &path);
+        let mut command = Command::new(&path);
 
-        let process = TemporaryProcess(
-            Command::new(&path)
-                .args(&args)
-                .stderr(Stdio::piped())
-                .spawn()?,
-        );
+        if let Some(process_envs) = launch_options.process_envs.clone() {
+            command.envs(process_envs);
+        }
+
+        let process = TemporaryProcess(command.args(&args).stderr(Stdio::piped()).spawn()?);
         Ok(process)
     }
 
