@@ -246,4 +246,39 @@ pub mod methods {
         const NAME: &'static str = "Page.enable";
         type ReturnObject = EnableReturnObject;
     }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetInterceptFileChooserDialog {
+        pub enabled: bool,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetInterceptFileChooserDialogReturnObject {}
+    impl Method for SetInterceptFileChooserDialog {
+        const NAME: &'static str = "Page.setInterceptFileChooserDialog";
+        type ReturnObject = SetInterceptFileChooserDialogReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "lowercase")]
+    pub enum FileChooserAction {
+        Accept,
+        Cancel,
+        Fallback,
+    }
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct HandleFileChooser {
+        pub action: FileChooserAction,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub files: Option<Vec<String>>,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct HandleFileChooserReturnObject {}
+    impl Method for HandleFileChooser {
+        const NAME: &'static str = "Page.handleFileChooser";
+        type ReturnObject = HandleFileChooserReturnObject;
+    }
 }
