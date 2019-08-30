@@ -92,7 +92,7 @@ where
     Ok(result)
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "method")]
 #[allow(clippy::large_enum_variant)]
 pub enum Event {

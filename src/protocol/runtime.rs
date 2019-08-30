@@ -258,7 +258,7 @@ pub mod events {
                       {
                         "name": "stack",
                         "type": "string",
-                        "value": "Error: Just an error thrown()\n    at thatThrows (h…ts_page.html?_ijt=mf0c1t5voa9ogu1jan2ubc781a:11:7"
+                        "value": "Error: Just an error thrown()\n    at thatThrows (https_page.html?_ijt=mf0c1t5voa9ogu1jan2ubc781a:11:7"
                       },
                       {
                         "name": "message",

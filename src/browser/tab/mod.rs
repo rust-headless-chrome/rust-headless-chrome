@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::thread;
 use std::time::Duration;
 
@@ -55,7 +55,17 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
-type EventListener = Box<dyn Fn(&Event) -> () + Send + Sync>;
+pub trait EventListener<T> {
+    fn on_event(&self, event: &T) -> ();
+}
+
+impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
+    fn on_event(&self, event: &T) {
+        self(&event);
+    }
+}
+
+type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
@@ -68,7 +78,7 @@ pub struct Tab {
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
     default_timeout: Arc<RwLock<Duration>>,
-    event_listeners: Arc<Mutex<Vec<EventListener>>>,
+    event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
 }
 
 #[derive(Debug, Fail)]
@@ -195,7 +205,7 @@ impl<'a> Tab {
             for event in incoming_events_rx {
                 let listeners = listeners_mutex.lock().unwrap();
                 listeners.iter().for_each(|listener| {
-                    listener(&event);
+                    listener.on_event(&event);
                 });
 
                 match event {
@@ -795,6 +805,7 @@ impl<'a> Tab {
     ///
     /// ```rust
     /// # use failure::Fallible;
+    /// # use std::sync::Arc;
     /// # fn main() -> Fallible<()> {
     /// #
     /// # use headless_chrome::Browser;
@@ -802,7 +813,7 @@ impl<'a> Tab {
     /// # let browser = Browser::default()?;
     /// # let tab = browser.wait_for_initial_tab()?;
     /// tab.enable_log()?;
-    /// tab.add_event_listener(Box::new(move |event| {
+    /// tab.add_event_listener(Arc::new(move |event: &Event| {
     ///     match event {
     ///         Event::LogEntryAdded(_) => {
     ///             // process event here
@@ -815,9 +826,27 @@ impl<'a> Tab {
     /// # }
     /// ```
     ///
-    pub fn add_event_listener(&self, listener: EventListener) -> Fallible<()> {
+    pub fn add_event_listener(
+        &self,
+        listener: Arc<SyncSendEvent>,
+    ) -> Fallible<Weak<SyncSendEvent>> {
         let mut listeners = self.event_listeners.lock().unwrap();
         listeners.push(listener);
+        Ok(Arc::downgrade(listeners.last().unwrap()))
+    }
+
+    pub fn remove_event_listener(&self, listener: &Weak<SyncSendEvent>) -> Fallible<()> {
+        let listener = listener.upgrade();
+        if listener.is_none() {
+            return Ok(());
+        }
+        let listener = listener.unwrap();
+        let mut listeners = self.event_listeners.lock().unwrap();
+        let pos = listeners.iter().position(|x| Arc::ptr_eq(x, &listener));
+        if let Some(idx) = pos {
+            listeners.remove(idx);
+        }
+
         Ok(())
     }
 
