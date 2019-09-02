@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::thread;
 use std::time::Duration;
 
@@ -14,7 +14,9 @@ use crate::browser::Transport;
 use crate::protocol::dom::Node;
 use crate::protocol::page::methods::Navigate;
 use crate::protocol::target::{TargetId, TargetInfo};
-use crate::protocol::{dom, input, logs, network, page, profiler, target, Event, RemoteError};
+use crate::protocol::{
+    dom, input, logs, network, page, profiler, runtime, target, Event, RemoteError,
+};
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
@@ -53,6 +55,18 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
+pub trait EventListener<T> {
+    fn on_event(&self, event: &T) -> ();
+}
+
+impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
+    fn on_event(&self, event: &T) {
+        self(&event);
+    }
+}
+
+type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
+
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
 pub struct Tab {
@@ -64,6 +78,7 @@ pub struct Tab {
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
     default_timeout: Arc<RwLock<Duration>>,
+    event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
 }
 
 #[derive(Debug, Fail)]
@@ -122,6 +137,7 @@ impl<'a> Tab {
             ))),
             response_handler: Arc::new(Mutex::new(None)),
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
+            event_listeners: Arc::new(Mutex::new(Vec::new())),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -183,9 +199,15 @@ impl<'a> Tab {
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
         let response_handler_mutex = self.response_handler.clone();
         let session_id = self.session_id.clone();
+        let listeners_mutex = Arc::clone(&self.event_listeners);
 
         thread::spawn(move || {
             for event in incoming_events_rx {
+                let listeners = listeners_mutex.lock().unwrap();
+                listeners.iter().for_each(|listener| {
+                    listener.on_event(&event);
+                });
+
                 match event {
                     Event::Lifecycle(lifecycle_event) => {
                         let event_name = lifecycle_event.params.name.as_ref();
@@ -682,6 +704,20 @@ impl<'a> Tab {
         Ok(())
     }
 
+    /// Enables runtime domain.
+    pub fn enable_runtime(&self) -> Fallible<&Self> {
+        self.call_method(runtime::methods::Enable {})?;
+
+        Ok(self)
+    }
+
+    /// Disables runtime domain
+    pub fn disable_runtime(&self) -> Fallible<&Self> {
+        self.call_method(runtime::methods::Disable {})?;
+
+        Ok(self)
+    }
+
     /// Enables Debugger
     pub fn enable_debugger(&self) -> Fallible<()> {
         self.call_method(protocol::debugger::methods::Enable {})?;
@@ -759,6 +795,59 @@ impl<'a> Tab {
             })?
             .result;
         Ok(result)
+    }
+
+    /// Adds event listener to Event
+    ///
+    /// Make sure you are enabled domain you are listening events to.
+    ///
+    /// ## Usage example
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # use std::sync::Arc;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// # use headless_chrome::Browser;
+    /// # use headless_chrome::protocol::Event;
+    /// # let browser = Browser::default()?;
+    /// # let tab = browser.wait_for_initial_tab()?;
+    /// tab.enable_log()?;
+    /// tab.add_event_listener(Arc::new(move |event: &Event| {
+    ///     match event {
+    ///         Event::LogEntryAdded(_) => {
+    ///             // process event here
+    ///         }
+    ///         _ => {}
+    ///       }
+    ///     }))?;
+    /// #
+    /// #     Ok(())
+    /// # }
+    /// ```
+    ///
+    pub fn add_event_listener(
+        &self,
+        listener: Arc<SyncSendEvent>,
+    ) -> Fallible<Weak<SyncSendEvent>> {
+        let mut listeners = self.event_listeners.lock().unwrap();
+        listeners.push(listener);
+        Ok(Arc::downgrade(listeners.last().unwrap()))
+    }
+
+    pub fn remove_event_listener(&self, listener: &Weak<SyncSendEvent>) -> Fallible<()> {
+        let listener = listener.upgrade();
+        if listener.is_none() {
+            return Ok(());
+        }
+        let listener = listener.unwrap();
+        let mut listeners = self.event_listeners.lock().unwrap();
+        let pos = listeners.iter().position(|x| Arc::ptr_eq(x, &listener));
+        if let Some(idx) = pos {
+            listeners.remove(idx);
+        }
+
+        Ok(())
     }
 
     /// Get position and size of the browser window associated with this `Tab`.

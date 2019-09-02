@@ -1,0 +1,18 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <script>
+      // This will log deprecation warning to console
+      const MyTag = document.registerElement('my-tag');
+
+      document.body.appendChild(new MyTag());
+
+      thatThrows();
+
+      function thatThrows() {
+        throw new Error("Just an error thrown()");
+      }
+    </script>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 use crate::protocol::types::{JsFloat, JsUInt};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Frame {
     pub id: String,
@@ -82,11 +82,11 @@ pub struct PrintToPdfOptions {
 pub mod events {
     use serde::Deserialize;
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct LifecycleEvent {
         pub params: LifecycleParams,
     }
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct LifecycleParams {
         pub frame_id: String,
@@ -95,31 +95,31 @@ pub mod events {
         pub timestamp: f32,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct FrameStartedLoadingEvent {
         pub params: FrameStartedLoadingParams,
     }
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct FrameStartedLoadingParams {
         pub frame_id: String,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct FrameNavigatedEvent {
         pub params: FrameNavigatedParams,
     }
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct FrameNavigatedParams {
         pub frame: super::Frame,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct FrameStoppedLoadingEvent {
         pub params: FrameStoppedLoadingParams,
     }
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct FrameStoppedLoadingParams {
         pub frame_id: String,

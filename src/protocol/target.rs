@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 pub type TargetId = String;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum TargetType {
     Page,
@@ -21,7 +21,7 @@ impl TargetType {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetInfo {
     pub target_id: TargetId,
@@ -37,12 +37,12 @@ pub struct TargetInfo {
 pub mod events {
     use serde::Deserialize;
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct AttachedToTargetEvent {
         pub params: AttachedToTargetParams,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct AttachedToTargetParams {
         pub session_id: String,
@@ -50,12 +50,12 @@ pub mod events {
         pub waiting_for_debugger: bool,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct ReceivedMessageFromTargetEvent {
         pub params: ReceivedMessageFromTargetParams,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct ReceivedMessageFromTargetParams {
         pub session_id: String,
@@ -63,34 +63,34 @@ pub mod events {
         pub message: String,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct TargetInfoChangedEvent {
         pub params: TargetInfoChangedParams,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct TargetInfoChangedParams {
         pub target_info: super::TargetInfo,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct TargetCreatedEvent {
         pub params: TargetCreatedParams,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct TargetCreatedParams {
         pub target_info: super::TargetInfo,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct TargetDestroyedEvent {
         pub params: TargetDestroyedParams,
     }
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub struct TargetDestroyedParams {
         pub target_id: super::TargetId,
