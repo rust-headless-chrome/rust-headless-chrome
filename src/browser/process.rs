@@ -222,6 +222,7 @@ impl Process {
 
         let mut args = vec![
             port_option.as_str(),
+            "--enable-logging",
             "--verbose",
             "--no-first-run",
             data_dir_option.as_str(),
