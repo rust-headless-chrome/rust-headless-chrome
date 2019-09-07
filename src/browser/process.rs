@@ -297,7 +297,7 @@ impl Process {
     }
 
     fn ws_url_from_output(child_process: &mut Child) -> Fallible<String> {
-        let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(10)).until(|| {
+        let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(30)).until(|| {
             let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
             match Self::ws_url_from_reader(my_stderr) {
                 Ok(output_option) => {
