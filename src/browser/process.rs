@@ -238,7 +238,7 @@ impl Process {
         }
 
         if !launch_options.sandbox {
-            args.extend(&["--no-sandbox"]);
+            args.extend(&["--no-sandbox", "--disable-setuid-sandbox"]);
         }
 
         let extension_args: Vec<String> = launch_options
