@@ -225,4 +225,20 @@ pub mod methods {
         const NAME: &'static str = "Target.sendMessageToTarget";
         type ReturnObject = SendMessageToTargetReturnObject;
     }
+
+    /// Closes the target. If the target is a page that gets closed too.
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CloseTarget<'a> {
+        pub target_id: &'a str,
+    }
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CloseTargetReturnObject {
+        pub success: bool,
+    }
+    impl<'a> Method for CloseTarget<'a> {
+        const NAME: &'static str = "Target.closeTarget";
+        type ReturnObject = CloseTargetReturnObject;
+    }
 }

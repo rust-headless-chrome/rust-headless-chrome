@@ -655,3 +655,33 @@ fn get_cookies() -> Fallible<()> {
 
     Ok(())
 }
+
+#[test]
+fn close_tabs() -> Fallible<()> {
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let tabs = browser.get_tabs();
+
+    let check_tabs = |num: usize| {
+        let num_tabs = tabs.lock().unwrap().len();
+        assert_eq!(num_tabs, num);
+    };
+    check_tabs(1);
+
+    let new_tab1 = browser.new_tab()?;
+    new_tab1.navigate_to( &format!("http://127.0.0.1:{}", server.port()))?;
+    check_tabs(2);
+
+    let new_tab2 = browser.new_tab()?;
+    new_tab2.navigate_to( &format!("http://127.0.0.1:{}", server.port()))?;
+    check_tabs(3);
+
+    let closed = new_tab1.close_target()?;
+    println!("{:?}", closed);
+//    assert_eq!(closed, true);
+//    check_tabs(2);
+//
+//    new_tab2.close_with_unload()?;
+//    check_tabs(1);
+
+    Ok(())
+}
