@@ -329,6 +329,14 @@ impl Browser {
                             }
                             Event::TargetDestroyed(ev) => {
                                 trace!("Target destroyed: {:?}", ev.params.target_id);
+                                let mut locked_tabs = tabs.lock().unwrap();
+                                let pos = locked_tabs
+                                    .iter()
+                                    .position(|tab| *tab.get_target_id() == ev.params.target_id);
+
+                                if let Some(idx) = pos {
+                                    locked_tabs.remove(idx);
+                                }
                             }
                             _ => {
                                 let mut raw_event = format!("{:?}", event);

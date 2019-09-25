@@ -229,6 +229,20 @@ pub mod methods {
     /// Closes the target. If the target is a page that gets closed too.
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
+    pub struct ActivateTarget<'a> {
+        pub target_id: &'a str,
+    }
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ActivateTargetReturnObject {}
+    impl<'a> Method for ActivateTarget<'a> {
+        const NAME: &'static str = "Target.activateTarget";
+        type ReturnObject = ActivateTargetReturnObject;
+    }
+
+    /// Closes the target. If the target is a page that gets closed too.
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct CloseTarget<'a> {
         pub target_id: &'a str,
     }
