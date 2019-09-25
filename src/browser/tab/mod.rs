@@ -874,11 +874,10 @@ impl<'a> Tab {
 
     /// Activates (focuses) the target.
     pub fn activate(&self) -> Fallible<&Self> {
-        self
-            .call_method(protocol::target::methods::ActivateTarget {
-                target_id: self.get_target_id(),
-            })
-            .map(|_| self)
+        self.call_method(protocol::target::methods::ActivateTarget {
+            target_id: self.get_target_id(),
+        })
+        .map(|_| self)
     }
 
     /// Get position and size of the browser window associated with this `Tab`.
