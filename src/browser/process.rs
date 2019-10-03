@@ -107,11 +107,15 @@ pub struct LaunchOptions<'a> {
     pub process_envs: Option<HashMap<String, String>>,
 }
 
+impl<'a> LaunchOptions<'a> {
+    pub fn default_builder() -> LaunchOptionsBuilder<'a> {
+        LaunchOptionsBuilder::default()
+    }
+}
+
 #[cfg(feature = "fetch")]
 impl<'a> LaunchOptionsBuilder<'a> {
-    fn default_revision(&self) -> &'static str {
-        fetcher::CUR_REV
-    }
+    fn default_revision(&self) -> &'static str {}
 }
 
 /// These are passed to the Chrome binary by default.
@@ -357,7 +361,7 @@ mod tests {
     fn can_launch_chrome_and_get_ws_url() {
         setup();
         let chrome = super::Process::new(
-            LaunchOptionsBuilder::default()
+            LaunchOptions::default_builder()
                 .path(Some(default_executable().unwrap()))
                 .build()
                 .unwrap(),
@@ -401,7 +405,7 @@ mod tests {
         setup();
         {
             let _chrome = &mut super::Process::new(
-                LaunchOptionsBuilder::default()
+                LaunchOptions::default_builder()
                     .path(Some(default_executable().unwrap()))
                     .build()
                     .unwrap(),
@@ -423,7 +427,7 @@ mod tests {
                 // these sleeps are to make it more likely the chrome startups will overlap
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 let chrome = super::Process::new(
-                    LaunchOptionsBuilder::default()
+                    LaunchOptions::default_builder()
                         .path(Some(default_executable().unwrap()))
                         .build()
                         .unwrap(),
@@ -448,7 +452,7 @@ mod tests {
 
         for _ in 0..10 {
             let chrome = super::Process::new(
-                LaunchOptionsBuilder::default()
+                LaunchOptions::default_builder()
                     .path(Some(default_executable().unwrap()))
                     .headless(true)
                     .build()
