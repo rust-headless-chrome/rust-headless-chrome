@@ -22,7 +22,7 @@ pub enum Bounds {
 impl Bounds {
     /// Set normal window state without setting any coordinates
     pub fn normal() -> Self {
-        Bounds::Normal {
+        Self::Normal {
             left: None,
             top: None,
             width: None,
@@ -34,28 +34,28 @@ impl Bounds {
 impl Into<methods::Bounds> for Bounds {
     fn into(self) -> methods::Bounds {
         match self {
-            Bounds::Minimized => methods::Bounds {
+            Self::Minimized => methods::Bounds {
                 left: None,
                 top: None,
                 width: None,
                 height: None,
                 window_state: WindowState::Minimized,
             },
-            Bounds::Maximized => methods::Bounds {
+            Self::Maximized => methods::Bounds {
                 left: None,
                 top: None,
                 width: None,
                 height: None,
                 window_state: WindowState::Maximized,
             },
-            Bounds::Fullscreen => methods::Bounds {
+            Self::Fullscreen => methods::Bounds {
                 left: None,
                 top: None,
                 width: None,
                 height: None,
                 window_state: WindowState::Fullscreen,
             },
-            Bounds::Normal {
+            Self::Normal {
                 left,
                 top,
                 width,

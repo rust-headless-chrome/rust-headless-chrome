@@ -15,7 +15,7 @@ pub enum TargetType {
 impl TargetType {
     pub fn is_page(&self) -> bool {
         match self {
-            TargetType::Page => true,
+            Self::Page => true,
             _ => false,
         }
     }
