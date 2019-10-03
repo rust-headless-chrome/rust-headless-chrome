@@ -139,8 +139,8 @@ impl<'a> Element<'a> {
     /// # use failure::Fallible;
     /// # fn main() -> Fallible<()> {
     /// #
-    /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
-    /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
+    /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser};
+    /// let browser = Browser::default()?;
     /// let png_data = browser.wait_for_initial_tab()?
     ///     .navigate_to("https://en.wikipedia.org/wiki/WebKit")?
     ///     .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
