@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 ### Removed
 ### Changed
+* Move env_logger to dev dependencies 
 
 ## 0.9.0 - 2019-08-22
 
