@@ -126,16 +126,17 @@ impl<'a> Element<'a> {
     ///
     /// Note: if you somehow call this on a node that's not an HTML Element (e.g. `document`), this
     /// will fail.
-    /// ```rust,no_run
+    /// ```rust
     /// # use failure::Fallible;
     /// # fn main() -> Fallible<()> {
     /// #
     /// use headless_chrome::Browser;
+    /// use std::time::Duration;
     /// let browser = Browser::default()?;
     /// let url = "https://web.archive.org/web/20190403224553/https://en.wikipedia.org/wiki/JavaScript";
     /// let inner_text_content = browser.wait_for_initial_tab()?
     ///     .navigate_to(url)?
-    ///     .wait_for_element("#Misplaced_trust_in_developers")?
+    ///     .wait_for_element_with_custom_timeout("#Misplaced_trust_in_developers", Duration::from_secs(10))?
     ///     .get_inner_text()?;
     /// assert_eq!(inner_text_content, "Misplaced trust in developers");
     /// #
@@ -143,11 +144,12 @@ impl<'a> Element<'a> {
     /// # }
     /// ```
     pub fn get_inner_text(&self) -> Fallible<String> {
-        Ok(self
-            .call_js_fn("function() { return this.innerText }", false)?
-            .value
-            .unwrap()
-            .to_string())
+        let text: String = serde_json::from_value(
+            self.call_js_fn("function() { return this.innerText }", false)?
+                .value
+                .unwrap(),
+        )?;
+        Ok(text)
     }
 
     pub fn get_description(&self) -> Fallible<dom::Node> {
