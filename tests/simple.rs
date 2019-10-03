@@ -14,6 +14,7 @@ use headless_chrome::protocol::network::methods::RequestPattern;
 use headless_chrome::protocol::network::Cookie;
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
+use headless_chrome::util::Wait;
 use headless_chrome::{
     protocol::browser::{Bounds, WindowState},
     protocol::page::ScreenshotFormat,
@@ -661,10 +662,21 @@ fn close_tabs() -> Fallible<()> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let tabs = browser.get_tabs();
 
+    let wait = Wait::with_timeout(Duration::from_secs(30));
+
     let check_tabs = |num: usize| {
         let num_tabs = tabs.lock().unwrap().len();
-        assert_eq!(num_tabs, num);
+        assert_eq!(num, num_tabs);
     };
+    let wait_tabs = |num: usize| {
+        let num_tabs = tabs.lock().unwrap().len();
+        if num_tabs == num {
+            Some(true)
+        } else {
+            None
+        }
+    };
+
     check_tabs(1);
 
     let new_tab1 = browser.new_tab()?;
@@ -684,11 +696,11 @@ fn close_tabs() -> Fallible<()> {
 
     assert_eq!(closed, true);
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait.until(|| wait_tabs(2))?;
     check_tabs(2);
 
-    std::thread::sleep(Duration::from_millis(500));
     new_tab2.close_with_unload()?;
+    wait.until(|| wait_tabs(1))?;
     check_tabs(1);
 
     Ok(())
