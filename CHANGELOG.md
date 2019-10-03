@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased](https://github.com/atroche/rust-headless-chrome/compare/v0.9.0...HEAD)
 
 ### Added
+* `LaunchOptions::default_builder()` for easier access to LaunchOptionsBuilder (which, because it's created via `derive(Builder)` is hard for editors to deal with
 ### Removed
 ### Changed
 * Move env_logger to dev dependencies 

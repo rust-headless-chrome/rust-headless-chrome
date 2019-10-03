@@ -74,7 +74,7 @@ extern crate log;
 
 pub use browser::{
     tab::{element::Element, Tab},
-    Browser, LaunchOptionsBuilder,
+    Browser, LaunchOptions, LaunchOptionsBuilder,
 };
 
 pub mod browser;
