@@ -119,6 +119,37 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
+    /// Returns the inner text of an HTML Element. Returns an empty string on elements with no text.
+    ///
+    /// Note: .innerText and .textContent are not the same thing. See:
+    /// https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/innerText
+    ///
+    /// Note: if you somehow call this on a node that's not an HTML Element (e.g. `document`), this
+    /// will fail.
+    /// ```rust,no_run
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::Browser;
+    /// let browser = Browser::default()?;
+    /// let url = "https://web.archive.org/web/20190403224553/https://en.wikipedia.org/wiki/JavaScript";
+    /// let inner_text_content = browser.wait_for_initial_tab()?
+    ///     .navigate_to(url)?
+    ///     .wait_for_element("#Misplaced_trust_in_developers")?
+    ///     .get_inner_text()?;
+    /// assert_eq!(inner_text_content, "Misplaced trust in developers");
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get_inner_text(&self) -> Fallible<String> {
+        Ok(self
+            .call_js_fn("function() { return this.innerText }", false)?
+            .value
+            .unwrap()
+            .to_string())
+    }
+
     pub fn get_description(&self) -> Fallible<dom::Node> {
         let node = self
             .parent
