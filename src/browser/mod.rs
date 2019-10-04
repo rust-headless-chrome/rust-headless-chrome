@@ -8,8 +8,8 @@ use failure::Fallible;
 use log::*;
 use serde;
 
-pub use process::LaunchOptionsBuilder;
-use process::{LaunchOptions, Process};
+use process::Process;
+pub use process::{LaunchOptions, LaunchOptionsBuilder};
 pub use tab::Tab;
 use transport::Transport;
 use which::which;
@@ -94,7 +94,7 @@ impl Browser {
     /// Calls [`new`] with options to launch a headless browser using whatever Chrome / Chromium
     /// binary can be found on the system.
     pub fn default() -> Fallible<Self> {
-        let launch_options = LaunchOptionsBuilder::default()
+        let launch_options = LaunchOptions::default_builder()
             .path(Some(default_executable().unwrap()))
             .build()
             .unwrap();

@@ -21,6 +21,7 @@ use crate::util;
 
 #[cfg(feature = "fetch")]
 use super::fetcher::{self, Fetcher};
+use std::collections::HashMap;
 
 pub struct Process {
     child_process: TemporaryProcess,
@@ -97,15 +98,24 @@ pub struct LaunchOptions<'a> {
 
     /// How long to keep the WebSocket to the browser for after not receiving any events from it
     /// Defaults to 30 seconds
-    #[builder(default = "Duration::from_secs(30)")]
+    #[builder(default = "Duration::from_secs(300)")]
     pub idle_browser_timeout: Duration,
+
+    /// Environment variables to set for the Chromium process.
+    /// Passes value through to std::process::Command::envs.
+    #[builder(default = "None")]
+    pub process_envs: Option<HashMap<String, String>>,
+}
+
+impl<'a> LaunchOptions<'a> {
+    pub fn default_builder() -> LaunchOptionsBuilder<'a> {
+        LaunchOptionsBuilder::default()
+    }
 }
 
 #[cfg(feature = "fetch")]
 impl<'a> LaunchOptionsBuilder<'a> {
-    fn default_revision(&self) -> &'static str {
-        fetcher::CUR_REV
-    }
+    fn default_revision(&self) -> &'static str {}
 }
 
 /// These are passed to the Chrome binary by default.
@@ -216,8 +226,12 @@ impl Process {
 
         let mut args = vec![
             port_option.as_str(),
+            "--disable-gpu",
+            "--enable-logging",
             "--verbose",
+            "--log-level=0",
             "--no-first-run",
+            "--disable-audio-output",
             data_dir_option.as_str(),
         ];
 
@@ -232,7 +246,7 @@ impl Process {
         }
 
         if !launch_options.sandbox {
-            args.extend(&["--no-sandbox"]);
+            args.extend(&["--no-sandbox", "--disable-setuid-sandbox"]);
         }
 
         let extension_args: Vec<String> = launch_options
@@ -249,13 +263,13 @@ impl Process {
             .ok_or_else(|| format_err!("Chrome path required"))?;
 
         info!("Launching Chrome binary at {:?}", &path);
+        let mut command = Command::new(&path);
 
-        let process = TemporaryProcess(
-            Command::new(&path)
-                .args(&args)
-                .stderr(Stdio::piped())
-                .spawn()?,
-        );
+        if let Some(process_envs) = launch_options.process_envs.clone() {
+            command.envs(process_envs);
+        }
+
+        let process = TemporaryProcess(command.args(&args).stderr(Stdio::piped()).spawn()?);
         Ok(process)
     }
 
@@ -290,7 +304,7 @@ impl Process {
     }
 
     fn ws_url_from_output(child_process: &mut Child) -> Fallible<String> {
-        let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(10)).until(|| {
+        let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(30)).until(|| {
             let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
             match Self::ws_url_from_reader(my_stderr) {
                 Ok(output_option) => {
@@ -347,7 +361,7 @@ mod tests {
     fn can_launch_chrome_and_get_ws_url() {
         setup();
         let chrome = super::Process::new(
-            LaunchOptionsBuilder::default()
+            LaunchOptions::default_builder()
                 .path(Some(default_executable().unwrap()))
                 .build()
                 .unwrap(),
@@ -391,7 +405,7 @@ mod tests {
         setup();
         {
             let _chrome = &mut super::Process::new(
-                LaunchOptionsBuilder::default()
+                LaunchOptions::default_builder()
                     .path(Some(default_executable().unwrap()))
                     .build()
                     .unwrap(),
@@ -413,7 +427,7 @@ mod tests {
                 // these sleeps are to make it more likely the chrome startups will overlap
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 let chrome = super::Process::new(
-                    LaunchOptionsBuilder::default()
+                    LaunchOptions::default_builder()
                         .path(Some(default_executable().unwrap()))
                         .build()
                         .unwrap(),
@@ -438,7 +452,7 @@ mod tests {
 
         for _ in 0..10 {
             let chrome = super::Process::new(
-                LaunchOptionsBuilder::default()
+                LaunchOptions::default_builder()
                     .path(Some(default_executable().unwrap()))
                     .headless(true)
                     .build()

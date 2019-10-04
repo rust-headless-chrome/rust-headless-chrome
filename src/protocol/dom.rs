@@ -307,5 +307,4 @@ pub mod methods {
         const NAME: &'static str = "DOM.getBoxModel";
         type ReturnObject = GetBoxModelReturnObject;
     }
-
 }
