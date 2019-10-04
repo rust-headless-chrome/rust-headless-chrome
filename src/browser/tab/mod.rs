@@ -852,6 +852,36 @@ impl<'a> Tab {
         Ok(())
     }
 
+    /// Closes the target Page
+    pub fn close_target(&self) -> Fallible<bool> {
+        self.call_method(protocol::target::methods::CloseTarget {
+            target_id: self.get_target_id(),
+        })
+        .map(|r| r.success)
+    }
+
+    /// Tries to close page, running its beforeunload hooks, if any
+    pub fn close_with_unload(&self) -> Fallible<bool> {
+        self.call_method(protocol::page::methods::Close {})
+            .map(|_| true)
+    }
+
+    /// Calls one of the close_* methods depending on fire_unload option
+    pub fn close(&self, fire_unload: bool) -> Fallible<bool> {
+        if fire_unload {
+            return self.close_with_unload();
+        }
+        self.close_target()
+    }
+
+    /// Activates (focuses) the target.
+    pub fn activate(&self) -> Fallible<&Self> {
+        self.call_method(protocol::target::methods::ActivateTarget {
+            target_id: self.get_target_id(),
+        })
+        .map(|_| self)
+    }
+
     /// Get position and size of the browser window associated with this `Tab`.
     ///
     /// Note that the returned bounds are always specified for normal (windowed)

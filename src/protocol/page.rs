@@ -236,6 +236,18 @@ pub mod methods {
         type ReturnObject = NavigateReturnObject;
     }
 
+    /// Tries to close page, running its beforeunload hooks, if any
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Close {}
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CloseReturnObject {}
+    impl Method for Close {
+        const NAME: &'static str = "Page.close";
+        type ReturnObject = CloseReturnObject;
+    }
+
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct Enable {}
