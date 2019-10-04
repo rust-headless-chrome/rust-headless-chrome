@@ -12,7 +12,9 @@ use point::Point;
 
 use crate::browser::Transport;
 use crate::protocol::dom::Node;
-use crate::protocol::page::methods::Navigate;
+use crate::protocol::page::methods::{
+    FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
+};
 use crate::protocol::target::{TargetId, TargetInfo};
 use crate::protocol::{
     dom, input, logs, network, page, profiler, runtime, target, Event, RemoteError,
@@ -924,5 +926,29 @@ impl<'a> Tab {
     pub fn get_title(&self) -> Fallible<String> {
         let remote_object = self.evaluate("document.title", false)?;
         Ok(serde_json::from_value(remote_object.value.unwrap())?)
+    }
+
+    /// If enabled, instead of using the GUI to select files, the browser will
+    /// wait for the `Tab.handle_file_chooser` method to be called.
+    /// **WARNING**: Only works on Chromium / Chrome 77 and above.
+    pub fn set_file_chooser_dialog_interception(&self, enabled: bool) -> Fallible<()> {
+        self.call_method(SetInterceptFileChooserDialog { enabled })?;
+        Ok(())
+    }
+
+    /// Will have the same effect as choosing these files from the file chooser dialog that would've
+    /// popped up had `set_file_chooser_dialog_interception` not been called. Calls to this method
+    /// must be preceded by calls that to that method.
+    ///
+    /// Supports selecting files or closing the file chooser dialog.
+    ///
+    /// NOTE: the filepaths listed in `files` must be absolute.
+    pub fn handle_file_chooser(
+        &self,
+        action: FileChooserAction,
+        files: Option<Vec<String>>,
+    ) -> Fallible<()> {
+        self.call_method(HandleFileChooser { action, files })?;
+        Ok(())
     }
 }
