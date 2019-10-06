@@ -377,7 +377,9 @@ impl<'a> Tab {
 
     fn optional_slow_motion_sleep(&self, millis: u64) {
         let multiplier = self.slow_motion_multiplier.read().unwrap();
-        sleep(Duration::from_millis(millis * *multiplier as u64));
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        let scaled_millis = millis * *multiplier as u64;
+        sleep(Duration::from_millis(scaled_millis));
     }
 
     pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
