@@ -23,6 +23,7 @@ use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
 use crate::protocol::network::Cookie;
+use std::thread::sleep;
 
 pub mod element;
 mod keys;
@@ -81,6 +82,7 @@ pub struct Tab {
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
     default_timeout: Arc<RwLock<Duration>>,
     event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
+    slow_motion_multiplier: Arc<RwLock<f64>>, // there's no AtomicF64, otherwise would use that
 }
 
 #[derive(Debug, Fail)]
@@ -140,6 +142,7 @@ impl<'a> Tab {
             response_handler: Arc::new(Mutex::new(None)),
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
             event_listeners: Arc::new(Mutex::new(Vec::new())),
+            slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -346,6 +349,37 @@ impl<'a> Tab {
         &self
     }
 
+    /// Analogous to Puppeteer's ['slowMo' option](https://github.com/GoogleChrome/puppeteer/blob/v1.20.0/docs/api.md#puppeteerconnectoptions),
+    /// but with some differences:
+    ///
+    /// * It doesn't add a delay after literally every message sent via the protocol, but instead
+    ///   just for:
+    ///     * clicking a specific point on the page (default: 100ms before moving the mouse, 250ms
+    ///       before pressing and releasting mouse button)
+    ///     * pressing a key (default: 25 ms)
+    ///     * reloading the page (default: 100ms)
+    ///     * closing a tab (default: 100ms)
+    /// * Instead of an absolute number of milliseconds, it's a multiplier, so that we can delay
+    ///   longer on certain actions like clicking or moving the mouse, and shorter on others like
+    ///   on pressing a key (or the individual 'mouseDown' and 'mouseUp' actions that go across the
+    ///   wire. If the delay was always the same, filling out a form (e.g.) would take ages).
+    ///
+    /// By default the multiplier is set to zero, which effectively disables the slow motion.
+    ///
+    /// The defaults for the various actions (i.e. how long we sleep for when
+    /// multiplier is 1.0) are supposed to be just slow enough to help a human see what's going on
+    /// as a test runs.
+    pub fn set_slow_motion_multiplier(&self, multiplier: f64) -> &Self {
+        let mut slow_motion_multiplier = self.slow_motion_multiplier.write().unwrap();
+        *slow_motion_multiplier = multiplier;
+        &self
+    }
+
+    fn optional_slow_motion_sleep(&self, millis: u64) {
+        let multiplier = self.slow_motion_multiplier.read().unwrap();
+        sleep(Duration::from_millis(millis * *multiplier as u64));
+    }
+
     pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
         self.wait_for_element_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
@@ -460,6 +494,8 @@ impl<'a> Tab {
         let key = Some(definition.key);
         let code = Some(definition.code);
 
+        self.optional_slow_motion_sleep(25);
+
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: key_down_event_type,
             key,
@@ -485,12 +521,15 @@ impl<'a> Tab {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
         }
 
+        self.optional_slow_motion_sleep(100);
+
         self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mouseMoved",
             x: point.x,
             y: point.y,
             ..Default::default()
         })?;
+
         Ok(self)
     }
 
@@ -502,6 +541,7 @@ impl<'a> Tab {
 
         self.move_mouse_to_point(point)?;
 
+        self.optional_slow_motion_sleep(250);
         self.call_method(input::methods::DispatchMouseEvent {
             event_type: "mousePressed",
             x: point.x,
@@ -580,6 +620,7 @@ impl<'a> Tab {
     /// If `script_to_evaluate` is given, the script will be injected into all frames of the
     /// inspected page after reload. Argument will be ignored if reloading dataURL origin.
     pub fn reload(&self, ignore_cache: bool, script_to_evaluate: Option<&str>) -> Fallible<&Self> {
+        self.optional_slow_motion_sleep(100);
         self.call_method(page::methods::Reload {
             ignore_cache,
             script_to_evaluate,
@@ -868,6 +909,8 @@ impl<'a> Tab {
 
     /// Calls one of the close_* methods depending on fire_unload option
     pub fn close(&self, fire_unload: bool) -> Fallible<bool> {
+        self.optional_slow_motion_sleep(50);
+
         if fire_unload {
             return self.close_with_unload();
         }
