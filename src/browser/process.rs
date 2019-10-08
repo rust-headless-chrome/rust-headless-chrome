@@ -20,7 +20,7 @@ use crate::browser::default_executable;
 use crate::util;
 
 #[cfg(feature = "fetch")]
-use super::fetcher::{self, Fetcher};
+use super::fetcher::{Fetcher, FetcherOptions};
 use std::collections::HashMap;
 
 pub struct Process {
@@ -89,12 +89,13 @@ pub struct LaunchOptions<'a> {
     #[builder(default)]
     extensions: Vec<&'a OsStr>,
 
-    /// The revision of chrome to use
+    /// The options to use for fetching a version of chrome when `path` is None.
     ///
-    /// By default, we'll use a revision guaranteed to work with our API.
+    /// By default, we'll use a revision guaranteed to work with our API and will
+    /// download and install that revision of chrome the first time a Process is created.
     #[cfg(feature = "fetch")]
-    #[builder(default = "self.default_revision()")]
-    revision: &'static str,
+    #[builder(default)]
+    fetcher_options: FetcherOptions,
 
     /// How long to keep the WebSocket to the browser for after not receiving any events from it
     /// Defaults to 30 seconds
@@ -111,11 +112,6 @@ impl<'a> LaunchOptions<'a> {
     pub fn default_builder() -> LaunchOptionsBuilder<'a> {
         LaunchOptionsBuilder::default()
     }
-}
-
-#[cfg(feature = "fetch")]
-impl<'a> LaunchOptionsBuilder<'a> {
-    fn default_revision(&self) -> &'static str {}
 }
 
 /// These are passed to the Chrome binary by default.
@@ -152,8 +148,8 @@ impl Process {
         if launch_options.path.is_none() {
             #[cfg(feature = "fetch")]
             {
-                let fetch = Fetcher::new(launch_options.revision)?;
-                launch_options.path = Some(fetch.run()?);
+                let fetch = Fetcher::new(launch_options.fetcher_options.clone())?;
+                launch_options.path = Some(fetch.fetch()?);
             }
             #[cfg(not(feature = "fetch"))]
             {
