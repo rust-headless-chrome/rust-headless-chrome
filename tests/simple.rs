@@ -14,6 +14,7 @@ use headless_chrome::protocol::network::methods::RequestPattern;
 use headless_chrome::protocol::network::Cookie;
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
+use headless_chrome::util::Wait;
 use headless_chrome::{
     protocol::browser::{Bounds, WindowState},
     protocol::page::ScreenshotFormat,
@@ -652,6 +653,55 @@ fn get_cookies() -> Fallible<()> {
 
     assert_eq!(name, "testing");
     assert_eq!(value, "1");
+
+    Ok(())
+}
+
+#[test]
+fn close_tabs() -> Fallible<()> {
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let tabs = browser.get_tabs();
+
+    let wait = Wait::with_timeout(Duration::from_secs(30));
+
+    let check_tabs = |num: usize| {
+        let num_tabs = tabs.lock().unwrap().len();
+        assert_eq!(num, num_tabs);
+    };
+    let wait_tabs = |num: usize| {
+        let num_tabs = tabs.lock().unwrap().len();
+        if num_tabs == num {
+            Some(true)
+        } else {
+            None
+        }
+    };
+
+    check_tabs(1);
+
+    let new_tab1 = browser.new_tab()?;
+    new_tab1
+        .navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
+    check_tabs(2);
+
+    let new_tab2 = browser.new_tab()?;
+    new_tab2
+        .navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
+
+    check_tabs(3);
+
+    let closed = new_tab1.close(true)?;
+
+    assert_eq!(closed, true);
+
+    wait.until(|| wait_tabs(2))?;
+    check_tabs(2);
+
+    new_tab2.close_with_unload()?;
+    wait.until(|| wait_tabs(1))?;
+    check_tabs(1);
 
     Ok(())
 }
