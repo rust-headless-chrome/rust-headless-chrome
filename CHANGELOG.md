@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 * [`LaunchOptions::default_builder()`](https://github.com/atroche/rust-headless-chrome/pull/176) for easier access to LaunchOptionsBuilder (which, because it's created via `derive(Builder)` is hard for editors to deal with
 * [Support for intercepting the file chooser dialog](https://github.com/atroche/rust-headless-chrome/pull/169)
 * [Slow motion option for tab](https://github.com/atroche/rust-headless-chrome/pull/177)
+* [`Element::get_inner_text()`](https://github.com/atroche/rust-headless-chrome/pull/178)
 
 ### Removed
 ### Changed
