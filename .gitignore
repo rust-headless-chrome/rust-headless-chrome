@@ -3,3 +3,8 @@
 .idea
 logs
 Cargo.lock
+
+/tests/temp/*
+!/tests/temp/.gitkeep
+
+debug.log

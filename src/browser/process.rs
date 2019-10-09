@@ -340,6 +340,8 @@ fn port_is_available(port: u16) -> bool {
 mod tests {
     use std::sync::Once;
     use std::thread;
+    use std::path::PathBuf;
+    use std::fs;
 
     use crate::browser::default_executable;
 
@@ -353,12 +355,52 @@ mod tests {
         });
     }
 
+    fn tests_temp_dir() -> PathBuf {
+        [env!("CARGO_MANIFEST_DIR"), "tests", "temp"].iter().collect::<PathBuf>()
+    }
+
     #[test]
     fn can_launch_chrome_and_get_ws_url() {
         setup();
         let chrome = super::Process::new(
             LaunchOptions::default_builder()
                 .path(Some(default_executable().unwrap()))
+                .build()
+                .unwrap(),
+        )
+        .unwrap();
+        info!("{:?}", chrome.debug_ws_url);
+    }
+
+    #[test]
+    #[cfg(feature = "fetch")]
+    fn can_install_chrome_to_dir_and_launch() {
+        use crate::browser::fetcher::{CUR_REV};
+        #[cfg(target_os = "linux")]
+        const PLATFORM: &str = "linux";
+        #[cfg(target_os = "macos")]
+        const PLATFORM: &str = "mac";
+        #[cfg(windows)]
+        const PLATFORM: &str = "win";
+
+        setup();
+
+        // clean up any artifacts from a previous run of this test.
+        // if we do this after it fails on windows because chrome can stay running
+        // for a bit.
+        let mut installed_dir = tests_temp_dir();
+        installed_dir.push(format!("{}-{}", PLATFORM, CUR_REV));
+
+        if installed_dir.exists() {
+            info!("Deleting pre-existing install at {:?}", &installed_dir);
+            fs::remove_dir_all(&installed_dir).expect("Could not delete pre-existing install");
+        }
+
+        let chrome = super::Process::new(
+            LaunchOptions::default_builder()
+                .fetcher_options(FetcherOptions::default()
+                    .with_install_dir(Some(tests_temp_dir()))
+                )
                 .build()
                 .unwrap(),
         )
