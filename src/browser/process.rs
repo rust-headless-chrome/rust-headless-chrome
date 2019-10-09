@@ -338,10 +338,13 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "fetch")]
+    use std::fs;
+    #[cfg(feature = "fetch")]
+    use std::path::PathBuf;
+
     use std::sync::Once;
     use std::thread;
-    use std::path::PathBuf;
-    use std::fs;
 
     use crate::browser::default_executable;
 
@@ -353,10 +356,6 @@ mod tests {
         INIT.call_once(|| {
             env_logger::try_init().unwrap_or(());
         });
-    }
-
-    fn tests_temp_dir() -> PathBuf {
-        [env!("CARGO_MANIFEST_DIR"), "tests", "temp"].iter().collect::<PathBuf>()
     }
 
     #[test]
@@ -375,7 +374,7 @@ mod tests {
     #[test]
     #[cfg(feature = "fetch")]
     fn can_install_chrome_to_dir_and_launch() {
-        use crate::browser::fetcher::{CUR_REV};
+        use crate::browser::fetcher::CUR_REV;
         #[cfg(target_os = "linux")]
         const PLATFORM: &str = "linux";
         #[cfg(target_os = "macos")]
@@ -383,12 +382,16 @@ mod tests {
         #[cfg(windows)]
         const PLATFORM: &str = "win";
 
+        let tests_temp_dir = [env!("CARGO_MANIFEST_DIR"), "tests", "temp"]
+            .iter()
+            .collect::<PathBuf>();
+
         setup();
 
         // clean up any artifacts from a previous run of this test.
         // if we do this after it fails on windows because chrome can stay running
         // for a bit.
-        let mut installed_dir = tests_temp_dir();
+        let mut installed_dir = tests_temp_dir.clone();
         installed_dir.push(format!("{}-{}", PLATFORM, CUR_REV));
 
         if installed_dir.exists() {
@@ -398,9 +401,7 @@ mod tests {
 
         let chrome = super::Process::new(
             LaunchOptions::default_builder()
-                .fetcher_options(FetcherOptions::default()
-                    .with_install_dir(Some(tests_temp_dir()))
-                )
+                .fetcher_options(FetcherOptions::default().with_install_dir(Some(&tests_temp_dir)))
                 .build()
                 .unwrap(),
         )

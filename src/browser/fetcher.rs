@@ -6,10 +6,10 @@ use std::{
 };
 
 use directories::ProjectDirs;
-use walkdir::WalkDir;
 use failure::{format_err, Fallible};
 use log::*;
 use ureq;
+use walkdir::WalkDir;
 use zip;
 
 pub const CUR_REV: &str = "634997";
@@ -27,23 +27,23 @@ const PLATFORM: &str = "win";
 #[derive(Clone)]
 pub struct FetcherOptions {
     /// The desired chrome revision.
-    /// 
+    ///
     /// defaults to CUR_REV
     revision: String,
 
     /// The prefered installation directory. If not None we will look here first
     /// for existing installs.
-    /// 
+    ///
     /// defaults to None
     install_dir: Option<PathBuf>,
 
     /// Allow headless_chrome to download and install the desired revision if not found.
-    /// 
+    ///
     /// defaults to true
     allow_download: bool,
 
     /// Allow looking in the standard installation directories for existing installs.
-    /// 
+    ///
     /// defaults to true
     allow_standard_dirs: bool,
 }
@@ -107,7 +107,7 @@ impl Fetcher {
             self.unzip(zip_path)?;
 
             // look again
-            return self.chrome_path()
+            return self.chrome_path();
         }
 
         // couldn't find and not allowed to download
@@ -136,12 +136,11 @@ impl Fetcher {
                     .split('-')
                     .collect::<Vec<_>>();
 
-                if 
-                    filename_parts.len() == 2 &&
-                    filename_parts[0] == PLATFORM &&
-                    filename_parts[1] == self.options.revision 
+                if filename_parts.len() == 2
+                    && filename_parts[0] == PLATFORM
+                    && filename_parts[1] == self.options.revision
                 {
-                    return Ok(entry.path().into())
+                    return Ok(entry.path().into());
                 }
             }
         }
@@ -180,18 +179,17 @@ impl Fetcher {
         let total = get_size(&url)?;
         info!("Total size of download: {} MiB", total);
 
-        let mut path: PathBuf = 
-            if let Some(mut dir) = self.options.install_dir.clone() {
-                // we have a preferred install location
-                dir.push(format!("{}-{}", PLATFORM, self.options.revision));
-                dir
-            } else if self.options.allow_standard_dirs {
-                get_project_dirs()?.data_dir().to_path_buf()
-            } else {
-                // No preferred install dir and not allowed to use standard dirs.
-                // Not likely for someone to try and do this on purpose.
-                return Err(format_err!("No allowed installation directory"))
-            };
+        let mut path: PathBuf = if let Some(mut dir) = self.options.install_dir.clone() {
+            // we have a preferred install location
+            dir.push(format!("{}-{}", PLATFORM, self.options.revision));
+            dir
+        } else if self.options.allow_standard_dirs {
+            get_project_dirs()?.data_dir().to_path_buf()
+        } else {
+            // No preferred install dir and not allowed to use standard dirs.
+            // Not likely for someone to try and do this on purpose.
+            return Err(format_err!("No allowed installation directory"));
+        };
         path = path.with_extension("zip");
 
         info!("Creating file for download: {}", &path.display());
@@ -207,12 +205,14 @@ impl Fetcher {
     fn unzip<P: AsRef<Path>>(&self, zip_path: P) -> Fallible<PathBuf> {
         let mut archive = zip::ZipArchive::new(File::open(zip_path.as_ref())?)?;
 
-        let mut extract_path: PathBuf = zip_path.as_ref()
+        let mut extract_path: PathBuf = zip_path
+            .as_ref()
             .parent()
             .ok_or_else(|| format_err!("zip_path does not have a parent directory"))?
             .to_path_buf();
 
-        let folder_name = zip_path.as_ref()
+        let folder_name = zip_path
+            .as_ref()
             .file_stem()
             .ok_or_else(|| format_err!("zip_path does not have a file stem"))?;
 
