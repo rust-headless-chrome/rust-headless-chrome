@@ -20,7 +20,7 @@ use crate::browser::default_executable;
 use crate::util;
 
 #[cfg(feature = "fetch")]
-use super::fetcher::{self, Fetcher};
+use super::fetcher::{Fetcher, FetcherOptions};
 use std::collections::HashMap;
 
 pub struct Process {
@@ -89,12 +89,13 @@ pub struct LaunchOptions<'a> {
     #[builder(default)]
     extensions: Vec<&'a OsStr>,
 
-    /// The revision of chrome to use
+    /// The options to use for fetching a version of chrome when `path` is None.
     ///
-    /// By default, we'll use a revision guaranteed to work with our API.
+    /// By default, we'll use a revision guaranteed to work with our API and will
+    /// download and install that revision of chrome the first time a Process is created.
     #[cfg(feature = "fetch")]
-    #[builder(default = "self.default_revision()")]
-    revision: &'static str,
+    #[builder(default)]
+    fetcher_options: FetcherOptions,
 
     /// How long to keep the WebSocket to the browser for after not receiving any events from it
     /// Defaults to 30 seconds
@@ -111,11 +112,6 @@ impl<'a> LaunchOptions<'a> {
     pub fn default_builder() -> LaunchOptionsBuilder<'a> {
         LaunchOptionsBuilder::default()
     }
-}
-
-#[cfg(feature = "fetch")]
-impl<'a> LaunchOptionsBuilder<'a> {
-    fn default_revision(&self) -> &'static str {}
 }
 
 /// These are passed to the Chrome binary by default.
@@ -152,8 +148,8 @@ impl Process {
         if launch_options.path.is_none() {
             #[cfg(feature = "fetch")]
             {
-                let fetch = Fetcher::new(launch_options.revision)?;
-                launch_options.path = Some(fetch.run()?);
+                let fetch = Fetcher::new(launch_options.fetcher_options.clone())?;
+                launch_options.path = Some(fetch.fetch()?);
             }
             #[cfg(not(feature = "fetch"))]
             {
@@ -342,6 +338,11 @@ fn port_is_available(port: u16) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "fetch")]
+    use std::fs;
+    #[cfg(feature = "fetch")]
+    use std::path::PathBuf;
+
     use std::sync::Once;
     use std::thread;
 
@@ -363,6 +364,44 @@ mod tests {
         let chrome = super::Process::new(
             LaunchOptions::default_builder()
                 .path(Some(default_executable().unwrap()))
+                .build()
+                .unwrap(),
+        )
+        .unwrap();
+        info!("{:?}", chrome.debug_ws_url);
+    }
+
+    #[test]
+    #[cfg(feature = "fetch")]
+    fn can_install_chrome_to_dir_and_launch() {
+        use crate::browser::fetcher::CUR_REV;
+        #[cfg(target_os = "linux")]
+        const PLATFORM: &str = "linux";
+        #[cfg(target_os = "macos")]
+        const PLATFORM: &str = "mac";
+        #[cfg(windows)]
+        const PLATFORM: &str = "win";
+
+        let tests_temp_dir = [env!("CARGO_MANIFEST_DIR"), "tests", "temp"]
+            .iter()
+            .collect::<PathBuf>();
+
+        setup();
+
+        // clean up any artifacts from a previous run of this test.
+        // if we do this after it fails on windows because chrome can stay running
+        // for a bit.
+        let mut installed_dir = tests_temp_dir.clone();
+        installed_dir.push(format!("{}-{}", PLATFORM, CUR_REV));
+
+        if installed_dir.exists() {
+            info!("Deleting pre-existing install at {:?}", &installed_dir);
+            fs::remove_dir_all(&installed_dir).expect("Could not delete pre-existing install");
+        }
+
+        let chrome = super::Process::new(
+            LaunchOptions::default_builder()
+                .fetcher_options(FetcherOptions::default().with_install_dir(Some(&tests_temp_dir)))
                 .build()
                 .unwrap(),
         )
