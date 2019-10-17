@@ -186,7 +186,7 @@ impl Fetcher {
         } else if self.options.allow_standard_dirs {
             let mut dir = get_project_dirs()?.data_dir().to_path_buf();
             dir.push(format!("{}-{}", PLATFORM, self.options.revision));
-            dir            
+            dir
         } else {
             // No preferred install dir and not allowed to use standard dirs.
             // Not likely for someone to try and do this on purpose.
@@ -194,9 +194,11 @@ impl Fetcher {
         };
         path = path.with_extension("zip");
         // we need to create this directory in case it doesn't exist yet
-        fs::create_dir_all(path.parent()
-            .map_err(|_err| format_err!("Path {:?} does not have a parent directory"))?
-        ).map_err(|_err| format_err!("Could not create directory at {:?}", path.parent()));
+        fs::create_dir_all(
+            path.parent()
+                .ok_or_else(|| format_err!("Path {:?} does not have a parent directory", path))?,
+        )
+        .map_err(|_err| format_err!("Could not create directory at {:?}", path.parent()))?;
 
         println!("{:?}", path);
 
