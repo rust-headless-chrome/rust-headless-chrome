@@ -184,13 +184,19 @@ impl Fetcher {
             dir.push(format!("{}-{}", PLATFORM, self.options.revision));
             dir
         } else if self.options.allow_standard_dirs {
-            get_project_dirs()?.data_dir().to_path_buf()
+            let mut dir = get_project_dirs()?.data_dir().to_path_buf();
+            dir.push(format!("{}-{}", PLATFORM, self.options.revision));
+            dir            
         } else {
             // No preferred install dir and not allowed to use standard dirs.
             // Not likely for someone to try and do this on purpose.
             return Err(format_err!("No allowed installation directory"));
         };
         path = path.with_extension("zip");
+        // we need to create this directory in case it doesn't exist yet
+        fs::create_dir_all(path.parent().unwrap());
+
+        println!("{:?}", path);
 
         info!("Creating file for download: {}", &path.display());
         let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
