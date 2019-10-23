@@ -21,6 +21,9 @@ use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
 use crate::protocol::{self, Event};
 use crate::util;
 
+#[cfg(feature = "fetch")]
+pub use fetcher::FetcherOptions;
+
 pub mod context;
 #[cfg(feature = "fetch")]
 mod fetcher;

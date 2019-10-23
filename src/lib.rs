@@ -77,6 +77,9 @@ pub use browser::{
     Browser, LaunchOptions, LaunchOptionsBuilder,
 };
 
+#[cfg(feature = "fetch")]
+pub use browser::FetcherOptions;
+
 pub mod browser;
 pub mod protocol;
 pub mod util;
