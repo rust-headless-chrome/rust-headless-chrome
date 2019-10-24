@@ -1013,7 +1013,7 @@ impl<'a> Tab {
 
     /// Will have the same effect as choosing these files from the file chooser dialog that would've
     /// popped up had `set_file_chooser_dialog_interception` not been called. Calls to this method
-    /// must be preceded by calls that to that method.
+    /// must be preceded by calls to that method.
     ///
     /// Supports selecting files or closing the file chooser dialog.
     ///
