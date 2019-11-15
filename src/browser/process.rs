@@ -72,6 +72,11 @@ pub struct LaunchOptions<'a> {
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
     port: Option<u16>,
+    /// Determines whether SSL certificates should be verified. 
+    /// This is unsafe and can lead to MiTM attacks. Make sure you understand the risks
+    /// See https://www.owasp.org/index.php/Man-in-the-middle_attack
+    #[builder(default = "true")]
+    verify: bool,
 
     /// Path for Chrome or Chromium.
     ///
@@ -239,6 +244,10 @@ impl Process {
 
         if launch_options.headless {
             args.extend(&["--headless"]);
+        }
+
+        if !launch_options.verify {
+            args.extend(&["--ignore-certificate-errors"])
         }
 
         if !launch_options.sandbox {
