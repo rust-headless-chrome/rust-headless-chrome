@@ -705,3 +705,11 @@ fn close_tabs() -> Fallible<()> {
 
     Ok(())
 }
+
+#[test]
+fn parses_shadow_doms() -> Fallible<()> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("shadow-dom.html"));
+    tab.wait_for_element("html")?;
+    Ok(())
+}
