@@ -141,8 +141,8 @@ impl Transport {
                 let mut raw = message_text.clone();
                 raw.truncate(300);
                 trace!("Msg to tab: {}", &raw);
-                if let Err(e) = self.call_method_on_browser(target_method.clone()) {
-                    warn!("Failed to call method on browser: {:?}", target_method);
+                if let Err(e) = self.call_method_on_browser(target_method) {
+                    warn!("Failed to call method on browser: {:?}", e);
                     self.waiting_call_registry.unregister_call(call.id);
                     trace!("Unregistered callback: {:?}", call.id);
                     return Err(e);
@@ -210,7 +210,6 @@ impl Transport {
     }
 
     pub fn shutdown(&self) {
-        self.open.store(false, Ordering::SeqCst);
         self.web_socket_connection.shutdown();
         let shutdown_tx = self.loop_shutdown_tx.lock().unwrap();
         let _ = shutdown_tx.send(());
