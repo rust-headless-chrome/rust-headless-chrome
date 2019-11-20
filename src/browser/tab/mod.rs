@@ -10,7 +10,6 @@ use serde;
 use element::Element;
 use point::Point;
 
-use crate::browser::Transport;
 use crate::protocol::dom::Node;
 use crate::protocol::page::methods::{
     FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
@@ -22,6 +21,7 @@ use crate::protocol::{
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
+use crate::browser::transport::Transport;
 use crate::protocol::network::Cookie;
 use std::thread::sleep;
 
@@ -83,6 +83,7 @@ pub struct Tab {
     default_timeout: Arc<RwLock<Duration>>,
     event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
     slow_motion_multiplier: Arc<RwLock<f64>>, // there's no AtomicF64, otherwise would use that
+    closed: Arc<AtomicBool>,
 }
 
 #[derive(Debug, Fail)]
@@ -136,13 +137,12 @@ impl<'a> Tab {
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
-            request_interceptor: Arc::new(Mutex::new(Box::new(
-                |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
-            ))),
+            request_interceptor: Arc::new(Mutex::new(Self::no_op_request_interceptor())),
             response_handler: Arc::new(Mutex::new(None)),
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
             event_listeners: Arc::new(Mutex::new(Vec::new())),
             slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
+            closed: Arc::new(AtomicBool::new(false)),
         };
 
         tab.call_method(page::methods::Enable {})?;
@@ -151,6 +151,10 @@ impl<'a> Tab {
         tab.start_event_handler_thread();
 
         Ok(tab)
+    }
+
+    fn no_op_request_interceptor() -> RequestInterceptor {
+        Box::new(|_transport, _session_id, _interception| RequestInterceptionDecision::Continue)
     }
 
     pub fn update_target_info(&self, target_info: TargetInfo) {
@@ -201,6 +205,7 @@ impl<'a> Tab {
             .transport
             .listen_to_target_events(self.session_id.clone());
         let navigating = Arc::clone(&self.navigating);
+        let closed = Arc::clone(&self.closed);
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
         let response_handler_mutex = self.response_handler.clone();
         let session_id = self.session_id.clone();
@@ -228,6 +233,9 @@ impl<'a> Tab {
                         }
                     }
                     Event::RequestIntercepted(interception_event) => {
+                        if closed.load(Ordering::SeqCst) {
+                            continue;
+                        }
                         let id = interception_event.params.interception_id.clone();
                         let interceptor = interceptor_mutex.lock().unwrap();
                         let decision = interceptor(
@@ -708,6 +716,16 @@ impl<'a> Tab {
         Ok(())
     }
 
+    /// Stops Chrome from asking us what to do about network requests
+    pub fn disable_request_interception(&self) -> Fallible<()> {
+        let mut current_interceptor = self.request_interceptor.lock().unwrap();
+        *current_interceptor = Self::no_op_request_interceptor();
+
+        self.call_method(network::methods::SetRequestInterception { patterns: &[] })?;
+
+        Ok(())
+    }
+
     /// Once you have an intercepted request, you can choose to let it continue by calling this.
     ///
     /// If you specify a 'modified_response', that's what the requester in the page will receive
@@ -897,16 +915,20 @@ impl<'a> Tab {
 
     /// Closes the target Page
     pub fn close_target(&self) -> Fallible<bool> {
-        self.call_method(protocol::target::methods::CloseTarget {
-            target_id: self.get_target_id(),
-        })
-        .map(|r| r.success)
+        let success = self
+            .call_method(protocol::target::methods::CloseTarget {
+                target_id: self.get_target_id(),
+            })
+            .map(|r| r.success);
+        self.mark_as_closed();
+        success
     }
 
     /// Tries to close page, running its beforeunload hooks, if any
     pub fn close_with_unload(&self) -> Fallible<bool> {
-        self.call_method(protocol::page::methods::Close {})
-            .map(|_| true)
+        self.call_method(protocol::page::methods::Close {})?;
+        self.mark_as_closed();
+        Ok(true)
     }
 
     /// Calls one of the close_* methods depending on fire_unload option
@@ -917,6 +939,10 @@ impl<'a> Tab {
             return self.close_with_unload();
         }
         self.close_target()
+    }
+
+    fn mark_as_closed(&self) -> () {
+        self.closed.store(true, Ordering::SeqCst)
     }
 
     /// Activates (focuses) the target.
