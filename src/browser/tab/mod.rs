@@ -11,7 +11,7 @@ use element::Element;
 use point::Point;
 
 use crate::browser::Transport;
-use crate::protocol::dom::Node;
+use crate::protocol::dom::{Node, NodeId};
 use crate::protocol::page::methods::{
     FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
 };
@@ -406,15 +406,51 @@ impl<'a> Tab {
         )
     }
 
+    /// Returns the first element in the document which matches the given CSS selector.
+    ///
+    /// Equivalent to the following JS:
+    ///
+    /// ```js
+    /// document.querySelector(selector)
+    /// ```
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # // Awful hack to get access to testing utils common between integration, doctest, and unit tests
+    /// # mod server {
+    /// #     include!("../../testing_utils/server.rs");
+    /// # }
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::Browser;
+    ///
+    /// let browser = Browser::default()?;
+    /// let initial_tab = browser.wait_for_initial_tab()?;
+    ///
+    /// let file_server = server::Server::with_dumb_html(include_str!("../../../tests/simple.html"));
+    /// let element = initial_tab.navigate_to(&file_server.url())?
+    ///     .wait_until_navigated()?
+    ///     .find_element("div#foobar")?;
+    /// let attrs = element.get_attributes()?.unwrap();
+    /// assert_eq!(attrs["id"], "foobar");
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn find_element(&self, selector: &str) -> Fallible<Element<'_>> {
         trace!("Looking up element via selector: {}", selector);
 
         let root_node_id = self.get_document()?.node_id;
+        self.run_query_selector_on_node(root_node_id, selector)
+    }
+
+    pub fn run_query_selector_on_node(
+        &self,
+        node_id: NodeId,
+        selector: &str,
+    ) -> Fallible<Element<'_>> {
         let node_id = self
-            .call_method(dom::methods::QuerySelector {
-                node_id: root_node_id,
-                selector,
-            })
+            .call_method(dom::methods::QuerySelector { node_id, selector })
             .map_err(NoElementFound::map)?
             .node_id;
 
