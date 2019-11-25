@@ -12,6 +12,7 @@ use crate::protocol::runtime;
 
 mod box_model;
 
+use crate::protocol::dom::Node;
 use crate::protocol::runtime::methods::RemoteObjectType;
 pub use box_model::{BoxModel, ElementQuad};
 
@@ -24,6 +25,7 @@ pub use box_model::{BoxModel, ElementQuad};
 pub struct Element<'a> {
     pub remote_object_id: String,
     pub backend_node_id: dom::NodeId,
+    pub node_id: dom::NodeId,
     pub parent: &'a super::Tab,
 }
 
@@ -60,6 +62,7 @@ impl<'a> Element<'a> {
         Ok(Element {
             remote_object_id,
             backend_node_id,
+            node_id,
             parent,
         })
     }

@@ -21,8 +21,8 @@ use headless_chrome::{
     Browser, Tab,
 };
 
-mod logging;
-mod server;
+pub mod logging;
+pub mod server;
 
 /// Launches a dumb server that unconditionally serves the given data as a
 /// successful html response; launches a new browser and navigates to the
@@ -348,6 +348,18 @@ fn find_elements() -> Fallible<()> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let divs = tab.wait_for_elements("div")?;
     assert_eq!(8, divs.len());
+    Ok(())
+}
+
+#[test]
+fn find_element_on_tab_and_other_elements() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let containing_element = tab.find_element("div#position-test")?;
+    let inner_element = containing_element.find_element("#strictly-above")?;
+    dbg!(&inner_element);
+    let attrs = inner_element.get_attributes()?.unwrap();
+    assert_eq!(attrs["id"], "strictly-above");
     Ok(())
 }
 
