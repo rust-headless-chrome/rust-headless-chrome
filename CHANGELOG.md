@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 * [Support for intercepting the file chooser dialog](https://github.com/atroche/rust-headless-chrome/pull/169)
 * [Slow motion option for tab](https://github.com/atroche/rust-headless-chrome/pull/177)
 * [`Element::get_inner_text()`](https://github.com/atroche/rust-headless-chrome/pull/178)
-* `Element::find_element`
+* [`Element::find_element` and `Element::find_elements`](https://github.com/atroche/rust-headless-chrome/pull/190)
 
 ### Removed
 ### Changed
