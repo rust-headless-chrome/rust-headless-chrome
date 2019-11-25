@@ -457,6 +457,22 @@ impl<'a> Tab {
         Element::new(&self, node_id)
     }
 
+    pub fn run_query_selector_all_on_node(
+        &self,
+        node_id: NodeId,
+        selector: &str,
+    ) -> Fallible<Vec<Element<'_>>> {
+        let node_ids = self
+            .call_method(dom::methods::QuerySelectorAll { node_id, selector })
+            .map_err(NoElementFound::map)?
+            .node_ids;
+
+        node_ids
+            .iter()
+            .map(|node_id| Element::new(&self, *node_id))
+            .collect()
+    }
+
     pub fn get_document(&self) -> Fallible<Node> {
         Ok(self
             .call_method(dom::methods::GetDocument {

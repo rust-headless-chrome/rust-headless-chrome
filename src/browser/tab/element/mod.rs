@@ -103,6 +103,42 @@ impl<'a> Element<'a> {
             .run_query_selector_on_node(self.node_id, selector)
     }
 
+    /// Returns the first element in the document which matches the given CSS selector.
+    ///
+    /// Equivalent to the following JS:
+    ///
+    /// ```js
+    /// document.querySelector(selector)
+    /// ```
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # // Awful hack to get access to testing utils common between integration, doctest, and unit tests
+    /// # mod server {
+    /// #     include!("../../../testing_utils/server.rs");
+    /// # }
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::Browser;
+    ///
+    /// let browser = Browser::default()?;
+    /// let initial_tab = browser.wait_for_initial_tab()?;
+    ///
+    /// let file_server = server::Server::with_dumb_html(include_str!("../../../../tests/simple.html"));
+    /// let containing_element = initial_tab.navigate_to(&file_server.url())?
+    ///     .wait_until_navigated()?
+    ///     .find_element("div#position-test")?;
+    /// let inner_divs = containing_element.find_elements("div")?;
+    /// assert_eq!(inner_divs.len(), 5);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn find_elements(&self, selector: &str) -> Fallible<Vec<Self>> {
+        self.parent
+            .run_query_selector_all_on_node(self.node_id, selector)
+    }
+
     /// Moves the mouse to the middle of this element
     pub fn move_mouse_over(&self) -> Fallible<&Self> {
         self.scroll_into_view()?;
