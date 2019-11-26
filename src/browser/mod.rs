@@ -11,6 +11,7 @@ use serde;
 use process::Process;
 pub use process::{LaunchOptions, LaunchOptionsBuilder};
 pub use tab::Tab;
+pub use transport::ConnectionClosed;
 use transport::Transport;
 use which::which;
 
