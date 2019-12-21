@@ -239,7 +239,12 @@ impl Process {
         args.extend(&DEFAULT_ARGS);
 
         if !launch_options.args.is_empty() {
-            args.extend(&launch_options.args)
+            let extra_args: Vec<&str> = launch_options
+                .args
+                .iter()
+                .map(|a| a.to_str().unwrap())
+                .collect();
+            args.extend(extra_args);
         }
 
         if !window_size_option.is_empty() {
