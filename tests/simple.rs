@@ -546,6 +546,7 @@ fn authentication() -> Fallible<()> {
     tab.enable_fetch(None, Some(true))?;
     tab.navigate_to("http://httpbin.org/basic-auth/login/password")?;
     tab.wait_until_navigated()?;
+
     Ok(())
 }
 

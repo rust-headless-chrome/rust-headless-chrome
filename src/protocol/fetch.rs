@@ -166,7 +166,7 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct GetResponseBody<'a> {
-        request_id: &'a str,
+        pub request_id: &'a str,
     }
 
     #[derive(Deserialize, Debug)]

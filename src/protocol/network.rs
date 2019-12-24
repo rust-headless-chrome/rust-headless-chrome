@@ -204,8 +204,6 @@ pub mod events {
 }
 
 pub mod methods {
-    use std::collections::HashMap;
-
     use serde::{Deserialize, Serialize};
 
     use crate::protocol::network::Cookie;
@@ -247,22 +245,6 @@ pub mod methods {
         pub interception_stage: Option<&'a str>,
     }
 
-    /// DEPRECIATED, use Fetch.enable instead
-    #[derive(Serialize, Debug)]
-    #[serde(rename_all = "camelCase")]
-    pub struct SetRequestInterception<'a> {
-        pub patterns: &'a [RequestPattern<'a>],
-    }
-
-    #[derive(Deserialize, Debug, Clone)]
-    #[serde(rename_all = "camelCase")]
-    pub struct SetRequestInterceptionReturnObject {}
-
-    impl<'a> Method for SetRequestInterception<'a> {
-        const NAME: &'static str = "Network.setRequestInterception";
-        type ReturnObject = SetRequestInterceptionReturnObject;
-    }
-
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct AuthChallengeResponse<'a> {
@@ -271,36 +253,6 @@ pub mod methods {
         pub username: Option<&'a str>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub password: Option<&'a str>,
-    }
-
-    /// DEPRECIATED use Fetch.continueRequest
-    #[derive(Serialize, Debug, Default)]
-    #[serde(rename_all = "camelCase")]
-    pub struct ContinueInterceptedRequest<'a> {
-        pub interception_id: &'a str,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub error_reason: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub raw_response: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub url: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub method: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub post_data: Option<&'a str>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub headers: Option<HashMap<&'a str, &'a str>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub auth_challenge_response: Option<AuthChallengeResponse<'a>>,
-    }
-
-    #[derive(Deserialize, Debug, Clone)]
-    #[serde(rename_all = "camelCase")]
-    pub struct ContinueInterceptedRequestReturnObject {}
-
-    impl<'a> Method for ContinueInterceptedRequest<'a> {
-        const NAME: &'static str = "Network.continueInterceptedRequest";
-        type ReturnObject = ContinueInterceptedRequestReturnObject;
     }
 
     #[derive(Serialize, Debug)]
