@@ -23,7 +23,9 @@ use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
 use crate::protocol::fetch::methods::{AuthChallengeResponse, ContinueRequest};
+use crate::protocol::network::methods::SetExtraHTTPHeaders;
 use crate::protocol::network::Cookie;
+use std::collections::HashMap;
 use std::thread::sleep;
 
 pub mod element;
@@ -235,7 +237,6 @@ impl Tab {
                         }
                     }
                     Event::RequestPaused(event) => {
-                        println!("Received Event: {:#?}", event);
                         let interceptor = interceptor_mutex.lock().unwrap();
                         let decision =
                             interceptor(Arc::clone(&transport), session_id.clone(), event.clone());
@@ -1078,6 +1079,12 @@ impl Tab {
         files: Option<Vec<String>>,
     ) -> Fallible<()> {
         self.call_method(HandleFileChooser { action, files })?;
+        Ok(())
+    }
+
+    pub fn set_extra_http_headers(&self, headers: HashMap<&str, &str>) -> Fallible<()> {
+        self.call_method(network::methods::Enable {})?;
+        self.call_method(SetExtraHTTPHeaders { headers })?;
         Ok(())
     }
 }

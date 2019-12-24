@@ -20,6 +20,7 @@ use headless_chrome::{
     protocol::page::ScreenshotFormat,
     Browser, Tab,
 };
+use std::collections::HashMap;
 
 pub mod logging;
 pub mod server;
@@ -539,9 +540,8 @@ fn set_request_interception() -> Fallible<()> {
 #[test]
 fn authentication() -> Fallible<()> {
     logging::enable_logging();
-    let (server, browser, tab) = dumb_server(include_str!(
-        "coverage_fixtures/basic_page_with_js_scripts.html"
-    ));
+    let browser = Browser::default()?;
+    let tab = browser.wait_for_initial_tab()?;
     tab.authenticate("login", "password")?;
     tab.enable_fetch(None, Some(true))?;
     tab.navigate_to("http://httpbin.org/basic-auth/login/password")?;
@@ -724,5 +724,23 @@ fn close_tabs() -> Fallible<()> {
     wait.until(|| wait_tabs(1))?;
     check_tabs(1);
 
+    Ok(())
+}
+
+#[test]
+fn set_extra_http_headers() -> Fallible<()> {
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let mut headers = HashMap::new();
+    headers.insert("test", "header");
+    tab.set_extra_http_headers(headers)?;
+    tab.enable_fetch(None, None)?;
+
+    tab.enable_request_interception(Box::new(|transport, session_id, intercepted| {
+        assert_eq!(intercepted.params.request.headers.get("test"), Some(&"header".to_string()));
+        RequestPausedDecision::Continue(None)
+    }))?;
+
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
     Ok(())
 }

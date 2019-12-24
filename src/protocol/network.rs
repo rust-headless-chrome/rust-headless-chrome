@@ -208,6 +208,7 @@ pub mod methods {
 
     use crate::protocol::network::Cookie;
     use crate::protocol::Method;
+    use std::collections::HashMap;
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -325,5 +326,20 @@ pub mod methods {
     impl<'a> Method for GetCookies {
         const NAME: &'static str = "Network.getCookies";
         type ReturnObject = GetCookiesReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetExtraHTTPHeaders<'a> {
+        pub headers: HashMap<&'a str, &'a str>,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetExtraHTTPHeadersReturnObject {}
+
+    impl<'a> Method for SetExtraHTTPHeaders<'a> {
+        const NAME: &'static str = "Network.setExtraHTTPHeaders";
+        type ReturnObject = SetExtraHTTPHeadersReturnObject;
     }
 }
