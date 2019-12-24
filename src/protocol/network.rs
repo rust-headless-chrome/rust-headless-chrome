@@ -74,6 +74,24 @@ pub struct Cookie {
     pub same_site: Option<CookieSameSite>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum ErrorReason {
+    Failed,
+    Aborted,
+    TimedOut,
+    AccessDenied,
+    ConnectionClosed,
+    ConnectionReset,
+    ConnectionRefused,
+    ConnectionAborted,
+    ConnectionFailed,
+    NameNotResolved,
+    InternetDisconnected,
+    AddressUnreachable,
+    BlockedByClient,
+    BlockedByResponse,
+}
+
 pub mod events {
     use crate::protocol::types::{JsFloat, JsInt};
     use serde::{Deserialize, Serialize};
@@ -229,6 +247,7 @@ pub mod methods {
         pub interception_stage: Option<&'a str>,
     }
 
+    /// DEPRECIATED, use Fetch.enable instead
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SetRequestInterception<'a> {
@@ -254,6 +273,7 @@ pub mod methods {
         pub password: Option<&'a str>,
     }
 
+    /// DEPRECIATED use Fetch.continueRequest
     #[derive(Serialize, Debug, Default)]
     #[serde(rename_all = "camelCase")]
     pub struct ContinueInterceptedRequest<'a> {

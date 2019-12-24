@@ -12,7 +12,6 @@ use crate::protocol::runtime;
 
 mod box_model;
 
-use crate::protocol::dom::Node;
 use crate::protocol::runtime::methods::RemoteObjectType;
 pub use box_model::{BoxModel, ElementQuad};
 

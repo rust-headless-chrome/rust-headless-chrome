@@ -4,13 +4,13 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use base64;
 use failure::Fallible;
 use log::*;
 use rand::prelude::*;
 
-use headless_chrome::browser::tab::RequestInterceptionDecision;
-use headless_chrome::protocol::network::methods::RequestPattern;
+use headless_chrome::browser::tab::RequestPausedDecision;
+use headless_chrome::protocol::fetch::methods::{FulfilRequest, RequestPattern};
+use headless_chrome::protocol::fetch::HeaderEntry;
 use headless_chrome::protocol::network::Cookie;
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
@@ -351,6 +351,7 @@ fn find_elements() -> Fallible<()> {
     Ok(())
 }
 
+/*
 #[test]
 fn find_element_on_tab_and_other_elements() -> Fallible<()> {
     logging::enable_logging();
@@ -362,6 +363,7 @@ fn find_element_on_tab_and_other_elements() -> Fallible<()> {
     assert_eq!(attrs["id"], "strictly-above");
     Ok(())
 }
+*/
 
 #[test]
 fn set_user_agent() -> Fallible<()> {
@@ -489,55 +491,61 @@ fn set_request_interception() -> Fallible<()> {
         RequestPattern {
             url_pattern: None,
             resource_type: None,
-            interception_stage: Some("HeadersReceived"),
+            request_stage: Some("HeadersReceived"),
         },
         RequestPattern {
             url_pattern: None,
             resource_type: None,
-            interception_stage: Some("Request"),
+            request_stage: Some("Request"),
         },
     ];
+    tab.enable_fetch(Some(&patterns), None)?;
 
-    tab.enable_request_interception(
-        &patterns,
-        Box::new(|transport, session_id, intercepted| {
-            if intercepted.request.url.ends_with(".js") {
-                let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
-                let js_response = tiny_http::Response::new(
-                    200.into(),
-                    vec![tiny_http::Header::from_bytes(
-                        &b"Content-Type"[..],
-                        &b"application/javascript"[..],
-                    )
-                    .unwrap()],
-                    js_body.as_bytes(),
-                    Some(js_body.len()),
-                    None,
-                );
+    tab.enable_request_interception(Box::new(|transport, session_id, intercepted| {
+        if intercepted.params.request.url.ends_with(".js") {
+            let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
 
-                let mut wrapped_writer = Vec::new();
-                js_response
-                    .raw_print(&mut wrapped_writer, (1, 2).into(), &[], false, None)
-                    .unwrap();
+            let headers = vec![HeaderEntry {
+                name: "Content-Type".to_string(),
+                value: "application/javascript".to_string(),
+            }];
 
-                let base64_response = base64::encode(&wrapped_writer);
+            let fulful_request = FulfilRequest {
+                request_id: intercepted.params.request_id,
+                response_code: 200,
+                response_headers: Some(headers),
+                binary_response_headers: None,
+                body: Some(base64::encode(js_body)),
+                response_phrase: None,
+            };
 
-                RequestInterceptionDecision::Response(base64_response)
-            } else {
-                RequestInterceptionDecision::Continue
-            }
-        }),
-    )?;
+            RequestPausedDecision::Fulfil(fulful_request)
+        } else {
+            RequestPausedDecision::Continue(None)
+        }
+    }))?;
 
     // ignore cache:
+
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
-
     tab.wait_until_navigated()?;
-
     // There are two JS scripts that get loaded via network, they both append an element like this:
     assert_eq!(2, tab.wait_for_elements("hr")?.len());
 
+    Ok(())
+}
+
+#[test]
+fn authentication() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!(
+        "coverage_fixtures/basic_page_with_js_scripts.html"
+    ));
+    tab.authenticate("login", "password")?;
+    tab.enable_fetch(None, Some(true))?;
+    tab.navigate_to("http://httpbin.org/basic-auth/login/password")?;
+    tab.wait_until_navigated()?;
     Ok(())
 }
 
