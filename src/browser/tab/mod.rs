@@ -777,12 +777,16 @@ impl Tab {
         Ok(())
     }
 
-    pub fn authenticate(&self, username: &str, password: &str) -> Fallible<&Self> {
+    pub fn authenticate(
+        &self,
+        username: Option<String>,
+        password: Option<String>,
+    ) -> Fallible<&Self> {
         let mut current_auth_handler = self.auth_handler.lock().unwrap();
         *current_auth_handler = AuthChallengeResponse {
             response: "ProvideCredentials".to_string(),
-            username: Some(username.to_string()),
-            password: Some(password.to_string()),
+            username,
+            password,
         };
         Ok(self)
     }

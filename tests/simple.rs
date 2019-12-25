@@ -542,7 +542,7 @@ fn authentication() -> Fallible<()> {
     logging::enable_logging();
     let browser = Browser::default()?;
     let tab = browser.wait_for_initial_tab()?;
-    tab.authenticate("login", "password")?;
+    tab.authenticate(Some("login".to_string()), Some("password".to_string()))?;
     tab.enable_fetch(None, Some(true))?;
     tab.navigate_to("http://httpbin.org/basic-auth/login/password")?;
     tab.wait_until_navigated()?;
