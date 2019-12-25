@@ -75,6 +75,39 @@ pub struct Cookie {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum CookiePriority {
+    Low,
+    Medium,
+    High,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CookieParam<'a> {
+    pub name: &'a str,
+    pub value: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secure: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub http_only: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub same_site: Option<CookieSameSite>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires: Option<JsFloat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<JsUInt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<CookiePriority>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ErrorReason {
     Failed,
     Aborted,
@@ -326,6 +359,21 @@ pub mod methods {
     impl<'a> Method for GetCookies {
         const NAME: &'static str = "Network.getCookies";
         type ReturnObject = GetCookiesReturnObject;
+    }
+
+    #[derive(Serialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetCookies<'a> {
+        pub cookies: &'a [super::CookieParam<'a>],
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetCookiesReturnObject {}
+
+    impl<'a> Method for SetCookies<'a> {
+        const NAME: &'static str = "Network.setCookies";
+        type ReturnObject = SetCookiesReturnObject;
     }
 
     #[derive(Serialize, Debug)]

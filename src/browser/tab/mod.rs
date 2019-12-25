@@ -24,7 +24,7 @@ use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 use super::transport::SessionId;
 use crate::protocol::fetch::methods::{AuthChallengeResponse, ContinueRequest};
 use crate::protocol::network::methods::SetExtraHTTPHeaders;
-use crate::protocol::network::Cookie;
+use crate::protocol::network::{Cookie, CookieParam};
 use std::collections::HashMap;
 use std::thread::sleep;
 
@@ -1034,6 +1034,12 @@ impl Tab {
         Ok(self
             .call_method(network::methods::GetCookies { urls: None })?
             .cookies)
+    }
+
+    /// Sets the cookies
+    pub fn set_cookies(&self, cookies: &[CookieParam]) -> Fallible<()> {
+        self.call_method(network::methods::SetCookies { cookies })?;
+        Ok(())
     }
 
     /// Returns the title of the document.

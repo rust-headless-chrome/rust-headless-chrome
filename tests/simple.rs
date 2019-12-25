@@ -11,7 +11,7 @@ use rand::prelude::*;
 use headless_chrome::browser::tab::RequestPausedDecision;
 use headless_chrome::protocol::fetch::methods::{FulfilRequest, RequestPattern};
 use headless_chrome::protocol::fetch::HeaderEntry;
-use headless_chrome::protocol::network::Cookie;
+use headless_chrome::protocol::network::{Cookie, CookieParam};
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
 use headless_chrome::util::Wait;
@@ -667,8 +667,7 @@ fn get_cookies() -> Fallible<()> {
     tab.wait_until_navigated()?;
 
     let cookies = tab.get_cookies()?;
-
-    assert_eq!(cookies.len(), 1);
+    assert_eq!(cookies.len(), 2);
 
     let Cookie { name, value, .. } = cookies.first().unwrap();
 
@@ -736,11 +735,40 @@ fn set_extra_http_headers() -> Fallible<()> {
     tab.enable_fetch(None, None)?;
 
     tab.enable_request_interception(Box::new(|transport, session_id, intercepted| {
-        assert_eq!(intercepted.params.request.headers.get("test"), Some(&"header".to_string()));
+        assert_eq!(
+            intercepted.params.request.headers.get("test"),
+            Some(&"header".to_string())
+        );
         RequestPausedDecision::Continue(None)
     }))?;
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
         .wait_until_navigated()?;
+    Ok(())
+}
+
+#[test]
+fn set_cookies() -> Fallible<()> {
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+
+    let cookie = CookieParam {
+        name: "test",
+        value: "cookie",
+        url: None,
+        domain: Some("127.0.0.1"),
+        path: None,
+        secure: None,
+        http_only: None,
+        same_site: None,
+        expires: None,
+        size: None,
+        priority: None,
+    };
+
+    tab.set_cookies(&[cookie])?;
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
+    let cookies = tab.get_cookies()?;
+    assert_eq!(cookies.len(), 1);
     Ok(())
 }
