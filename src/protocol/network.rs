@@ -84,15 +84,15 @@ pub enum CookiePriority {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct CookieParam<'a> {
-    pub name: &'a str,
-    pub value: &'a str,
+pub struct CookieParam {
+    pub name: String,
+    pub value: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<&'a str>,
+    pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain: Option<&'a str>,
+    pub domain: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<&'a str>,
+    pub path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub secure: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -364,7 +364,7 @@ pub mod methods {
     #[derive(Serialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct SetCookies<'a> {
-        pub cookies: &'a [super::CookieParam<'a>],
+        pub cookies: &'a [super::CookieParam],
     }
 
     #[derive(Deserialize, Debug, Clone)]

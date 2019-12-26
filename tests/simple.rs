@@ -752,10 +752,10 @@ fn set_cookies() -> Fallible<()> {
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
 
     let cookie = CookieParam {
-        name: "test",
-        value: "cookie",
+        name: "test".to_string(),
+        value: "cookie".to_string(),
         url: None,
-        domain: Some("127.0.0.1"),
+        domain: Some("127.0.0.1".to_string()),
         path: None,
         secure: None,
         http_only: None,
