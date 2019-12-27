@@ -9,6 +9,8 @@ use log::*;
 use rand::prelude::*;
 
 use headless_chrome::browser::tab::RequestPausedDecision;
+use headless_chrome::browser::transport::{SessionId, Transport};
+use headless_chrome::protocol::fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::fetch::methods::{FulfilRequest, RequestPattern};
 use headless_chrome::protocol::fetch::HeaderEntry;
 use headless_chrome::protocol::network::{Cookie, CookieParam};
@@ -500,31 +502,33 @@ fn set_request_interception() -> Fallible<()> {
             request_stage: Some("Request"),
         },
     ];
-    tab.enable_fetch(Some(&patterns), None)?;
+    tab.enable_fetch(Some(&patterns), None)?;=
 
-    tab.enable_request_interception(Box::new(|transport, session_id, intercepted| {
-        if intercepted.params.request.url.ends_with(".js") {
-            let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
+    tab.enable_request_interception(Arc::new(
+        move |transport: Arc<Transport>, session_id: SessionId, intercepted: RequestPausedEvent| {
+            if intercepted.params.request.url.ends_with(".js") {
+                let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
 
-            let headers = vec![HeaderEntry {
-                name: "Content-Type".to_string(),
-                value: "application/javascript".to_string(),
-            }];
+                let headers = vec![HeaderEntry {
+                    name: "Content-Type".to_string(),
+                    value: "application/javascript".to_string(),
+                }];
 
-            let fulful_request = FulfilRequest {
-                request_id: intercepted.params.request_id,
-                response_code: 200,
-                response_headers: Some(headers),
-                binary_response_headers: None,
-                body: Some(base64::encode(js_body)),
-                response_phrase: None,
-            };
+                let fulful_request = FulfilRequest {
+                    request_id: intercepted.params.request_id,
+                    response_code: 200,
+                    response_headers: Some(headers),
+                    binary_response_headers: None,
+                    body: Some(base64::encode(js_body)),
+                    response_phrase: None,
+                };
 
-            RequestPausedDecision::Fulfil(fulful_request)
-        } else {
-            RequestPausedDecision::Continue(None)
-        }
-    }))?;
+                RequestPausedDecision::Fulfil(fulful_request)
+            } else {
+                RequestPausedDecision::Continue(None)
+            }
+        },
+    ))?;
 
     // ignore cache:
 
@@ -734,13 +738,15 @@ fn set_extra_http_headers() -> Fallible<()> {
     tab.set_extra_http_headers(headers)?;
     tab.enable_fetch(None, None)?;
 
-    tab.enable_request_interception(Box::new(|transport, session_id, intercepted| {
-        assert_eq!(
-            intercepted.params.request.headers.get("test"),
-            Some(&"header".to_string())
-        );
-        RequestPausedDecision::Continue(None)
-    }))?;
+    tab.enable_request_interception(Arc::new(
+        |transport: Arc<Transport>, session_id: SessionId, intercepted: RequestPausedEvent| {
+            assert_eq!(
+                intercepted.params.request.headers.get("test"),
+                Some(&"header".to_string())
+            );
+            RequestPausedDecision::Continue(None)
+        },
+    ))?;
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
         .wait_until_navigated()?;

@@ -10,7 +10,6 @@ use serde;
 use element::Element;
 use point::Point;
 
-use crate::browser::Transport;
 use crate::protocol::dom::{Node, NodeId};
 use crate::protocol::page::methods::{
     FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
@@ -22,6 +21,8 @@ use crate::protocol::{
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
+use crate::browser::transport::Transport;
+use crate::protocol::fetch::events::RequestPausedEvent;
 use crate::protocol::fetch::methods::{AuthChallengeResponse, ContinueRequest};
 use crate::protocol::network::methods::SetExtraHTTPHeaders;
 use crate::protocol::network::{Cookie, CookieParam};
@@ -39,16 +40,6 @@ pub enum RequestPausedDecision {
     Continue(Option<fetch::methods::ContinueRequest>),
 }
 
-pub type RequestInterceptor = Box<
-    dyn Fn(
-            Arc<Transport>,
-            SessionId,
-            protocol::fetch::events::RequestPausedEvent,
-        ) -> RequestPausedDecision
-        + Send
-        + Sync,
->;
-
 #[rustfmt::skip]
 pub type ResponseHandler = Box<
     dyn Fn(
@@ -60,6 +51,31 @@ pub type ResponseHandler = Box<
     ) + Send
     + Sync,
 >;
+
+pub trait RequestInterceptor {
+    fn intercept(
+        &self,
+        transport: Arc<Transport>,
+        session_id: SessionId,
+        event: RequestPausedEvent,
+    ) -> RequestPausedDecision;
+}
+
+impl<
+        F: Fn(Arc<Transport>, SessionId, RequestPausedEvent) -> RequestPausedDecision + Send + Sync,
+    > RequestInterceptor for F
+{
+    fn intercept(
+        &self,
+        transport: Arc<Transport>,
+        session_id: SessionId,
+        event: RequestPausedEvent,
+    ) -> RequestPausedDecision {
+        self(transport, session_id, event)
+    }
+}
+
+type RequestIntercept = dyn RequestInterceptor + Send + Sync;
 
 pub trait EventListener<T> {
     fn on_event(&self, event: &T) -> ();
@@ -81,7 +97,7 @@ pub struct Tab {
     session_id: SessionId,
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
-    request_interceptor: Arc<Mutex<RequestInterceptor>>,
+    request_interceptor: Arc<Mutex<Arc<RequestIntercept>>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
     auth_handler: Arc<Mutex<fetch::methods::AuthChallengeResponse>>,
     default_timeout: Arc<RwLock<Duration>>,
@@ -140,7 +156,7 @@ impl Tab {
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
-            request_interceptor: Arc::new(Mutex::new(Box::new(
+            request_interceptor: Arc::new(Mutex::new(Arc::new(
                 |_transport, _session_id, _interception| RequestPausedDecision::Continue(None),
             ))),
             response_handler: Arc::new(Mutex::new(None)),
@@ -238,8 +254,11 @@ impl Tab {
                     }
                     Event::RequestPaused(event) => {
                         let interceptor = interceptor_mutex.lock().unwrap();
-                        let decision =
-                            interceptor(Arc::clone(&transport), session_id.clone(), event.clone());
+                        let decision = interceptor.intercept(
+                            Arc::clone(&transport),
+                            session_id.clone(),
+                            event.clone(),
+                        );
                         let result = match decision {
                             RequestPausedDecision::Continue(continue_request) => {
                                 if let Some(continue_request) = continue_request {
@@ -266,7 +285,6 @@ impl Tab {
                                 .map(|_| ()),
                         };
                         if result.is_err() {
-                            println!("{:#?}", result);
                             warn!("Tried to handle request after connection was closed");
                         }
                     }
@@ -771,7 +789,7 @@ impl Tab {
     /// so that you can call methods from within the closure using `transport.call_method_on_target`.
     ///
     /// The closure needs to return a variant of `RequestPausedDecision`.
-    pub fn enable_request_interception(&self, interceptor: RequestInterceptor) -> Fallible<()> {
+    pub fn enable_request_interception(&self, interceptor: Arc<RequestIntercept>) -> Fallible<()> {
         let mut current_interceptor = self.request_interceptor.lock().unwrap();
         *current_interceptor = interceptor;
         Ok(())
