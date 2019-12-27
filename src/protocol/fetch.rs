@@ -72,8 +72,8 @@ pub mod methods {
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct FailRequest {
-        request_id: String,
-        error_reason: ErrorReason,
+        pub request_id: String,
+        pub error_reason: ErrorReason,
     }
 
     #[derive(Debug, Deserialize)]
