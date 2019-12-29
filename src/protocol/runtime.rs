@@ -73,6 +73,8 @@ pub mod methods {
         pub subtype: Option<RemoteObjectSubtype>,
         pub description: Option<String>,
         pub class_name: Option<String>,
+        /// TODO: When the subtype is an array the returned `value` is always `None`.
+        /// You can find the first 100 elements of the array in the `preview`.
         pub value: Option<serde_json::Value>,
         pub unserializable_value: Option<String>,
         pub preview: Option<ObjectPreview>,
