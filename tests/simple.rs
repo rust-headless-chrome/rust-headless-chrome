@@ -351,20 +351,17 @@ fn find_elements() -> Fallible<()> {
     Ok(())
 }
 
-// TODO:
-// https://github.com/atroche/rust-headless-chrome/issues/197
-//
-//#[test]
-//fn find_element_on_tab_and_other_elements() -> Fallible<()> {
-//    logging::enable_logging();
-//    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
-//    let containing_element = tab.find_element("div#position-test")?;
-//    let inner_element = containing_element.find_element("#strictly-above")?;
-//    dbg!(&inner_element);
-//    let attrs = inner_element.get_attributes()?.unwrap();
-//    assert_eq!(attrs["id"], "strictly-above");
-//    Ok(())
-//}
+#[test]
+fn find_element_on_tab_and_other_elements() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let containing_element = tab.find_element("div#position-test")?;
+    let inner_element = containing_element.find_element("#strictly-above")?;
+    dbg!(&inner_element);
+    let attrs = inner_element.get_attributes()?.unwrap();
+    assert_eq!(attrs["id"], "strictly-above");
+    Ok(())
+}
 
 #[test]
 fn set_user_agent() -> Fallible<()> {
@@ -445,20 +442,6 @@ fn call_js_fn_async_resolved() -> Fallible<()> {
     assert_eq!(result.value, Some((42).into()));
     Ok(())
 }
-
-// https://github.com/atroche/rust-headless-chrome/issues/198
-//#[test]
-//fn call_js_fn_return_array() -> Fallible<()> {
-//    logging::enable_logging();
-//    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
-//    let element = tab.wait_for_element("#foobar")?;
-//    let remote_obj = element.call_js_fn("function() { return [1, 2, 3] }", false)?;
-//    assert_eq!(remote_obj.object_type, RemoteObjectType::Object);
-//    assert_eq!(remote_obj.subtype, Some(RemoteObjectSubtype::Array));
-//    assert_eq!(remote_obj.description, Some("Array(3)".to_owned()));
-//    assert_eq!(remote_obj.value, Some((vec![1, 2, 3]).into()));
-//    Ok(())
-//}
 
 #[test]
 fn evaluate_sync() -> Fallible<()> {
