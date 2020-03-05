@@ -106,6 +106,12 @@ pub struct LaunchOptions<'a> {
     /// Passes value through to std::process::Command::envs.
     #[builder(default = "None")]
     pub process_envs: Option<HashMap<String, String>>,
+
+    /// Extra Chromium launch arguments.
+    ///
+    /// Current arguments may be found at http://peter.sh/examples/?/chromium-switches.html
+    #[builder(default = "None")]
+    extra_args: Option<&'a [&'a str]>,
 }
 
 impl<'a> LaunchOptions<'a> {
@@ -232,6 +238,10 @@ impl Process {
         ];
 
         args.extend(&DEFAULT_ARGS);
+
+        if let Some(extra_args) = launch_options.extra_args {
+            args.extend(extra_args);
+        }
 
         if !window_size_option.is_empty() {
             args.extend(&[window_size_option.as_str()]);
@@ -364,6 +374,20 @@ mod tests {
         let chrome = super::Process::new(
             LaunchOptions::default_builder()
                 .path(Some(default_executable().unwrap()))
+                .build()
+                .unwrap(),
+        )
+        .unwrap();
+        info!("{:?}", chrome.debug_ws_url);
+    }
+
+    #[test]
+    fn can_launch_chrome_with_extra_args_and_get_ws_url() {
+        setup();
+        let chrome = super::Process::new(
+            LaunchOptions::default_builder()
+                .path(Some(default_executable().unwrap()))
+                .extra_args(Some(&["--hide-scrollbars"]))
                 .build()
                 .unwrap(),
         )
