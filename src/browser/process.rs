@@ -89,6 +89,9 @@ pub struct LaunchOptions<'a> {
     #[builder(default)]
     extensions: Vec<&'a OsStr>,
 
+    #[builder(default = "None")]
+    user_data_dir: Option<std::path::PathBuf>,
+
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
     /// By default, we'll use a revision guaranteed to work with our API and will
@@ -211,12 +214,19 @@ impl Process {
             String::from("")
         };
 
-        // NOTE: picking random data dir so that each a new browser instance is launched
-        // (see man google-chrome)
-        let user_data_dir = ::tempfile::Builder::new()
-            .prefix("rust-headless-chrome-profile")
-            .tempdir()?;
-        let data_dir_option = format!("--user-data-dir={}", user_data_dir.path().to_str().unwrap());
+        // User data directory
+        let user_data_dir = if let Some(dir) = &launch_options.user_data_dir {
+            dir.to_owned()
+        } else {
+            // picking random data dir so that each a new browser instance is launched
+            // (see man google-chrome)
+            ::tempfile::Builder::new()
+                .prefix("rust-headless-chrome-profile")
+                .tempdir()?
+                .path()
+                .to_path_buf()
+        };
+        let data_dir_option = format!("--user-data-dir={}", &user_data_dir.to_str().unwrap());
 
         trace!("Chrome will have profile: {}", data_dir_option);
 
