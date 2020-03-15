@@ -159,7 +159,10 @@ impl Transport {
         }
 
         let mut params_string = format!("{:?}", call.get_params());
-        params_string.truncate(400);
+        params_string = match params_string.char_indices().nth(400) {
+            None => params_string,
+            Some((idx, _)) => params_string[..idx].to_string(),
+        };
         trace!(
             "waiting for response from call registry: {} {:?}",
             &call_id,
