@@ -37,6 +37,20 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
+    pub struct DispatchInsertText<'a> {
+        pub text: &'a str,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DispatchInsertTextReturnObject {}
+    impl<'a> Method for DispatchInsertText<'a> {
+        const NAME: &'static str = "Input.insertText";
+        type ReturnObject = DispatchInsertTextReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct DispatchKeyEvent<'a> {
         #[serde(rename = "type")]
         pub event_type: &'a str,

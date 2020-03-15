@@ -521,8 +521,23 @@ impl<'a> Tab {
             if c == "" {
                 continue;
             }
-            self.press_key(c)?;
+
+            // https://github.com/puppeteer/puppeteer/blob/master/lib/Input.js#L158-L169
+            // If key description is not defined, just send insert text event
+            // This will allow to type not only latin letters
+            if let Ok(_) = keys::get_key_definition(c) {
+                self.press_key(c)?;
+            } else {
+                self.call_method(input::methods::DispatchInsertText { text: c })?;
+            }
+
+            self.optional_slow_motion_sleep(25);
         }
+        Ok(self)
+    }
+
+    pub fn insert_text(&self, text: &str) -> Fallible<&Self> {
+        self.call_method(input::methods::DispatchInsertText { text })?;
         Ok(self)
     }
 
@@ -547,8 +562,6 @@ impl<'a> Tab {
 
         let key = Some(definition.key);
         let code = Some(definition.code);
-
-        self.optional_slow_motion_sleep(25);
 
         self.call_method(input::methods::DispatchKeyEvent {
             event_type: key_down_event_type,
