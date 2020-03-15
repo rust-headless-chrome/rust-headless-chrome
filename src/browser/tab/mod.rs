@@ -695,6 +695,12 @@ impl<'a> Tab {
         Ok(self)
     }
 
+    /// Force stop page loading
+    pub fn stop_loading(&self) -> Fallible<&Self> {
+        self.call_method(page::methods::Stop {})?;
+        Ok(self)
+    }
+
     /// Enables the profiler
     pub fn enable_profiler(&self) -> Fallible<&Self> {
         self.call_method(profiler::methods::Enable {})?;
