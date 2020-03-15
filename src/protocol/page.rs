@@ -250,6 +250,19 @@ pub mod methods {
 
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
+    pub struct Stop {}
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct StopReturnObject {}
+
+    impl Method for Stop {
+        const NAME: &'static str = "Page.stopLoading";
+        type ReturnObject = StopReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
     pub struct Enable {}
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
