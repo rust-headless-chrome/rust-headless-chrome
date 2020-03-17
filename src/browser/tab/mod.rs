@@ -313,6 +313,19 @@ impl<'a> Tab {
         Ok(self)
     }
 
+    pub fn wait_for_url(&self, url: &str) -> Fallible<&Self> {
+        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
+            if &self.get_url() == url {
+                Some(true)
+            } else {
+                None
+            }
+        })?;
+        debug!("A tab finised navigating url");
+
+        Ok(self)
+    }
+
     pub fn navigate_to(&self, url: &str) -> Fallible<&Self> {
         let return_object = self.call_method(Navigate { url })?;
         if let Some(error_text) = return_object.error_text {
