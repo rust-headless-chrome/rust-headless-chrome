@@ -63,6 +63,9 @@ assert!(browse_wikipedia().is_ok());
 
 For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples`](examples/).
 
+> Before running examples. Make sure add [failure](https://crates.io/crates/failure) crate in your cargo project dependency of `Cargo.toml`
+
+
 ## What can't it do?
 
 The [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Browser) is huge. Currently, Puppeteer supports way more of it than we do. Some of the missing features include:
