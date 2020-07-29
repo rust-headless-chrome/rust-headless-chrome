@@ -211,33 +211,30 @@ impl Fetcher {
         Ok(path)
     }
 
-    // unzip the downloaded file and do all the needed file manipulation
-    fn unzip<P: AsRef<Path>>(&self, zip_path: P) -> Fallible<PathBuf> {
+    #[cfg(target_os = "macos")]
+    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Fallible<()> {
+        let out = std::process::Command::new("unzip")
+            .arg(zip_path.as_ref().as_os_str())
+            .current_dir(&extract_path)
+            .output()?;
+
+        if !out.status.success() {
+            error!(
+                "Unable to extract zip using unzip command: \n---- stdout:\n{}\n---- stderr:\n{}",
+                String::from_utf8_lossy(&out.stdout),
+                String::from_utf8_lossy(&out.stderr)
+            );
+        }
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Fallible<()> {
         let mut archive = zip::ZipArchive::new(File::open(zip_path.as_ref())?)?;
-
-        let mut extract_path: PathBuf = zip_path
-            .as_ref()
-            .parent()
-            .ok_or_else(|| format_err!("zip_path does not have a parent directory"))?
-            .to_path_buf();
-
-        let folder_name = zip_path
-            .as_ref()
-            .file_stem()
-            .ok_or_else(|| format_err!("zip_path does not have a file stem"))?;
-
-        extract_path.push(folder_name);
-
-        fs::create_dir_all(&extract_path)?;
-
-        info!(
-            "Extracting (this can take a while): {}",
-            extract_path.display()
-        );
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
-            let mut out_path = extract_path.clone();
+            let mut out_path = PathBuf::from(extract_path);
             out_path.push(file.sanitized_name().as_path());
 
             let comment = file.comment();
@@ -277,6 +274,31 @@ impl Fetcher {
                 }
             }
         }
+        Ok(())
+    }
+    // unzip the downloaded file and do all the needed file manipulation
+    fn unzip<P: AsRef<Path>>(&self, zip_path: P) -> Fallible<PathBuf> {
+        let mut extract_path: PathBuf = zip_path
+            .as_ref()
+            .parent()
+            .ok_or_else(|| format_err!("zip_path does not have a parent directory"))?
+            .to_path_buf();
+
+        let folder_name = zip_path
+            .as_ref()
+            .file_stem()
+            .ok_or_else(|| format_err!("zip_path does not have a file stem"))?;
+
+        extract_path.push(folder_name);
+
+        fs::create_dir_all(&extract_path)?;
+
+        info!(
+            "Extracting (this can take a while): {}",
+            extract_path.display()
+        );
+
+        self.do_unzip(zip_path.as_ref(), &extract_path)?;
 
         info!("Cleaning up");
         if fs::remove_file(&zip_path).is_err() {
