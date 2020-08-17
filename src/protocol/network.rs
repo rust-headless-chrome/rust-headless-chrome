@@ -432,6 +432,17 @@ pub mod methods {
         pub path: Option<String>,
     }
 
+    impl From<SetCookie> for DeleteCookies {
+        fn from(v: SetCookie) -> Self {
+            Self {
+                name: v.name,
+                url: v.url,
+                domain: v.domain,
+                path: v.path,
+            }
+        }
+    }
+
     #[derive(Deserialize, Debug, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct DeleteCookiesReturnObject {}
