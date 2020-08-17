@@ -59,6 +59,14 @@ pub enum CookieSameSite {
     None,
 }
 
+/// https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-CookiePriority
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum CookiePriority {
+    Low,
+    Medium,
+    High,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Cookie {
@@ -190,7 +198,8 @@ pub mod methods {
 
     use serde::{Deserialize, Serialize};
 
-    use crate::protocol::network::Cookie;
+    use crate::protocol::network::{Cookie, CookiePriority, CookieSameSite};
+    use crate::protocol::types::JsFloat;
     use crate::protocol::Method;
 
     #[derive(Serialize, Debug)]
@@ -353,5 +362,82 @@ pub mod methods {
     impl<'a> Method for GetCookies {
         const NAME: &'static str = "Network.getCookies";
         type ReturnObject = GetCookiesReturnObject;
+    }
+
+    /// https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-CookieParam
+    /// https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-setCookie
+    /// TODO: impl From<Cookie>
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetCookie {
+        pub name: String,
+        pub value: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub url: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub domain: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub path: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub secure: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub http_only: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub same_site: Option<CookieSameSite>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub expires: Option<JsFloat>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub priority: Option<CookiePriority>,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetCookieReturnObject {
+        pub success: Option<bool>,
+    }
+
+    impl<'a> Method for SetCookie {
+        const NAME: &'static str = "Network.setCookie";
+        type ReturnObject = SetCookieReturnObject;
+    }
+
+    /// https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-CookieParam
+    /// https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-setCookies
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetCookies {
+        pub cookies: Vec<SetCookie>,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetCookiesReturnObject {}
+
+    impl<'a> Method for SetCookies {
+        const NAME: &'static str = "Network.setCookies";
+        type ReturnObject = SetCookiesReturnObject;
+    }
+
+    /// https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-deleteCookies
+    /// TODO: impl From<Cookie>
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DeleteCookies {
+        pub name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub url: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub domain: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub path: Option<String>,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DeleteCookiesReturnObject {}
+
+    impl<'a> Method for DeleteCookies {
+        const NAME: &'static str = "Network.deleteCookies";
+        type ReturnObject = DeleteCookiesReturnObject;
     }
 }
