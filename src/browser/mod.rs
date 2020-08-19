@@ -302,53 +302,52 @@ impl Browser {
                         }
                         break;
                     }
-                    Ok(event) => {
-                        match event {
-                            Event::TargetCreated(ev) => {
-                                let target_info = ev.params.target_info;
-                                trace!("Creating target: {:?}", target_info);
-                                if target_info.target_type.is_page() {
-                                    match Tab::new(target_info, Arc::clone(&transport)) {
-                                        Ok(new_tab) => {
-                                            tabs.lock().unwrap().push(Arc::new(new_tab));
-                                        }
-                                        Err(_tab_creation_err) => {
-                                            info!("Failed to create a handle to new tab");
-                                            break;
-                                        }
+                    Ok(event) => match event {
+                        Event::TargetCreated(ev) => {
+                            let target_info = ev.params.target_info;
+                            trace!("Creating target: {:?}", target_info);
+                            if target_info.target_type.is_page() {
+                                match Tab::new(target_info, Arc::clone(&transport)) {
+                                    Ok(new_tab) => {
+                                        tabs.lock().unwrap().push(Arc::new(new_tab));
+                                    }
+                                    Err(_tab_creation_err) => {
+                                        info!("Failed to create a handle to new tab");
+                                        break;
                                     }
                                 }
                             }
-                            Event::TargetInfoChanged(ev) => {
-                                let target_info = ev.params.target_info;
-                                trace!("Target info changed: {:?}", target_info);
-                                if target_info.target_type.is_page() {
-                                    let locked_tabs = tabs.lock().unwrap();
-                                    let updated_tab = locked_tabs
-                                        .iter()
-                                        .find(|tab| *tab.get_target_id() == target_info.target_id)
-                                        .expect("got TargetInfoChanged event about a tab not in our list");
+                        }
+                        Event::TargetInfoChanged(ev) => {
+                            let target_info = ev.params.target_info;
+                            trace!("Target info changed: {:?}", target_info);
+                            if target_info.target_type.is_page() {
+                                let locked_tabs = tabs.lock().unwrap();
+                                if let Some(updated_tab) = locked_tabs
+                                    .iter()
+                                    .find(|tab| *tab.get_target_id() == target_info.target_id)
+                                {
                                     updated_tab.update_target_info(target_info);
                                 }
                             }
-                            Event::TargetDestroyed(ev) => {
-                                trace!("Target destroyed: {:?}", ev.params.target_id);
-                                let mut locked_tabs = tabs.lock().unwrap();
-                                let pos = locked_tabs
-                                    .iter()
-                                    .position(|tab| *tab.get_target_id() == ev.params.target_id);
+                        }
+                        Event::TargetDestroyed(ev) => {
+                            trace!("Target destroyed: {:?}", ev.params.target_id);
+                            let mut locked_tabs = tabs.lock().unwrap();
+                            let pos = locked_tabs
+                                .iter()
+                                .position(|tab| *tab.get_target_id() == ev.params.target_id);
 
-                                if let Some(idx) = pos {
-                                    locked_tabs.remove(idx);
-                                }
-                            }
-                            _ => {
-                                let mut raw_event = format!("{:?}", event);
-                                raw_event.truncate(50);
-                                trace!("Unhandled event: {}", raw_event);
+                            if let Some(idx) = pos {
+                                locked_tabs.remove(idx);
                             }
                         }
-                    }
+                        _ => {
+                            let mut raw_event = format!("{:?}", event);
+                            raw_event.truncate(50);
+                            trace!("Unhandled event: {}", raw_event);
+                        }
+                    },
                 }
             }
             info!("Finished browser's event handling loop");
