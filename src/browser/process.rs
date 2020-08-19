@@ -72,6 +72,20 @@ pub struct LaunchOptions<'a> {
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
     port: Option<u16>,
+    #[builder(default = "true")]
+    /// Include default chrome args
+    ///
+    /// The default args can be found [here][def_args]
+    /// [def_args]: https://github.com/atroche/rust-headless-chrome/blob/master/src/browser/process.rs#L119
+    default_args: bool,
+    #[builder(default = "Vec::new()")]
+    /// Extra args to add to chrome
+    extra_args: Vec<String>,
+
+    #[builder(default = "None")]
+    /// Run Chrome in "app" mode and point it to the given URL. In app mode
+    /// chrome will not display the usual browser tabs, URL input, etc.
+    app_url: Option<String>,
 
     /// Path for Chrome or Chromium.
     ///
@@ -116,7 +130,7 @@ impl<'a> LaunchOptions<'a> {
 
 /// These are passed to the Chrome binary by default.
 /// Via https://github.com/GoogleChrome/puppeteer/blob/master/lib/Launcher.js#L38
-static DEFAULT_ARGS: [&str; 23] = [
+pub static DEFAULT_ARGS: [&str; 29] = [
     "--disable-background-networking",
     "--enable-features=NetworkService,NetworkServiceInProcess",
     "--disable-background-timer-throttling",
@@ -141,6 +155,13 @@ static DEFAULT_ARGS: [&str; 23] = [
     "--enable-automation",
     "--password-store=basic",
     "--use-mock-keychain",
+    // Our extras
+    "--disable-gpu",
+    "--enable-logging",
+    "--verbose",
+    "--log-level=0",
+    "--no-first-run",
+    "--disable-audio-output",
 ];
 
 impl Process {
@@ -220,18 +241,13 @@ impl Process {
 
         trace!("Chrome will have profile: {}", data_dir_option);
 
-        let mut args = vec![
-            port_option.as_str(),
-            "--disable-gpu",
-            "--enable-logging",
-            "--verbose",
-            "--log-level=0",
-            "--no-first-run",
-            "--disable-audio-output",
-            data_dir_option.as_str(),
-        ];
+        let mut args = vec![port_option.as_str(), data_dir_option.as_str()];
 
-        args.extend(&DEFAULT_ARGS);
+        args.extend(launch_options.extra_args.iter().map(|x| x.as_str()));
+
+        if launch_options.default_args {
+            args.extend(&DEFAULT_ARGS);
+        }
 
         if !window_size_option.is_empty() {
             args.extend(&[window_size_option.as_str()]);
@@ -240,6 +256,13 @@ impl Process {
         if launch_options.headless {
             args.extend(&["--headless"]);
         }
+
+        let app_arg = if let Some(url) = &launch_options.app_url {
+            format!("--app={}", url)
+        } else {
+            String::from("")
+        };
+        args.push(app_arg.as_str());
 
         if !launch_options.sandbox {
             args.extend(&["--no-sandbox", "--disable-setuid-sandbox"]);
