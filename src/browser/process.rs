@@ -62,22 +62,22 @@ impl Drop for TemporaryProcess {
 pub struct LaunchOptions<'a> {
     /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
-    headless: bool,
+    pub headless: bool,
     /// Determines whether to run the browser with a sandbox.
     #[builder(default = "true")]
-    sandbox: bool,
+    pub sandbox: bool,
     /// Launch the browser with a specific window width and height.
     #[builder(default = "None")]
-    window_size: Option<(u32, u32)>,
+    pub window_size: Option<(u32, u32)>,
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
-    port: Option<u16>,
+    pub port: Option<u16>,
 
     /// Path for Chrome or Chromium.
     ///
     /// If unspecified, the create will try to automatically detect a suitable binary.
     #[builder(default = "None")]
-    path: Option<std::path::PathBuf>,
+    pub path: Option<std::path::PathBuf>,
 
     /// A list of Chrome extensions to load.
     ///
@@ -87,7 +87,7 @@ pub struct LaunchOptions<'a> {
     /// Note that Chrome does not support loading extensions in headless-mode.
     /// See https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c5
     #[builder(default)]
-    extensions: Vec<&'a OsStr>,
+    pub extensions: Vec<&'a OsStr>,
 
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
@@ -106,6 +106,21 @@ pub struct LaunchOptions<'a> {
     /// Passes value through to std::process::Command::envs.
     #[builder(default = "None")]
     pub process_envs: Option<HashMap<String, String>>,
+}
+
+impl<'a> Default for LaunchOptions<'a> {
+    fn default() -> Self {
+        LaunchOptions {
+            headless: true,
+            sandbox: true,
+            idle_browser_timeout: Duration::from_secs(300),
+            window_size: None,
+            path: None,
+            port: None,
+            extensions: Vec::new(),
+            process_envs: None,
+        }
+    }
 }
 
 impl<'a> LaunchOptions<'a> {

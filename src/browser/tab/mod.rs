@@ -58,6 +58,13 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
+
+pub struct SyncSendEvent(pub Arc<Tab>,pub Box<dyn Fn(&Event,&Tab)>);
+
+unsafe impl Sync for SyncSendEvent {}
+
+unsafe impl Send for SyncSendEvent {}
+
 pub trait EventListener<T> {
     fn on_event(&self, event: &T) -> ();
 }
@@ -68,7 +75,15 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
+impl SyncSendEvent {
+
+    pub fn on_event(&self,event: &Event) {
+        self.1(event,&self.0);
+    }
+
+}
+
+// type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
