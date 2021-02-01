@@ -96,11 +96,19 @@ pub struct LaunchOptions<'a> {
     #[cfg(feature = "fetch")]
     #[builder(default)]
     fetcher_options: FetcherOptions,
-
+    
     /// How long to keep the WebSocket to the browser for after not receiving any events from it
     /// Defaults to 30 seconds
     #[builder(default = "Duration::from_secs(300)")]
     pub idle_browser_timeout: Duration,
+    
+    /// Set the process flag `–disable-print-preview`
+    #[builder(default)]
+    pub disable_print_preview: bool,
+    
+    /// Set the process flag `-kiosk-printing`
+    #[builder(default)]
+    pub print_kiosk_mode: bool,
 
     /// Environment variables to set for the Chromium process.
     /// Passes value through to std::process::Command::envs.
@@ -243,6 +251,14 @@ impl Process {
 
         if !launch_options.sandbox {
             args.extend(&["--no-sandbox", "--disable-setuid-sandbox"]);
+        }
+
+        if launch_options.disable_print_preview {
+            args.push("–disable-print-preview");
+        }
+
+        if launch_options.print_kiosk_mode {
+            args.push("-kiosk-printing");
         }
 
         let extension_args: Vec<String> = launch_options
