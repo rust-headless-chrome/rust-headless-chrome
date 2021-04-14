@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::fmt::Debug;
+use std::time::Duration;
 
 use failure::{Fail, Fallible};
 use log::*;
@@ -13,8 +13,12 @@ use crate::protocol::runtime;
 mod box_model;
 
 use crate::protocol::runtime::methods::RemoteObjectType;
+use crate::util;
 pub use box_model::{BoxModel, ElementQuad};
 
+#[derive(Debug, Fail)]
+#[fail(display = "Couldnt get element quad")]
+pub struct NoQuadFound {}
 /// A handle to a [DOM Element](https://developer.mozilla.org/en-US/docs/Web/API/Element).
 ///
 /// Typically you get access to these by passing `Tab.wait_for_element` a CSS selector. Once
@@ -337,38 +341,65 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_midpoint(&self) -> Fallible<Point> {
-        let return_object = self.parent.call_method(dom::methods::GetContentQuads {
-            node_id: None,
-            backend_node_id: Some(self.backend_node_id),
-            object_id: None,
-        })?;
-        let raw_quad = return_object.quads.first().unwrap();
-        let input_quad = ElementQuad::from_raw_points(&raw_quad);
+        match self
+            .parent
+            .call_method(dom::methods::GetContentQuads {
+                node_id: None,
+                backend_node_id: Some(self.backend_node_id),
+                object_id: None,
+            })
+            .and_then(|quad| {
+                let raw_quad = quad.quads.first().unwrap();
+                let input_quad = ElementQuad::from_raw_points(&raw_quad);
 
-        Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
+                Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
+            }) {
+            Ok(e) => return Ok(e),
+            Err(_) => {
+                let mut p = Point { x: 0.0, y: 0.0 };
+
+                util::Wait::with_sleep(Duration::from_secs(1)).run_until(|| {
+                    let r = self.call_js_fn(
+                        r#"
+                    function() {
+                        let v = document.getElementsByClassName("ShowAllChapters")[0];
+
+                        let rect = v.getBoundingClientRect();
+
+                        if(rect.x != 0) {
+                            v.scrollIntoView();
+                        }
+
+                        return v.getBoundingClientRect();
+                    }
+                    "#,
+                        false,
+                    ).unwrap();
+
+                    let res = util::extract_midpoint(r);
+
+                    match res {
+                        Ok(v) => {
+                            if v.x != 0.0 {
+                                p = v;
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        _ => false
+                    }
+                });
+            
+                return Ok(p);
+            }
+        }
     }
 
     pub fn get_js_midpoint(&self) -> Fallible<Point> {
-        let result =
-            self.call_js_fn("function(){ return this.getBoundingClientRect(); }", false)?;
+        let result = self.call_js_fn("function(){return this.getBoundingClientRect(); }", false)?;
 
-        let properties = result
-            .preview
-            .expect("JS couldn't give us quad for element")
-            .properties;
-
-        let mut prop_map = HashMap::new();
-
-        for prop in properties {
-            prop_map.insert(prop.name, prop.value.unwrap().parse::<f64>().unwrap());
-        }
-
-        let midpoint = Point {
-            x: prop_map["x"] + (prop_map["width"] / 2.0),
-            y: prop_map["y"] + (prop_map["height"] / 2.0),
-        };
-
-        Ok(midpoint)
+       util::extract_midpoint(result)
     }
 }
 
@@ -377,3 +408,4 @@ impl<'a> Element<'a> {
 struct ScrollFailed {
     error_text: String,
 }
+

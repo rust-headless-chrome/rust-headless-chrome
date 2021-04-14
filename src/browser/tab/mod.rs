@@ -27,7 +27,7 @@ use std::thread::sleep;
 
 pub mod element;
 mod keys;
-mod point;
+pub mod point;
 
 #[derive(Debug)]
 pub enum RequestInterceptionDecision {
