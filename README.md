@@ -24,7 +24,7 @@ browser testing / web crawling use cases, and there are several 'advanced' featu
 ## Quick Start
 
 ```rust
-use headless_chrome::{Browser, protocol::page::ScreenshotFormat};
+use headless_chrome::{Browser, protocol::page::ScreenshotFormat,browser::tab::Selector};
 
 fn browse_wikipedia() -> Result<(), failure::Error> {
     let browser = Browser::default()?;
@@ -36,7 +36,7 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
 
     /// Wait for network/javascript/dom to make the search-box available
     /// and click it.
-    tab.wait_for_element("input#searchInput")?.click()?;
+    tab.wait_for_element(Selector::Css("input#searchInput"))?.click()?;
 
     /// Type in a query and press `Enter`
     tab.type_str("WebKit")?.press_key("Enter")?;
@@ -53,7 +53,7 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
 
     /// Take a screenshot of just the WebKit-Infobox
     let _png_data = tab
-        .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
+        .wait_for_element(Selector::Css("#mw-content-text > div > table.infobox.vevent"))?
         .capture_screenshot(ScreenshotFormat::PNG)?;
     Ok(())
 }
