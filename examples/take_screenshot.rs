@@ -2,13 +2,13 @@ use std::fs;
 
 use failure::Fallible;
 
-use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
+use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptionsBuilder};
 
 fn main() -> Fallible<()> {
     // Create a headless browser, navigate to wikipedia.org, wait for the page
     // to render completely, take a screenshot of the entire page
     // in JPEG-format using 75% quality.
-    let options = LaunchOptions::default_builder()
+    let options = LaunchOptionsBuilder::default()
         .build()
         .expect("Couldn't find appropriate Chrome binary.");
     let browser = Browser::new(options)?;
