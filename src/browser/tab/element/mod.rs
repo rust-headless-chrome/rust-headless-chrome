@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::fmt::Debug;
+use std::time::Duration;
 
 use failure::{Fail, Fallible};
 use log::*;
@@ -13,8 +13,12 @@ use crate::protocol::runtime;
 mod box_model;
 
 use crate::protocol::runtime::methods::RemoteObjectType;
+use crate::util;
 pub use box_model::{BoxModel, ElementQuad};
 
+#[derive(Debug, Fail)]
+#[fail(display = "Couldnt get element quad")]
+pub struct NoQuadFound {}
 /// A handle to a [DOM Element](https://developer.mozilla.org/en-US/docs/Web/API/Element).
 ///
 /// Typically you get access to these by passing `Tab.wait_for_element` a CSS selector. Once
@@ -165,6 +169,60 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
+    /// Call a JavaScript function where `this` is a reference to the element.
+    ///
+    /// Note: If your function returns an `Array` the returned value will be `None`.
+    /// At this time you can get around this if your array length is <= 100 by inspecting
+    /// the preview.
+    ///
+    /// FIXME: Question for code reviewer - is there anything that can be done about this or
+    /// is this a devtools protocol limitation? I'll update this comment with that information
+    /// before we merge this PR.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::Browser;
+    /// use std::time::Duration;
+    /// let browser = Browser::default()?;
+    /// let url = "https://web.archive.org/web/20190403224553/https://en.wikipedia.org/wiki/JavaScript";
+    ///
+    /// let tab = browser.wait_for_initial_tab()?;
+    /// tab.navigate_to(url)?;
+    ///
+    /// let elem = tab
+    ///     .wait_for_element_with_custom_timeout("#Misplaced_trust_in_developers", Duration::from_secs(10))?;
+    ///
+    /// let remote_object = elem.call_js_fn(r#"
+    ///   function {
+    ///     if (this.id !== 'Misplaced_trust_in_developers') {
+    ///         throw new Error('Failed initial ID assertion');
+    ///     }
+    ///
+    ///     this.id = 'changed-the-id';
+    ///   }
+    /// #", false)?;
+    ///
+    /// let elem = tab.wait_for_element("#changed-the-id")?;
+    /// let remote_object = elem.call_js_fn(r#"
+    ///     async asyncFnExample function () {
+    ///         return 500;
+    ///     }
+    /// "#, true)?;
+    ///
+    /// match remote_object.value.unwrap() {
+    ///    serde_json::value::Value::Number(num) => {
+    ///        assert_eq!(num.as_i64().unwrap(), 500);
+    ///    }
+    ///    _ => panic!("Should have returned a Number"),
+    /// };
+    ///
+    /// #
+    /// # Ok(())
+    /// # }
     pub fn call_js_fn(
         &self,
         function_declaration: &str,
@@ -337,38 +395,66 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_midpoint(&self) -> Fallible<Point> {
-        let return_object = self.parent.call_method(dom::methods::GetContentQuads {
-            node_id: None,
-            backend_node_id: Some(self.backend_node_id),
-            object_id: None,
-        })?;
-        let raw_quad = return_object.quads.first().unwrap();
-        let input_quad = ElementQuad::from_raw_points(&raw_quad);
+        match self
+            .parent
+            .call_method(dom::methods::GetContentQuads {
+                node_id: None,
+                backend_node_id: Some(self.backend_node_id),
+                object_id: None,
+            })
+            .and_then(|quad| {
+                let raw_quad = quad.quads.first().unwrap();
+                let input_quad = ElementQuad::from_raw_points(&raw_quad);
 
-        Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
+                Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
+            }) {
+            Ok(e) => return Ok(e),
+            Err(_) => {
+                let mut p = Point { x: 0.0, y: 0.0 };
+
+                util::Wait::with_sleep(Duration::from_secs(1)).run_until(|| {
+                    let r = self
+                        .call_js_fn(
+                            r#"
+                    function() {
+
+                        let rect = this.getBoundingClientRect();
+
+                        if(rect.x != 0) {
+                            this.scrollIntoView();
+                        }
+
+                        return this.getBoundingClientRect();
+                    }
+                    "#,
+                            false,
+                        )
+                        .unwrap();
+
+                    let res = util::extract_midpoint(r);
+
+                    match res {
+                        Ok(v) => {
+                            if v.x != 0.0 {
+                                p = v;
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        _ => false,
+                    }
+                });
+
+                return Ok(p);
+            }
+        }
     }
 
     pub fn get_js_midpoint(&self) -> Fallible<Point> {
-        let result =
-            self.call_js_fn("function(){ return this.getBoundingClientRect(); }", false)?;
+        let result = self.call_js_fn("function(){return this.getBoundingClientRect(); }", false)?;
 
-        let properties = result
-            .preview
-            .expect("JS couldn't give us quad for element")
-            .properties;
-
-        let mut prop_map = HashMap::new();
-
-        for prop in properties {
-            prop_map.insert(prop.name, prop.value.unwrap().parse::<f64>().unwrap());
-        }
-
-        let midpoint = Point {
-            x: prop_map["x"] + (prop_map["width"] / 2.0),
-            y: prop_map["y"] + (prop_map["height"] / 2.0),
-        };
-
-        Ok(midpoint)
+        util::extract_midpoint(result)
     }
 }
 

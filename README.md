@@ -5,6 +5,8 @@
 [![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
 [![Discord channel](https://img.shields.io/discord/557374784233799681.svg?logo=discord)](https://discord.gg/yyGEzcc)
 
+**  LOOKING FOR A MAINTAINER **
+
 A high-level API to control headless Chrome or Chromium over the DevTools Protocol. It is the
 Rust equivalent of [Puppeteer](https://github.com/GoogleChrome/puppeteer), a Node library
 maintained by the Chrome DevTools team.
@@ -42,7 +44,7 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
     tab.type_str("WebKit")?.press_key("Enter")?;
 
     /// We should end up on the WebKit-page once navigated
-    tab.wait_for_element("#firstHeading")?;
+    let elem = tab.wait_for_element("#firstHeading")?;
     assert!(tab.get_url().ends_with("WebKit"));
 
     /// Take a screenshot of the entire browser window
@@ -55,6 +57,21 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
     let _png_data = tab
         .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
         .capture_screenshot(ScreenshotFormat::PNG)?;
+
+    // Run JavaScript in the page
+    match elem.call_js_fn(r#"
+        function getIdTwice () {
+            // `this` is always the element that you called `call_js_fn` on
+            const id = this.id;
+            return id + id;
+        }
+    ", false)? {
+        serde_json::value::Value::String(returned_string) {
+            assert_eq!(returned_string, "firstHeadingfirstHeading".to_string());
+        }
+        _ => unreachable!()
+    };
+
     Ok(())
 }
 
