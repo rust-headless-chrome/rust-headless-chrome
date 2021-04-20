@@ -359,22 +359,23 @@ impl<'a> Element<'a> {
                 let mut p = Point { x: 0.0, y: 0.0 };
 
                 util::Wait::with_sleep(Duration::from_secs(1)).run_until(|| {
-                    let r = self.call_js_fn(
-                        r#"
+                    let r = self
+                        .call_js_fn(
+                            r#"
                     function() {
-                        let v = document.getElementsByClassName("ShowAllChapters")[0];
 
-                        let rect = v.getBoundingClientRect();
+                        let rect = this.getBoundingClientRect();
 
                         if(rect.x != 0) {
-                            v.scrollIntoView();
+                            this.scrollIntoView();
                         }
 
-                        return v.getBoundingClientRect();
+                        return this.getBoundingClientRect();
                     }
                     "#,
-                        false,
-                    ).unwrap();
+                            false,
+                        )
+                        .unwrap();
 
                     let res = util::extract_midpoint(r);
 
@@ -387,10 +388,10 @@ impl<'a> Element<'a> {
                                 false
                             }
                         }
-                        _ => false
+                        _ => false,
                     }
                 });
-            
+
                 return Ok(p);
             }
         }
@@ -399,7 +400,7 @@ impl<'a> Element<'a> {
     pub fn get_js_midpoint(&self) -> Fallible<Point> {
         let result = self.call_js_fn("function(){return this.getBoundingClientRect(); }", false)?;
 
-       util::extract_midpoint(result)
+        util::extract_midpoint(result)
     }
 }
 
@@ -408,4 +409,3 @@ impl<'a> Element<'a> {
 struct ScrollFailed {
     error_text: String,
 }
-
