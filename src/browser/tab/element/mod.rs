@@ -362,15 +362,13 @@ impl<'a> Element<'a> {
                     let r = self.call_js_fn(
                         r#"
                     function() {
-                        let v = document.getElementsByClassName("ShowAllChapters")[0];
-
-                        let rect = v.getBoundingClientRect();
+                        let rect = this.getBoundingClientRect();
 
                         if(rect.x != 0) {
-                            v.scrollIntoView();
+                            this.scrollIntoView();
                         }
 
-                        return v.getBoundingClientRect();
+                        return this.getBoundingClientRect();
                     }
                     "#,
                         false,
