@@ -78,7 +78,10 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
 assert!(browse_wikipedia().is_ok());
 ```
 
-For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples/real_world.rs`](examples/real_world.rs).
+For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples`](examples/).
+
+> Before running examples. Make sure add [failure](https://crates.io/crates/failure) crate in your cargo project dependency of `Cargo.toml`
+
 
 ## What can't it do?
 
