@@ -58,11 +58,7 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
-pub struct SyncSendEvent(pub Arc<Tab>, pub Box<dyn Fn(&Event, &Tab)>);
-
-unsafe impl Sync for SyncSendEvent {}
-
-unsafe impl Send for SyncSendEvent {}
+type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 pub trait EventListener<T> {
     fn on_event(&self, event: &T) -> ();
@@ -74,16 +70,22 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-impl SyncSendEvent {
-    pub fn on_event(&self, event: &Event) {
-        self.1(event, &self.0);
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum Selector<'a> {
     Css(&'a str),
     XPath(&'a str),
+}
+
+impl<'a> From<&'a str> for Selector<'a> {
+    fn from(v: &'a str) -> Self {
+        if v.contains(".") || v.contains("#") {
+            Self::Css(v)
+        } else if v.contains("/") {
+            Self::XPath(v)
+        } else {
+            Self::Css(v)
+        }
+    }
 }
 
 // type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
@@ -400,13 +402,13 @@ impl<'a> Tab {
         sleep(Duration::from_millis(scaled_millis));
     }
 
-    pub fn wait_for_element(&self, selector: Selector) -> Fallible<Element<'_>> {
+    pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
         self.wait_for_element_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
 
     pub fn wait_for_element_with_custom_timeout(
         &self,
-        selector: Selector,
+        selector: &str,
         timeout: std::time::Duration,
     ) -> Fallible<Element<'_>> {
         debug!("Waiting for element with selector: {:?}", selector);
@@ -416,7 +418,7 @@ impl<'a> Tab {
         )
     }
 
-    pub fn wait_for_elements(&self, selector: Selector) -> Fallible<Vec<Element<'_>>> {
+    pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements(selector),
@@ -455,9 +457,11 @@ impl<'a> Tab {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn find_element(&self, s: Selector) -> Fallible<Element<'_>> {
+    pub fn find_element(&self, s: &str) -> Fallible<Element<'_>> {
         let root_node_id = self.get_document()?.node_id;
         trace!("Looking up element via selector: {:?}", s);
+
+        let s = s.into();
 
         match s {
             Selector::Css(selector) => self.run_query_selector_on_node(root_node_id, selector),
@@ -520,8 +524,10 @@ impl<'a> Tab {
             .root)
     }
 
-    pub fn find_elements(&self, s: Selector) -> Fallible<Vec<Element<'_>>> {
+    pub fn find_elements(&self, s: &str) -> Fallible<Vec<Element<'_>>> {
         trace!("Looking up elements via selector: {:?}", s);
+
+        let s = s.into();
 
         match s {
             Selector::Css(selector) => {

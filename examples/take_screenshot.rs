@@ -22,7 +22,7 @@ fn main() -> Fallible<()> {
     // Browse to the WebKit-Page and take a screenshot of the infobox.
     let png_data = tab
         .navigate_to("https://en.wikipedia.org/wiki/WebKit")?
-        .wait_for_element(Selector::Css("#mw-content-text > div > table.infobox.vevent"))?
+        .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
         .capture_screenshot(ScreenshotFormat::PNG)?;
     fs::write("screenshot.png", &png_data)?;
 

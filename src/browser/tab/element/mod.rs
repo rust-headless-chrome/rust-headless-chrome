@@ -358,7 +358,7 @@ impl<'a> Element<'a> {
             Err(_) => {
                 let mut p = Point { x: 0.0, y: 0.0 };
 
-                util::Wait::with_sleep(Duration::from_secs(1)).run_until(|| {
+                p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
                     let r = self.call_js_fn(
                         r#"
                     function() {
@@ -379,15 +379,14 @@ impl<'a> Element<'a> {
                     match res {
                         Ok(v) => {
                             if v.x != 0.0 {
-                                p = v;
-                                true
+                                Some(v)
                             } else {
-                                false
+                                None
                             }
                         }
-                        _ => false
+                        _ => None
                     }
-                });
+                })?;
             
                 return Ok(p);
             }
