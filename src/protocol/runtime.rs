@@ -116,10 +116,17 @@ pub mod methods {
         column_number: JsInt,
     }
 
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CallArgument {
+        pub value: serde_json::Value
+    }
+
     #[derive(Serialize, Debug, Default)]
     #[serde(rename_all = "camelCase")]
     pub struct CallFunctionOn<'a> {
         pub object_id: &'a str,
+        pub arguments: Vec<CallArgument>,
         pub function_declaration: &'a str,
         pub return_by_value: bool,
         pub generate_preview: bool,
