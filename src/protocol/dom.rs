@@ -222,7 +222,7 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct PerformSearch<'a> {
-        pub query: &'a str,
+        pub query: &'a str
     }
 
     #[derive(Debug, Deserialize)]

@@ -70,24 +70,6 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum Selector<'a> {
-    Css(&'a str),
-    XPath(&'a str),
-}
-
-impl<'a> From<&'a str> for Selector<'a> {
-    fn from(v: &'a str) -> Self {
-        if v.contains(".") || v.contains("#") {
-            Self::Css(v)
-        } else if v.contains("/") {
-            Self::XPath(v)
-        } else {
-            Self::Css(v)
-        }
-    }
-}
-
 // type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
@@ -406,6 +388,10 @@ impl<'a> Tab {
         self.wait_for_element_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
 
+    pub fn wait_for_xpath(&self, selector: &str) -> Fallible<Element<'_>> {
+        self.wait_for_xpath_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
+    }
+
     pub fn wait_for_element_with_custom_timeout(
         &self,
         selector: &str,
@@ -418,10 +404,30 @@ impl<'a> Tab {
         )
     }
 
+    pub fn wait_for_xpath_with_custom_timeout(
+        &self,
+        selector: &str,
+        timeout: std::time::Duration,
+    ) -> Fallible<Element<'_>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(timeout).strict_until(
+            || self.find_element_by_xpath(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
     pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
+    pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
+            || self.find_elements_by_xpath(selector),
             Error::downcast::<NoElementFound>,
         )
     }
@@ -457,33 +463,33 @@ impl<'a> Tab {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn find_element(&self, s: &str) -> Fallible<Element<'_>> {
+    pub fn find_element(&self, selector: &str) -> Fallible<Element<'_>> {
         let root_node_id = self.get_document()?.node_id;
-        trace!("Looking up element via selector: {:?}", s);
+        trace!("Looking up element via selector: {}", selector);
 
-        let s = s.into();
+        self.run_query_selector_on_node(root_node_id, selector)
+    }
 
-        match s {
-            Selector::Css(selector) => self.run_query_selector_on_node(root_node_id, selector),
-            Selector::XPath(query) => self
-                .call_method(dom::methods::PerformSearch { query })
-                .and_then(|o| {
-                    Ok(self
-                        .call_method(dom::methods::GetSearchResults {
-                            search_id: &o.search_id,
-                            from_index: 0,
-                            to_index: o.result_count,
-                        })?
-                        .node_ids[0])
-                })
-                .and_then(|id| {
-                    if id == 0 {
-                        Err(NoElementFound {}.into())
-                    } else {
-                        Ok(Element::new(self, id)?)
-                    }
-                }),
-        }
+    pub fn find_element_by_xpath(&self, query: &str) -> Fallible<Element<'_>> {
+        self.get_document()?;
+
+        self.call_method(dom::methods::PerformSearch { query })
+            .and_then(|o| {
+                Ok(self
+                    .call_method(dom::methods::GetSearchResults {
+                        search_id: &o.search_id,
+                        from_index: 0,
+                        to_index: o.result_count,
+                    })?
+                    .node_ids[0])
+            })
+            .and_then(|id| {
+                if id == 0 {
+                    Err(NoElementFound {}.into())
+                } else {
+                    Ok(Element::new(self, id)?)
+                }
+            })
     }
 
     pub fn run_query_selector_on_node(
@@ -524,49 +530,45 @@ impl<'a> Tab {
             .root)
     }
 
-    pub fn find_elements(&self, s: &str) -> Fallible<Vec<Element<'_>>> {
-        trace!("Looking up elements via selector: {:?}", s);
+    pub fn find_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+        trace!("Looking up elements via selector: {}", selector);
 
-        let s = s.into();
+        let root_node_id = self.get_document()?.node_id;
+        let node_ids = self
+            .call_method(dom::methods::QuerySelectorAll {
+                node_id: root_node_id,
+                selector,
+            })
+            .map_err(NoElementFound::map)?
+            .node_ids;
 
-        match s {
-            Selector::Css(selector) => {
-                let root_node_id = self.get_document()?.node_id;
-                let node_ids = self
-                    .call_method(dom::methods::QuerySelectorAll {
-                        node_id: root_node_id,
-                        selector,
-                    })
-                    .map_err(NoElementFound::map)?
-                    .node_ids;
-
-                if node_ids.is_empty() {
-                    return Err(NoElementFound {}.into());
-                }
-
-                node_ids
-                    .into_iter()
-                    .map(|node_id| Element::new(&self, node_id))
-                    .collect()
-            }
-            Selector::XPath(query) => self
-                .call_method(dom::methods::PerformSearch { query })
-                .and_then(|o| {
-                    Ok(self
-                        .call_method(dom::methods::GetSearchResults {
-                            search_id: &o.search_id,
-                            from_index: 0,
-                            to_index: o.result_count,
-                        })?
-                        .node_ids)
-                })
-                .and_then(|ids| {
-                    ids.iter()
-                        .filter(|id| **id != 0)
-                        .map(|id| Element::new(self, *id))
-                        .collect()
-                }),
+        if node_ids.is_empty() {
+            return Err(NoElementFound {}.into());
         }
+
+        node_ids
+            .into_iter()
+            .map(|node_id| Element::new(&self, node_id))
+            .collect()
+    }
+
+    pub fn find_elements_by_xpath(&self, query: &str) -> Fallible<Vec<Element<'_>>> {
+        self.call_method(dom::methods::PerformSearch { query })
+            .and_then(|o| {
+                Ok(self
+                    .call_method(dom::methods::GetSearchResults {
+                        search_id: &o.search_id,
+                        from_index: 0,
+                        to_index: o.result_count,
+                    })?
+                    .node_ids)
+            })
+            .and_then(|ids| {
+                ids.iter()
+                    .filter(|id| **id != 0)
+                    .map(|id| Element::new(self, *id))
+                    .collect()
+            })
     }
 
     pub fn describe_node(&self, node_id: dom::NodeId) -> Fallible<dom::Node> {
