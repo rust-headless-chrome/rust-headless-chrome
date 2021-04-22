@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use failure::{Fail, Fallible};
 use log::*;
+use runtime::methods::CallArgument;
 
 use crate::browser::tab::point::Point;
 use crate::browser::tab::NoElementFound;
@@ -172,13 +173,19 @@ impl<'a> Element<'a> {
     pub fn call_js_fn(
         &self,
         function_declaration: &str,
+        args: Vec<serde_json::Value>,
         await_promise: bool,
     ) -> Fallible<runtime::methods::RemoteObject> {
+        let mut args = args.clone();
         let result = self
             .parent
             .call_method(runtime::methods::CallFunctionOn {
                 object_id: &self.remote_object_id,
                 function_declaration,
+                arguments: args
+                    .iter_mut()
+                    .map(|v| runtime::methods::CallArgument { value: v.take() })
+                    .collect(),
                 return_by_value: false,
                 generate_preview: true,
                 silent: false,
@@ -224,7 +231,7 @@ impl<'a> Element<'a> {
     /// ```
     pub fn get_inner_text(&self) -> Fallible<String> {
         let text: String = serde_json::from_value(
-            self.call_js_fn("function() { return this.innerText }", false)?
+            self.call_js_fn("function() { return this.innerText }", vec![], false)?
                 .value
                 .unwrap(),
         )?;
@@ -304,6 +311,7 @@ impl<'a> Element<'a> {
                     });
                 return false;
             }",
+            vec![],
             true,
         )?;
 
@@ -359,8 +367,9 @@ impl<'a> Element<'a> {
                 let mut p = Point { x: 0.0, y: 0.0 };
 
                 p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
-                    let r = self.call_js_fn(
-                        r#"
+                    let r = self
+                        .call_js_fn(
+                            r#"
                     function() {
                         let rect = this.getBoundingClientRect();
 
@@ -371,8 +380,10 @@ impl<'a> Element<'a> {
                         return this.getBoundingClientRect();
                     }
                     "#,
-                        false,
-                    ).unwrap();
+                            vec![],
+                            false,
+                        )
+                        .unwrap();
 
                     let res = util::extract_midpoint(r);
 
@@ -384,19 +395,23 @@ impl<'a> Element<'a> {
                                 None
                             }
                         }
-                        _ => None
+                        _ => None,
                     }
                 })?;
-            
+
                 return Ok(p);
             }
         }
     }
 
     pub fn get_js_midpoint(&self) -> Fallible<Point> {
-        let result = self.call_js_fn("function(){return this.getBoundingClientRect(); }", false)?;
+        let result = self.call_js_fn(
+            "function(){return this.getBoundingClientRect(); }",
+            vec![],
+            false,
+        )?;
 
-       util::extract_midpoint(result)
+        util::extract_midpoint(result)
     }
 }
 
@@ -405,4 +420,3 @@ impl<'a> Element<'a> {
 struct ScrollFailed {
     error_text: String,
 }
-
