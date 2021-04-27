@@ -2,7 +2,7 @@ use std::fs;
 
 use failure::Fallible;
 
-use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions,browser::tab::Selector};
+use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
 
 fn main() -> Fallible<()> {
     // Create a headless browser, navigate to wikipedia.org, wait for the page
