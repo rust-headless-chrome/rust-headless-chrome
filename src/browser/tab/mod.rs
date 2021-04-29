@@ -27,7 +27,7 @@ use std::thread::sleep;
 
 pub mod element;
 mod keys;
-mod point;
+pub mod point;
 
 #[derive(Debug)]
 pub enum RequestInterceptionDecision {
@@ -38,10 +38,10 @@ pub enum RequestInterceptionDecision {
 
 pub type RequestInterceptor = Box<
     dyn Fn(
-            Arc<Transport>,
-            SessionId,
-            protocol::network::events::RequestInterceptedEventParams,
-        ) -> RequestInterceptionDecision
+        Arc<Transport>,
+        SessionId,
+        protocol::network::events::RequestInterceptedEventParams,
+    ) -> RequestInterceptionDecision
         + Send
         + Sync,
 >;
@@ -58,6 +58,8 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
+type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
+
 pub trait EventListener<T> {
     fn on_event(&self, event: &T) -> ();
 }
@@ -68,7 +70,7 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
+// type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
@@ -386,27 +388,51 @@ impl<'a> Tab {
         self.wait_for_element_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
 
+    pub fn wait_for_xpath(&self, selector: &str) -> Fallible<Element<'_>> {
+        self.wait_for_xpath_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
+    }
+
     pub fn wait_for_element_with_custom_timeout(
         &self,
         selector: &str,
         timeout: std::time::Duration,
     ) -> Fallible<Element<'_>> {
-        debug!("Waiting for element with selector: {}", selector);
+        debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element(selector),
             Error::downcast::<NoElementFound>,
         )
     }
 
+    pub fn wait_for_xpath_with_custom_timeout(
+        &self,
+        selector: &str,
+        timeout: std::time::Duration,
+    ) -> Fallible<Element<'_>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(timeout).strict_until(
+            || self.find_element_by_xpath(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
     pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
-        debug!("Waiting for element with selector: {}", selector);
+        debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements(selector),
             Error::downcast::<NoElementFound>,
         )
     }
 
-    /// Returns the first element in the document which matches the given CSS selector.
+    pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
+            || self.find_elements_by_xpath(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
+    /// Returns the first element in the document which matches the given selector.
     ///
     /// Equivalent to the following JS:
     ///
@@ -438,10 +464,32 @@ impl<'a> Tab {
     /// # }
     /// ```
     pub fn find_element(&self, selector: &str) -> Fallible<Element<'_>> {
+        let root_node_id = self.get_document()?.node_id;
         trace!("Looking up element via selector: {}", selector);
 
-        let root_node_id = self.get_document()?.node_id;
         self.run_query_selector_on_node(root_node_id, selector)
+    }
+
+    pub fn find_element_by_xpath(&self, query: &str) -> Fallible<Element<'_>> {
+        self.get_document()?;
+
+        self.call_method(dom::methods::PerformSearch { query })
+            .and_then(|o| {
+                Ok(self
+                    .call_method(dom::methods::GetSearchResults {
+                        search_id: &o.search_id,
+                        from_index: 0,
+                        to_index: o.result_count,
+                    })?
+                    .node_ids[0])
+            })
+            .and_then(|id| {
+                if id == 0 {
+                    Err(NoElementFound {}.into())
+                } else {
+                    Ok(Element::new(&self, id)?)
+                }
+            })
     }
 
     pub fn run_query_selector_on_node(
@@ -502,6 +550,25 @@ impl<'a> Tab {
             .into_iter()
             .map(|node_id| Element::new(&self, node_id))
             .collect()
+    }
+
+    pub fn find_elements_by_xpath(&self, query: &str) -> Fallible<Vec<Element<'_>>> {
+        self.call_method(dom::methods::PerformSearch { query })
+            .and_then(|o| {
+                Ok(self
+                    .call_method(dom::methods::GetSearchResults {
+                        search_id: &o.search_id,
+                        from_index: 0,
+                        to_index: o.result_count,
+                    })?
+                    .node_ids)
+            })
+            .and_then(|ids| {
+                ids.iter()
+                    .filter(|id| **id != 0)
+                    .map(|id| Element::new(self, *id))
+                    .collect()
+            })
     }
 
     pub fn describe_node(&self, node_id: dom::NodeId) -> Fallible<dom::Node> {

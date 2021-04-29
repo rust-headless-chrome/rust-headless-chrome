@@ -13,3 +13,6 @@ pub type ScriptId = String;
 /// Experimental
 /// See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#type-StackTraceId
 pub type UniqueDebuggerId = String;
+
+
+pub type UniqueSessionId = String;

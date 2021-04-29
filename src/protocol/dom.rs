@@ -3,7 +3,11 @@ use std::collections::HashMap;
 use crate::protocol::types::JsUInt;
 use serde::{Deserialize, Deserializer};
 
+use super::types::UniqueSessionId;
+
 pub type NodeId = JsUInt;
+
+pub type SearchId = UniqueSessionId;
 
 pub type NodeAttributes = HashMap<String, String>;
 
@@ -135,6 +139,8 @@ pub mod methods {
     use crate::protocol::types::{JsFloat, JsInt, JsUInt};
     use crate::protocol::Method;
 
+    use super::SearchId;
+
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct GetDocument {
@@ -213,6 +219,41 @@ pub mod methods {
         pub node_id: super::NodeId,
         pub selector: &'a str,
     }
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct PerformSearch<'a> {
+        pub query: &'a str
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct PerformSearchReturnObject {
+        pub search_id: SearchId,
+        pub result_count: JsInt,
+    }
+    impl<'a> Method for PerformSearch<'a> {
+        const NAME: &'static str = "DOM.performSearch";
+        type ReturnObject = PerformSearchReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetSearchResults<'a> {
+        pub search_id: &'a str,
+        pub from_index: JsInt,
+        pub to_index: JsInt,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetSearchResultsObject {
+        pub node_ids: Vec<super::NodeId>,
+    }
+    impl<'a> Method for GetSearchResults<'a> {
+        const NAME: &'static str = "DOM.getSearchResults";
+        type ReturnObject = GetSearchResultsObject;
+    }
+
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct QuerySelectorReturnObject {
@@ -306,5 +347,17 @@ pub mod methods {
     impl<'a> Method for GetBoxModel<'a> {
         const NAME: &'static str = "DOM.getBoxModel";
         type ReturnObject = GetBoxModelReturnObject;
+    }
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Enable {}
+
+    #[derive(Debug, Deserialize)]
+    pub struct EnableReturnObject {}
+
+    impl Method for Enable {
+        const NAME: &'static str = "DOM.enable";
+
+        type ReturnObject = EnableReturnObject;
     }
 }

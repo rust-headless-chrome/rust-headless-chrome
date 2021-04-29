@@ -1,7 +1,11 @@
-use std::thread::sleep;
 use std::time::{Duration, Instant};
+use std::{collections::HashMap, thread::sleep};
 
 use failure::{Error, Fail, Fallible};
+
+use crate::protocol::runtime::methods::RemoteObject;
+
+use crate::browser::tab::point::Point;
 
 #[derive(Debug, Fail)]
 #[fail(display = "The event waited for never came")]
@@ -20,6 +24,25 @@ impl Default for Wait {
             timeout: Duration::from_secs(10),
             sleep: Duration::from_millis(100),
         }
+    }
+}
+
+pub fn extract_midpoint(remote_obj: RemoteObject) -> Fallible<Point> {
+    let mut prop_map = HashMap::new();
+
+    match remote_obj.preview.and_then(|v| {
+        for prop in v.properties {
+            prop_map.insert(prop.name, prop.value.unwrap().parse::<f64>().unwrap());
+        }
+        let midpoint = Point {
+            x: prop_map["x"] + (prop_map["width"] / 2.0),
+            y: prop_map["y"] + (prop_map["height"] / 2.0),
+        };
+
+        Some(midpoint)
+    }) {
+        Some(v) => return Ok(v),
+        None => return Ok(Point { x: 0.0, y: 0.0 }),
     }
 }
 
@@ -101,3 +124,4 @@ impl Wait {
         }
     }
 }
+
