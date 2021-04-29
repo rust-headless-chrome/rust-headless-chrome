@@ -487,7 +487,7 @@ impl<'a> Tab {
                 if id == 0 {
                     Err(NoElementFound {}.into())
                 } else {
-                    Ok(Element::new(self, id)?)
+                    Ok(Element::new(&self, id)?)
                 }
             })
     }
