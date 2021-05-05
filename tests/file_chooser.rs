@@ -7,7 +7,7 @@ use regex::Regex;
 use headless_chrome::protocol::page::methods::FileChooserAction;
 use headless_chrome::Browser;
 
-mod logging;
+pub mod logging;
 mod server;
 
 #[test]

@@ -1,10 +1,10 @@
 use failure::Fallible;
 
-use headless_chrome::{Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptionsBuilder};
 
 fn query(input: &str) -> Fallible<()> {
     let browser = Browser::new(
-        LaunchOptions::default_builder()
+        LaunchOptionsBuilder::default()
             .build()
             .expect("Could not find chrome-executable"),
     )?;

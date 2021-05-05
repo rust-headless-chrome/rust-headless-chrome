@@ -63,12 +63,15 @@ pub struct LaunchOptions<'a> {
     /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
     headless: bool,
+
     /// Determines whether to run the browser with a sandbox.
     #[builder(default = "true")]
     sandbox: bool,
+
     /// Launch the browser with a specific window width and height.
     #[builder(default = "None")]
     window_size: Option<(u32, u32)>,
+
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
     port: Option<u16>,
@@ -76,13 +79,19 @@ pub struct LaunchOptions<'a> {
     /// This is unsafe and can lead to MiTM attacks. Make sure you understand the risks
     /// See https://www.owasp.org/index.php/Man-in-the-middle_attack
     #[builder(default = "true")]
-    verify: bool,
+    ignore_certificate_errors: bool,
 
     /// Path for Chrome or Chromium.
     ///
     /// If unspecified, the create will try to automatically detect a suitable binary.
     #[builder(default = "None")]
-    path: Option<std::path::PathBuf>,
+    pub path: Option<std::path::PathBuf>,
+
+    /// User Data (Profile) to use.
+    ///
+    /// If unspecified, a new temp directory is created and used on every launch.
+    #[builder(default = "None")]
+    user_data_dir: Option<std::path::PathBuf>,
 
     /// A list of Chrome extensions to load.
     ///
@@ -92,7 +101,7 @@ pub struct LaunchOptions<'a> {
     /// Note that Chrome does not support loading extensions in headless-mode.
     /// See https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c5
     #[builder(default)]
-    extensions: Vec<&'a OsStr>,
+    pub extensions: Vec<&'a OsStr>,
 
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
@@ -111,6 +120,21 @@ pub struct LaunchOptions<'a> {
     /// Passes value through to std::process::Command::envs.
     #[builder(default = "None")]
     pub process_envs: Option<HashMap<String, String>>,
+}
+
+impl<'a> Default for LaunchOptions<'a> {
+    fn default() -> Self {
+        LaunchOptions {
+            headless: true,
+            sandbox: true,
+            idle_browser_timeout: Duration::from_secs(300),
+            window_size: None,
+            path: None,
+            port: None,
+            extensions: Vec::new(),
+            process_envs: None,
+        }
+    }
 }
 
 impl<'a> LaunchOptions<'a> {
@@ -216,12 +240,19 @@ impl Process {
             String::from("")
         };
 
-        // NOTE: picking random data dir so that each a new browser instance is launched
-        // (see man google-chrome)
-        let user_data_dir = ::tempfile::Builder::new()
-            .prefix("rust-headless-chrome-profile")
-            .tempdir()?;
-        let data_dir_option = format!("--user-data-dir={}", user_data_dir.path().to_str().unwrap());
+        // User data directory
+        let user_data_dir = if let Some(dir) = &launch_options.user_data_dir {
+            dir.to_owned()
+        } else {
+            // picking random data dir so that each a new browser instance is launched
+            // (see man google-chrome)
+            ::tempfile::Builder::new()
+                .prefix("rust-headless-chrome-profile")
+                .tempdir()?
+                .path()
+                .to_path_buf()
+        };
+        let data_dir_option = format!("--user-data-dir={}", &user_data_dir.to_str().unwrap());
 
         trace!("Chrome will have profile: {}", data_dir_option);
 

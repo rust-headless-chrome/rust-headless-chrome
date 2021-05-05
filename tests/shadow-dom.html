@@ -1,0 +1,24 @@
+<html>
+    <body>
+        <div>some text</div>
+        <div id="has-open"></div>
+        <div id="has-closed"></div>
+        <div id="has-other"></div>
+        <script>
+            (function makeShadowDOM() {
+                document
+                  .getElementById("has-open")
+                  .attachShadow({ mode: 'open' });
+                document
+                  .getElementById("has-closed")
+                  .attachShadow({ mode: 'closed' });
+                // has-other shadow dom should not get created,
+                // so parsing the html tag should still succeed
+                document
+                  .getElementById("has-other")
+                  .attachShadow({ mode: 'nonsense-mode-does-not-exist' });
+            })()
+        </script>
+    </body>
+</html>
+

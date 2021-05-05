@@ -11,7 +11,7 @@ use element::Element;
 use point::Point;
 
 use crate::browser::Transport;
-use crate::protocol::dom::Node;
+use crate::protocol::dom::{Node, NodeId};
 use crate::protocol::page::methods::{
     FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
 };
@@ -27,7 +27,7 @@ use std::thread::sleep;
 
 pub mod element;
 mod keys;
-mod point;
+pub mod point;
 
 #[derive(Debug)]
 pub enum RequestInterceptionDecision {
@@ -58,6 +58,13 @@ pub type ResponseHandler = Box<
     + Sync,
 >;
 
+
+pub struct SyncSendEvent(pub Arc<Tab>,pub Box<dyn Fn(&Event,&Tab)>);
+
+unsafe impl Sync for SyncSendEvent {}
+
+unsafe impl Send for SyncSendEvent {}
+
 pub trait EventListener<T> {
     fn on_event(&self, event: &T) -> ();
 }
@@ -68,7 +75,15 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
+impl SyncSendEvent {
+
+    pub fn on_event(&self,event: &Event) {
+        self.1(event,&self.0);
+    }
+
+}
+
+// type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
@@ -406,19 +421,71 @@ impl<'a> Tab {
         )
     }
 
+    /// Returns the first element in the document which matches the given CSS selector.
+    ///
+    /// Equivalent to the following JS:
+    ///
+    /// ```js
+    /// document.querySelector(selector)
+    /// ```
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # // Awful hack to get access to testing utils common between integration, doctest, and unit tests
+    /// # mod server {
+    /// #     include!("../../testing_utils/server.rs");
+    /// # }
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::Browser;
+    ///
+    /// let browser = Browser::default()?;
+    /// let initial_tab = browser.wait_for_initial_tab()?;
+    ///
+    /// let file_server = server::Server::with_dumb_html(include_str!("../../../tests/simple.html"));
+    /// let element = initial_tab.navigate_to(&file_server.url())?
+    ///     .wait_until_navigated()?
+    ///     .find_element("div#foobar")?;
+    /// let attrs = element.get_attributes()?.unwrap();
+    /// assert_eq!(attrs["id"], "foobar");
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn find_element(&self, selector: &str) -> Fallible<Element<'_>> {
         trace!("Looking up element via selector: {}", selector);
 
         let root_node_id = self.get_document()?.node_id;
+        self.run_query_selector_on_node(root_node_id, selector)
+    }
+
+    pub fn run_query_selector_on_node(
+        &self,
+        node_id: NodeId,
+        selector: &str,
+    ) -> Fallible<Element<'_>> {
         let node_id = self
-            .call_method(dom::methods::QuerySelector {
-                node_id: root_node_id,
-                selector,
-            })
+            .call_method(dom::methods::QuerySelector { node_id, selector })
             .map_err(NoElementFound::map)?
             .node_id;
 
         Element::new(&self, node_id)
+    }
+
+    pub fn run_query_selector_all_on_node(
+        &self,
+        node_id: NodeId,
+        selector: &str,
+    ) -> Fallible<Vec<Element<'_>>> {
+        let node_ids = self
+            .call_method(dom::methods::QuerySelectorAll { node_id, selector })
+            .map_err(NoElementFound::map)?
+            .node_ids;
+
+        node_ids
+            .iter()
+            .map(|node_id| Element::new(&self, *node_id))
+            .collect()
     }
 
     pub fn get_document(&self) -> Fallible<Node> {
@@ -979,6 +1046,54 @@ impl<'a> Tab {
         Ok(self
             .call_method(network::methods::GetCookies { urls: None })?
             .cookies)
+    }
+
+    /// Set cookies with tab's current URL
+    pub fn set_cookies(&self, cs: Vec<network::methods::SetCookie>) -> Fallible<()> {
+        // puppeteer 7b24e5435b:src/common/Page.ts :1009-1028
+        use network::methods::{SetCookie, SetCookies};
+        let url = self.get_url();
+        let starts_with_http = url.starts_with("http");
+        let cookies: Vec<SetCookie> = cs
+            .into_iter()
+            .map(|c| {
+                if c.url.is_none() && starts_with_http {
+                    SetCookie {
+                        url: Some(url.clone()),
+                        ..c
+                    }
+                } else {
+                    c
+                }
+            })
+            .collect();
+        self.delete_cookies(cookies.clone().into_iter().map(|c| c.into()).collect())?;
+        self.call_method(SetCookies { cookies })?;
+        Ok(())
+    }
+
+    /// Delete cookies with tab's current URL
+    pub fn delete_cookies(&self, cs: Vec<network::methods::DeleteCookies>) -> Fallible<()> {
+        // puppeteer 7b24e5435b:src/common/Page.ts :998-1007
+        let url = self.get_url();
+        let starts_with_http = url.starts_with("http");
+        cs.into_iter()
+            .map(|c| {
+                // REVIEW: if c.url is blank string
+                if c.url.is_none() && starts_with_http {
+                    network::methods::DeleteCookies {
+                        url: Some(url.clone()),
+                        ..c
+                    }
+                } else {
+                    c
+                }
+            })
+            .try_for_each(|c| -> Result<(), failure::Error> {
+                let _ = self.call_method(c)?;
+                Ok(())
+            })?;
+        Ok(())
     }
 
     /// Returns the title of the document.

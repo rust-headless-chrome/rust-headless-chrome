@@ -69,6 +69,7 @@ pub enum PseudoType {
     ScrollbarCorner,
     Resizer,
     InputListButton,
+    Marker,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -76,7 +77,7 @@ pub enum PseudoType {
 pub enum ShadowRootType {
     UserAgent,
     Open,
-    Close,
+    Closed,
 }
 
 fn attribute_deser<'de, D>(d: D) -> Result<Option<NodeAttributes>, D::Error>
