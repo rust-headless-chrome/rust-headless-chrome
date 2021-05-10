@@ -44,7 +44,7 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
     tab.type_str("WebKit")?.press_key("Enter")?;
 
     /// We should end up on the WebKit-page once navigated
-    tab.wait_for_element("#firstHeading")?;
+    let elem = tab.wait_for_element("#firstHeading")?;
     assert!(tab.get_url().ends_with("WebKit"));
 
     /// Take a screenshot of the entire browser window
@@ -57,19 +57,37 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
     let _png_data = tab
         .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
         .capture_screenshot(ScreenshotFormat::PNG)?;
+
+    // Run JavaScript in the page
+    match elem.call_js_fn(r#"
+        function getIdTwice () {
+            // `this` is always the element that you called `call_js_fn` on
+            const id = this.id;
+            return id + id;
+        }
+    ", false)? {
+        serde_json::value::Value::String(returned_string) {
+            assert_eq!(returned_string, "firstHeadingfirstHeading".to_string());
+        }
+        _ => unreachable!()
+    };
+
     Ok(())
 }
 
 assert!(browse_wikipedia().is_ok());
 ```
 
-For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples/real_world.rs`](examples/real_world.rs).
+For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples`](examples/).
+
+> Before running examples. Make sure add [failure](https://crates.io/crates/failure) crate in your cargo project dependency of `Cargo.toml`
+
 
 ## What can't it do?
 
 The [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Browser) is huge. Currently, Puppeteer supports way more of it than we do. Some of the missing features include:
 
--  Manipulating cookies (you can view them with `tab.getCookies()`, though)
+-  <s>Manipulating cookies (you can view them with `tab.getCookies()`, though)</s>
 -  Dealing with frames
 -  Handling file picker / chooser interactions
 -  Tapping touchscreens

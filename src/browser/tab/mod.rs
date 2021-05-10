@@ -1100,6 +1100,54 @@ impl<'a> Tab {
             .cookies)
     }
 
+    /// Set cookies with tab's current URL
+    pub fn set_cookies(&self, cs: Vec<network::methods::SetCookie>) -> Fallible<()> {
+        // puppeteer 7b24e5435b:src/common/Page.ts :1009-1028
+        use network::methods::{SetCookie, SetCookies};
+        let url = self.get_url();
+        let starts_with_http = url.starts_with("http");
+        let cookies: Vec<SetCookie> = cs
+            .into_iter()
+            .map(|c| {
+                if c.url.is_none() && starts_with_http {
+                    SetCookie {
+                        url: Some(url.clone()),
+                        ..c
+                    }
+                } else {
+                    c
+                }
+            })
+            .collect();
+        self.delete_cookies(cookies.clone().into_iter().map(|c| c.into()).collect())?;
+        self.call_method(SetCookies { cookies })?;
+        Ok(())
+    }
+
+    /// Delete cookies with tab's current URL
+    pub fn delete_cookies(&self, cs: Vec<network::methods::DeleteCookies>) -> Fallible<()> {
+        // puppeteer 7b24e5435b:src/common/Page.ts :998-1007
+        let url = self.get_url();
+        let starts_with_http = url.starts_with("http");
+        cs.into_iter()
+            .map(|c| {
+                // REVIEW: if c.url is blank string
+                if c.url.is_none() && starts_with_http {
+                    network::methods::DeleteCookies {
+                        url: Some(url.clone()),
+                        ..c
+                    }
+                } else {
+                    c
+                }
+            })
+            .try_for_each(|c| -> Result<(), failure::Error> {
+                let _ = self.call_method(c)?;
+                Ok(())
+            })?;
+        Ok(())
+    }
+
     /// Returns the title of the document.
     ///
     /// ```rust

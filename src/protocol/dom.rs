@@ -73,6 +73,7 @@ pub enum PseudoType {
     ScrollbarCorner,
     Resizer,
     InputListButton,
+    Marker,
 }
 
 #[derive(Deserialize, Debug, Clone)]

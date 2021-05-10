@@ -62,22 +62,36 @@ impl Drop for TemporaryProcess {
 pub struct LaunchOptions<'a> {
     /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
-    pub headless: bool,
+    headless: bool,
+
     /// Determines whether to run the browser with a sandbox.
     #[builder(default = "true")]
-    pub sandbox: bool,
+    sandbox: bool,
+
     /// Launch the browser with a specific window width and height.
     #[builder(default = "None")]
-    pub window_size: Option<(u32, u32)>,
+    window_size: Option<(u32, u32)>,
+
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
-    pub port: Option<u16>,
+    port: Option<u16>,
+    /// Determines whether SSL certificates should be verified. 
+    /// This is unsafe and can lead to MiTM attacks. Make sure you understand the risks
+    /// See https://www.owasp.org/index.php/Man-in-the-middle_attack
+    #[builder(default = "true")]
+    ignore_certificate_errors: bool,
 
     /// Path for Chrome or Chromium.
     ///
     /// If unspecified, the create will try to automatically detect a suitable binary.
     #[builder(default = "None")]
     pub path: Option<std::path::PathBuf>,
+
+    /// User Data (Profile) to use.
+    ///
+    /// If unspecified, a new temp directory is created and used on every launch.
+    #[builder(default = "None")]
+    user_data_dir: Option<std::path::PathBuf>,
 
     /// A list of Chrome extensions to load.
     ///
@@ -228,12 +242,19 @@ impl Process {
             String::from("")
         };
 
-        // NOTE: picking random data dir so that each a new browser instance is launched
-        // (see man google-chrome)
-        let user_data_dir = ::tempfile::Builder::new()
-            .prefix("rust-headless-chrome-profile")
-            .tempdir()?;
-        let data_dir_option = format!("--user-data-dir={}", user_data_dir.path().to_str().unwrap());
+        // User data directory
+        let user_data_dir = if let Some(dir) = &launch_options.user_data_dir {
+            dir.to_owned()
+        } else {
+            // picking random data dir so that each a new browser instance is launched
+            // (see man google-chrome)
+            ::tempfile::Builder::new()
+                .prefix("rust-headless-chrome-profile")
+                .tempdir()?
+                .path()
+                .to_path_buf()
+        };
+        let data_dir_option = format!("--user-data-dir={}", &user_data_dir.to_str().unwrap());
 
         trace!("Chrome will have profile: {}", data_dir_option);
 
@@ -256,6 +277,10 @@ impl Process {
 
         if launch_options.headless {
             args.extend(&["--headless"]);
+        }
+
+        if !launch_options.verify {
+            args.extend(&["--ignore-certificate-errors"])
         }
 
         if !launch_options.sandbox {

@@ -262,6 +262,60 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
+    /// Call a JavaScript function where `this` is a reference to the element.
+    ///
+    /// Note: If your function returns an `Array` the returned value will be `None`.
+    /// At this time you can get around this if your array length is <= 100 by inspecting
+    /// the preview.
+    ///
+    /// FIXME: Question for code reviewer - is there anything that can be done about this or
+    /// is this a devtools protocol limitation? I'll update this comment with that information
+    /// before we merge this PR.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::Browser;
+    /// use std::time::Duration;
+    /// let browser = Browser::default()?;
+    /// let url = "https://web.archive.org/web/20190403224553/https://en.wikipedia.org/wiki/JavaScript";
+    ///
+    /// let tab = browser.wait_for_initial_tab()?;
+    /// tab.navigate_to(url)?;
+    ///
+    /// let elem = tab
+    ///     .wait_for_element_with_custom_timeout("#Misplaced_trust_in_developers", Duration::from_secs(10))?;
+    ///
+    /// let remote_object = elem.call_js_fn(r#"
+    ///   function {
+    ///     if (this.id !== 'Misplaced_trust_in_developers') {
+    ///         throw new Error('Failed initial ID assertion');
+    ///     }
+    ///
+    ///     this.id = 'changed-the-id';
+    ///   }
+    /// #", false)?;
+    ///
+    /// let elem = tab.wait_for_element("#changed-the-id")?;
+    /// let remote_object = elem.call_js_fn(r#"
+    ///     async asyncFnExample function () {
+    ///         return 500;
+    ///     }
+    /// "#, true)?;
+    ///
+    /// match remote_object.value.unwrap() {
+    ///    serde_json::value::Value::Number(num) => {
+    ///        assert_eq!(num.as_i64().unwrap(), 500);
+    ///    }
+    ///    _ => panic!("Should have returned a Number"),
+    /// };
+    ///
+    /// #
+    /// # Ok(())
+    /// # }
     pub fn call_js_fn(
         &self,
         function_declaration: &str,
@@ -455,6 +509,7 @@ impl<'a> Element<'a> {
                     let r = self.call_js_fn(
                         r#"
                     function() {
+
                         let rect = this.getBoundingClientRect();
 
                         if(rect.x != 0) {
@@ -464,8 +519,9 @@ impl<'a> Element<'a> {
                         return this.getBoundingClientRect();
                     }
                     "#,
-                        false,
-                    ).unwrap();
+                            false,
+                        )
+                        .unwrap();
 
                     let res = util::extract_midpoint(r);
 
@@ -477,10 +533,11 @@ impl<'a> Element<'a> {
                                 None
                             }
                         }
+
                         _ => None
                     }
                 })?;
-            
+       
                 return Ok(p);
             }
         }
@@ -489,7 +546,7 @@ impl<'a> Element<'a> {
     pub fn get_js_midpoint(&self) -> Fallible<Point> {
         let result = self.call_js_fn("function(){return this.getBoundingClientRect(); }", false)?;
 
-       util::extract_midpoint(result)
+        util::extract_midpoint(result)
     }
 }
 
@@ -498,4 +555,3 @@ impl<'a> Element<'a> {
 struct ScrollFailed {
     error_text: String,
 }
-

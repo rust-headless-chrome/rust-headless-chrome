@@ -10,7 +10,7 @@ use log::*;
 use rand::prelude::*;
 
 use headless_chrome::browser::tab::RequestInterceptionDecision;
-use headless_chrome::protocol::network::methods::RequestPattern;
+use headless_chrome::protocol::network::methods::{RequestPattern, SetCookie};
 use headless_chrome::protocol::network::Cookie;
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
@@ -650,7 +650,7 @@ fn get_script_source() -> Fallible<()> {
 }
 
 #[test]
-fn get_cookies() -> Fallible<()> {
+fn read_write_cookies() -> Fallible<()> {
     logging::enable_logging();
     let responder = move |r: tiny_http::Request| {
         let response = tiny_http::Response::new(
@@ -669,18 +669,49 @@ fn get_cookies() -> Fallible<()> {
     let server = server::Server::new(responder);
     let (browser, tab) = dumb_client(&server);
 
-    tab.navigate_to(&server.url())?;
+    // can read cookies
+    {
+        tab.navigate_to(&server.url())?;
 
-    tab.wait_until_navigated()?;
+        tab.wait_until_navigated()?;
 
-    let cookies = tab.get_cookies()?;
+        let cookies = tab.get_cookies()?;
 
-    assert_eq!(cookies.len(), 1);
+        assert_eq!(cookies.len(), 1);
 
-    let Cookie { name, value, .. } = cookies.first().unwrap();
+        let Cookie { name, value, .. } = cookies.first().unwrap();
 
-    assert_eq!(name, "testing");
-    assert_eq!(value, "1");
+        assert_eq!(name, "testing");
+        assert_eq!(value, "1");
+
+        let t: Fallible<()> = Ok(()); // type hint for error
+        t
+    }?;
+
+    // can change (delete and set) value for current url
+    {
+        tab.set_cookies(vec![SetCookie {
+            name: "testing".to_string(),
+            value: "2".to_string(),
+            url: None,
+            domain: None,
+            path: None,
+            secure: None,
+            http_only: None,
+            same_site: None,
+            expires: None,
+            priority: None,
+        }])?;
+
+        let cookies = tab.get_cookies()?;
+        assert_eq!(cookies.len(), 1);
+        let cf = cookies.first().unwrap();
+        assert_eq!(cf.name, "testing");
+        assert_eq!(cf.value, "2");
+
+        let t: Fallible<()> = Ok(()); // type hint for error
+        t
+    }?;
 
     Ok(())
 }
