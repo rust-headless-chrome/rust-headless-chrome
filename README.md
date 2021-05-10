@@ -5,8 +5,6 @@
 [![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
 [![Discord channel](https://img.shields.io/discord/557374784233799681.svg?logo=discord)](https://discord.gg/yyGEzcc)
 
-**  LOOKING FOR A MAINTAINER **
-
 A high-level API to control headless Chrome or Chromium over the DevTools Protocol. It is the
 Rust equivalent of [Puppeteer](https://github.com/GoogleChrome/puppeteer), a Node library
 maintained by the Chrome DevTools team.
@@ -87,7 +85,7 @@ For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`e
 
 The [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Browser) is huge. Currently, Puppeteer supports way more of it than we do. Some of the missing features include:
 
--  Manipulating cookies (you can view them with `tab.getCookies()`, though)
+-  <s>Manipulating cookies (you can view them with `tab.getCookies()`, though)</s>
 -  Dealing with frames
 -  Handling file picker / chooser interactions
 -  Tapping touchscreens
