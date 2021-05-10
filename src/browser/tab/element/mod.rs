@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::time::Duration;
 
-use failure::{Fail, Fallible};
+use failure::{Error, Fail, Fallible};
 use log::*;
 
 use crate::browser::tab::point::Point;
@@ -107,6 +107,30 @@ impl<'a> Element<'a> {
             .run_query_selector_on_node(self.node_id, selector)
     }
 
+    pub fn find_element_by_xpath(&self, query: &str) -> Fallible<Element<'_>> {
+        self.parent.get_document()?;
+
+        self.parent
+            .call_method(dom::methods::PerformSearch { query })
+            .and_then(|o| {
+                Ok(self
+                    .parent
+                    .call_method(dom::methods::GetSearchResults {
+                        search_id: &o.search_id,
+                        from_index: 0,
+                        to_index: o.result_count,
+                    })?
+                    .node_ids[0])
+            })
+            .and_then(|id| {
+                if id == 0 {
+                    Err(NoElementFound {}.into())
+                } else {
+                    Ok(Element::new(self.parent, id)?)
+                }
+            })
+    }
+
     /// Returns the first element in the document which matches the given CSS selector.
     ///
     /// Equivalent to the following JS:
@@ -141,6 +165,75 @@ impl<'a> Element<'a> {
     pub fn find_elements(&self, selector: &str) -> Fallible<Vec<Self>> {
         self.parent
             .run_query_selector_all_on_node(self.node_id, selector)
+    }
+
+    pub fn find_elements_by_xpath(&self, query: &str) -> Fallible<Vec<Element<'_>>> {
+        self.parent
+            .call_method(dom::methods::PerformSearch { query })
+            .and_then(|o| {
+                Ok(self
+                    .parent
+                    .call_method(dom::methods::GetSearchResults {
+                        search_id: &o.search_id,
+                        from_index: 0,
+                        to_index: o.result_count,
+                    })?
+                    .node_ids)
+            })
+            .and_then(|ids| {
+                ids.iter()
+                    .filter(|id| **id != 0)
+                    .map(|id| Element::new(self.parent, *id))
+                    .collect()
+            })
+    }
+
+    pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
+        self.wait_for_element_with_custom_timeout(selector, Duration::from_secs(3))
+    }
+
+    pub fn wait_for_xpath(&self, selector: &str) -> Fallible<Element<'_>> {
+        self.wait_for_xpath_with_custom_timeout(selector, Duration::from_secs(3))
+    }
+
+    pub fn wait_for_element_with_custom_timeout(
+        &self,
+        selector: &str,
+        timeout: std::time::Duration,
+    ) -> Fallible<Element<'_>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(timeout).strict_until(
+            || self.find_element(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
+    pub fn wait_for_xpath_with_custom_timeout(
+        &self,
+        selector: &str,
+        timeout: std::time::Duration,
+    ) -> Fallible<Element<'_>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(timeout).strict_until(
+            || self.find_element_by_xpath(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
+    pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
+            || self.find_elements(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
+    pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+        debug!("Waiting for element with selector: {:?}", selector);
+        util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
+            || self.find_elements_by_xpath(selector),
+            Error::downcast::<NoElementFound>,
+        )
     }
 
     /// Moves the mouse to the middle of this element
@@ -412,10 +505,9 @@ impl<'a> Element<'a> {
             Err(_) => {
                 let mut p = Point { x: 0.0, y: 0.0 };
 
-                util::Wait::with_sleep(Duration::from_secs(1)).run_until(|| {
-                    let r = self
-                        .call_js_fn(
-                            r#"
+                p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
+                    let r = self.call_js_fn(
+                        r#"
                     function() {
 
                         let rect = this.getBoundingClientRect();
@@ -436,16 +528,16 @@ impl<'a> Element<'a> {
                     match res {
                         Ok(v) => {
                             if v.x != 0.0 {
-                                p = v;
-                                true
+                                Some(v)
                             } else {
-                                false
+                                None
                             }
                         }
-                        _ => false,
-                    }
-                });
 
+                        _ => None
+                    }
+                })?;
+       
                 return Ok(p);
             }
         }

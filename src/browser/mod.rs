@@ -32,6 +32,8 @@ mod process;
 pub mod tab;
 mod transport;
 
+use protocol::dom::methods;
+
 /// A handle to an instance of Chrome / Chromium, which wraps a WebSocket connection to its debugging port.
 ///
 ///
@@ -150,7 +152,7 @@ impl Browser {
         trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
 
-        browser.wait_for_initial_tab()?;
+        browser.wait_for_initial_tab()?.call_method(methods::Enable {})?;
 
         Ok(browser)
     }

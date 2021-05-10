@@ -93,20 +93,6 @@ impl Wait {
         }
     }
 
-    pub fn run_until<F>(&self, predicate: F)
-    where
-        F: FnMut() -> bool,
-    {
-        let mut predicate = predicate;
-
-        loop {
-            if predicate() {
-                break;
-            }
-            sleep(self.sleep);
-        }
-    }
-
     /// Wait until the given predicate returns `Ok(G)`, an unexpected error occurs or timeout arrives.
     ///
     /// Errors produced by the predicate are downcasted by the additional provided closure.

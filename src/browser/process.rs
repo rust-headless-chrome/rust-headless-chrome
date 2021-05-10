@@ -133,6 +133,8 @@ impl<'a> Default for LaunchOptions<'a> {
             port: None,
             extensions: Vec::new(),
             process_envs: None,
+            #[cfg(feature = "fetch")]
+            fetcher_options: Default::default()
         }
     }
 }

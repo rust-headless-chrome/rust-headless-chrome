@@ -347,7 +347,9 @@ fn find_elements() -> Fallible<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
     let divs = tab.wait_for_elements("div")?;
+    let divs_xpath = tab.wait_for_elements_by_xpath("//*[@id]")?;
     assert_eq!(8, divs.len());
+    assert_eq!(7, divs_xpath.len());
     Ok(())
 }
 
@@ -360,6 +362,20 @@ fn find_element_on_tab_and_other_elements() -> Fallible<()> {
     dbg!(&inner_element);
     let attrs = inner_element.get_attributes()?.unwrap();
     assert_eq!(attrs["id"], "strictly-above");
+    Ok(())
+}
+
+#[test]
+fn find_element_on_tab_by_xpath() -> Fallible<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let containing_element_xpath = tab.wait_for_xpath("/html/body/div[2]")?;
+    let inner_element_xpath =
+        containing_element_xpath.wait_for_xpath(r#"//*[@id="strictly-above"]"#)?;
+    dbg!(&inner_element_xpath);
+    let attrs = inner_element_xpath.get_attributes()?.unwrap();
+    assert_eq!(attrs["id"], "strictly-above");
+
     Ok(())
 }
 

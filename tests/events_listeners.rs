@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use failure::Fallible;
 
-use headless_chrome::browser::tab::{SyncSendEvent, Tab};
+use headless_chrome::browser::tab::Tab;
 use headless_chrome::protocol::Event;
 use headless_chrome::Browser;
 
@@ -23,18 +23,15 @@ fn listen_to_events() -> Fallible<()> {
     let counter_log_entries_clone = Arc::clone(&counter_log_entries);
     let counter_exception_thrown_clone = Arc::clone(&counter_exception_thrown);
 
-    let sync_event = SyncSendEvent(
-        tab.clone(),
-        Box::new(move |event: &Event, _| match event {
-            Event::LogEntryAdded(_) => {
-                *counter_log_entries_clone.lock().unwrap() += 1;
-            }
-            Event::RuntimeExceptionThrown(_) => {
-                *counter_exception_thrown_clone.lock().unwrap() += 1;
-            }
-            _ => {}
-        }),
-    );
+    let sync_event = move |event: &Event| match event {
+        Event::LogEntryAdded(_) => {
+            *counter_log_entries_clone.lock().unwrap() += 1;
+        }
+        Event::RuntimeExceptionThrown(_) => {
+            *counter_exception_thrown_clone.lock().unwrap() += 1;
+        }
+        _ => {}
+    };
 
     tab.add_event_listener(Arc::new(sync_event))?;
 
@@ -61,23 +58,17 @@ fn remove_event_listener() -> Fallible<()> {
     let counter_log_entries_clone = Arc::clone(&counter_log_entries);
     let counter_exception_thrown_clone = Arc::clone(&counter_exception_thrown);
 
-    let sync_event = SyncSendEvent(
-        tab.clone(),
-        Box::new(move |event: &Event, _| {
-            if let Event::LogEntryAdded(_) = event {
-                *counter_log_entries_clone.lock().unwrap() += 1;
-            }
-        }),
-    );
+    let sync_event = move |event: &Event| {
+        if let Event::LogEntryAdded(_) = event {
+            *counter_log_entries_clone.lock().unwrap() += 1;
+        }
+    };
 
-    let runtime_event = SyncSendEvent(
-        tab.clone(),
-        Box::new(move |event: &Event, _| {
-            if let Event::RuntimeExceptionThrown(_) = event {
-                *counter_exception_thrown_clone.lock().unwrap() += 1;
-            }
-        }),
-    );
+    let runtime_event = move |event: &Event| {
+        if let Event::RuntimeExceptionThrown(_) = event {
+            *counter_exception_thrown_clone.lock().unwrap() += 1;
+        }
+    };
 
     tab.add_event_listener(Arc::new(sync_event))?;
 
