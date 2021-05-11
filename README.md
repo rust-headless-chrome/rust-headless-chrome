@@ -87,7 +87,6 @@ For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`e
 
 The [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Browser) is huge. Currently, Puppeteer supports way more of it than we do. Some of the missing features include:
 
--  <s>Manipulating cookies (you can view them with `tab.getCookies()`, though)</s>
 -  Dealing with frames
 -  Handling file picker / chooser interactions
 -  Tapping touchscreens
