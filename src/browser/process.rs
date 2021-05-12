@@ -62,24 +62,24 @@ impl Drop for TemporaryProcess {
 pub struct LaunchOptions<'a> {
     /// Determintes whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
-    headless: bool,
+    pub headless: bool,
 
     /// Determines whether to run the browser with a sandbox.
     #[builder(default = "true")]
-    sandbox: bool,
+    pub sandbox: bool,
 
     /// Launch the browser with a specific window width and height.
     #[builder(default = "None")]
-    window_size: Option<(u32, u32)>,
+    pub window_size: Option<(u32, u32)>,
 
     /// Launch the browser with a specific debugging port.
     #[builder(default = "None")]
-    port: Option<u16>,
-    /// Determines whether SSL certificates should be verified. 
+    pub port: Option<u16>,
+    /// Determines whether SSL certificates should be verified.
     /// This is unsafe and can lead to MiTM attacks. Make sure you understand the risks
     /// See https://www.owasp.org/index.php/Man-in-the-middle_attack
     #[builder(default = "true")]
-    ignore_certificate_errors: bool,
+    pub ignore_certificate_errors: bool,
 
     /// Path for Chrome or Chromium.
     ///
@@ -91,7 +91,7 @@ pub struct LaunchOptions<'a> {
     ///
     /// If unspecified, a new temp directory is created and used on every launch.
     #[builder(default = "None")]
-    user_data_dir: Option<std::path::PathBuf>,
+    pub user_data_dir: Option<std::path::PathBuf>,
 
     /// A list of Chrome extensions to load.
     ///
@@ -130,11 +130,13 @@ impl<'a> Default for LaunchOptions<'a> {
             idle_browser_timeout: Duration::from_secs(300),
             window_size: None,
             path: None,
+            user_data_dir: None,
             port: None,
+            ignore_certificate_errors: true,
             extensions: Vec::new(),
             process_envs: None,
             #[cfg(feature = "fetch")]
-            fetcher_options: Default::default()
+            fetcher_options: Default::default(),
         }
     }
 }
@@ -279,7 +281,7 @@ impl Process {
             args.extend(&["--headless"]);
         }
 
-        if !launch_options.verify {
+        if !launch_options.ignore_certificate_errors {
             args.extend(&["--ignore-certificate-errors"])
         }
 

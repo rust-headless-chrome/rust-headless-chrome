@@ -503,9 +503,7 @@ impl<'a> Element<'a> {
             }) {
             Ok(e) => return Ok(e),
             Err(_) => {
-                let mut p = Point { x: 0.0, y: 0.0 };
-
-                p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
+                let p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
                     let r = self.call_js_fn(
                         r#"
                     function() {
