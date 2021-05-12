@@ -5,8 +5,6 @@
 [![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
 [![Discord channel](https://img.shields.io/discord/557374784233799681.svg?logo=discord)](https://discord.gg/yyGEzcc)
 
-**  LOOKING FOR A MAINTAINER **
-
 A high-level API to control headless Chrome or Chromium over the DevTools Protocol. It is the
 Rust equivalent of [Puppeteer](https://github.com/GoogleChrome/puppeteer), a Node library
 maintained by the Chrome DevTools team.
