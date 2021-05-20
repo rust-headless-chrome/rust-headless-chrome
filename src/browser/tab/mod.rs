@@ -337,7 +337,7 @@ impl<'a> Tab {
               return promise;
             };
           })()
-        "#;
+        "#; // https://github.com/puppeteer/puppeteer/blob/97c9fe2520723d45a5a86da06b888ae888d400be/src/common/helper.ts#L183
 
         self.call_method(runtime::methods::AddBinding {
             name: name.to_string(),
