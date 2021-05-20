@@ -1,11 +1,16 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::thread;
 use std::time::Duration;
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use failure::{Error, Fail, Fallible};
 use log::*;
 use serde;
+
+use serde_json::{json, Value as Json};
 
 use element::Element;
 use point::Point;
@@ -70,6 +75,14 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
+pub struct Binding(Box<dyn Fn(Json)>);
+
+unsafe impl Send for Binding {}
+
+unsafe impl Sync for Binding {}
+
+pub type FunctionBinding = HashMap<String, Arc<Binding>>;
+
 // type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
@@ -83,6 +96,7 @@ pub struct Tab {
     request_interceptor: Arc<Mutex<RequestInterceptor>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
     default_timeout: Arc<RwLock<Duration>>,
+    page_bindings: Arc<Mutex<FunctionBinding>>,
     event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
     slow_motion_multiplier: Arc<RwLock<f64>>, // there's no AtomicF64, otherwise would use that
 }
@@ -138,6 +152,7 @@ impl<'a> Tab {
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
+            page_bindings: Arc::new(Mutex::new(HashMap::new())),
             request_interceptor: Arc::new(Mutex::new(Box::new(
                 |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
             ))),
@@ -208,6 +223,8 @@ impl<'a> Tab {
         let session_id = self.session_id.clone();
         let listeners_mutex = Arc::clone(&self.event_listeners);
 
+        let bindings_mutex = Arc::clone(&self.page_bindings);
+
         thread::spawn(move || {
             for event in incoming_events_rx {
                 let listeners = listeners_mutex.lock().unwrap();
@@ -228,6 +245,16 @@ impl<'a> Tab {
                             }
                             _ => {}
                         }
+                    }
+                    Event::BindingCalled(binding) => {
+                        let bindings = bindings_mutex.lock().unwrap().clone();
+
+                        let name = binding.params.name;
+                        let payload = binding.params.payload;
+
+                        let func = &Arc::clone(bindings.get(&name).unwrap()).0;
+
+                        func(json!(payload));
                     }
                     Event::RequestIntercepted(interception_event) => {
                         let id = interception_event.params.interception_id.clone();
@@ -284,6 +311,43 @@ impl<'a> Tab {
             }
             info!("finished tab's event handling loop");
         });
+    }
+
+    pub fn expose_function(&self, name: &str, func: Box<dyn Fn(Json)>) -> Fallible<()> {
+        let bindings_mutex = Arc::clone(&self.page_bindings);
+
+        let mut bindings = bindings_mutex.lock().unwrap();
+
+        bindings.insert(name.to_string(), Arc::new(Binding(func)));
+
+        let expression = r#"
+        (function addPageBinding(bindingName) {
+            const binding = window[bindingName];
+            window[bindingName] = (...args) => {
+              const me = window[bindingName];
+              let callbacks = me['callbacks'];
+              if (!callbacks) {
+                callbacks = new Map();
+                me['callbacks'] = callbacks;
+              }
+              const seq = (me['lastSeq'] || 0) + 1;
+              me['lastSeq'] = seq;
+              const promise = new Promise((resolve, reject) => callbacks.set(seq, {resolve, reject}));
+              binding(JSON.stringify({name: bindingName, seq, args}));
+              return promise;
+            };
+          })()
+        "#; // https://github.com/puppeteer/puppeteer/blob/97c9fe2520723d45a5a86da06b888ae888d400be/src/common/helper.ts#L183
+
+        self.call_method(runtime::methods::AddBinding {
+            name: name.to_string(),
+        })?;
+
+        self.call_method(page::methods::AddScriptToEvaluateOnNewDocument {
+            source: expression.to_string(),
+        })?;
+
+        Ok(())
     }
 
     pub fn call_method<C>(&self, method: C) -> Fallible<C::ReturnObject>

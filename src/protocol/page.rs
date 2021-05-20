@@ -293,4 +293,21 @@ pub mod methods {
         const NAME: &'static str = "Page.handleFileChooser";
         type ReturnObject = HandleFileChooserReturnObject;
     }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AddScriptToEvaluateOnNewDocument {
+        pub source: String,
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AddScriptToEvaluateOnNewDocumentReturnObject {
+        pub identifier: String,
+    }
+
+    impl Method for AddScriptToEvaluateOnNewDocument {
+        const NAME: &'static str = "Page.addScriptToEvaluateOnNewDocument";
+        type ReturnObject = AddScriptToEvaluateOnNewDocumentReturnObject;
+    }
 }
