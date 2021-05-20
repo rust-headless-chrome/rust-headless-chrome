@@ -126,7 +126,6 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct CallFunctionOn<'a> {
         pub object_id: &'a str,
-        pub arguments: Vec<CallArgument>,
         pub function_declaration: &'a str,
         pub return_by_value: bool,
         pub generate_preview: bool,
@@ -185,6 +184,21 @@ pub mod methods {
         const NAME: &'static str = "Runtime.disable";
         type ReturnObject = DisableReturnObject;
     }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AddBinding {
+        pub name: String,
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AddBindingReturnObject {}
+
+    impl Method for AddBinding {
+        const NAME: &'static str = "Runtime.addBinding";
+        type ReturnObject = AddBindingReturnObject;
+    }
 }
 
 pub mod events {
@@ -221,6 +235,19 @@ pub mod events {
     #[serde(rename_all = "camelCase")]
     pub struct ExceptionThrownEvent {
         pub params: ExceptionThrown,
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    pub struct BindingCalledEvent {
+        pub params: BindingCalledEventParams,
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct BindingCalledEventParams {
+        pub name: String,
+        pub payload: String,
+        pub execution_context_id: Option<JsInt>,
     }
 
     #[test]

@@ -122,6 +122,8 @@ pub enum Event {
     LogEntryAdded(logs::events::EntryAddedEvent),
     #[serde(rename = "Runtime.exceptionThrown")]
     RuntimeExceptionThrown(runtime::events::ExceptionThrownEvent),
+    #[serde(rename = "Runtime.bindingCalled")]
+    BindingCalled(runtime::events::BindingCalledEvent),
 }
 
 #[derive(Deserialize, Debug, Clone)]

@@ -1,0 +1,37 @@
+use std::sync::{Arc, Mutex};
+
+use headless_chrome::browser::tab::{SyncSendEvent, Tab};
+use headless_chrome::protocol::Event;
+use headless_chrome::Browser;
+
+mod server;
+
+use failure::Fallible;
+
+#[test]
+fn expose_function() -> Fallible<()> {
+    let server = server::Server::with_dumb_html(include_str!("simple.html"));
+
+    let function_called_entries = Arc::new(Mutex::new(0));
+
+    let browser = Browser::default()?;
+    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+
+    let function_called_entries_clone = Arc::clone(&function_called_entries);
+
+    let url = format!("http://127.0.0.1:{}", server.port());
+    tab.navigate_to(&url)?.wait_until_navigated()?;
+
+    tab.expose_function(
+        "simple",
+        Box::new(move |value| {
+            *function_called_entries_clone.lock().unwrap() += 1;
+        }),
+    )?;
+
+    tab.evaluate("window.simple('100')", false)?;
+
+    assert_eq!(*function_called_entries.lock().unwrap(), 1);
+
+    Ok(())
+}
