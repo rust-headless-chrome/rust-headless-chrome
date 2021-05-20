@@ -20,7 +20,7 @@ fn main() -> Fallible<()> {
 
     let element = tab.wait_for_xpath("/html/body/div[1]/div[5]/div[1]")?;
 
-    element.call_js_fn("function(...args) {if(arg[0]) {return this.innerText;}}", vec![json!(true),json!({"message": "hello"}),json!(200)], false)?;
+    element.call_js_fn("function(...args) {if(arg[0]) {return this.innerText;}}", false)?;
     
     Ok(())
 }

@@ -126,7 +126,6 @@ pub mod methods {
     #[serde(rename_all = "camelCase")]
     pub struct CallFunctionOn<'a> {
         pub object_id: &'a str,
-        pub arguments: Vec<CallArgument>,
         pub function_declaration: &'a str,
         pub return_by_value: bool,
         pub generate_preview: bool,
