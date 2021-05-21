@@ -57,7 +57,7 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
         .capture_screenshot(ScreenshotFormat::PNG)?;
 
     // Run JavaScript in the page
-    match elem.call_js_fn(r#"
+    match elem.call_js_fn("
         function getIdTwice () {
             // `this` is always the element that you called `call_js_fn` on
             const id = this.id;
