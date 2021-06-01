@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use failure::Fallible;
 
-use headless_chrome::{Browser, LaunchOptions, protocol::Event};
+use headless_chrome::{protocol::Event, Browser, LaunchOptions};
 
 fn start() -> Fallible<()> {
     let browser = Browser::new(LaunchOptions {
@@ -19,18 +19,14 @@ fn start() -> Fallible<()> {
 
     let new_tab = tab.clone();
 
-    let sync_event = 
-        Arc::new(move |event: &Event| {
-            match event {
-                Event::Lifecycle(lifecycle) => {
-                    if lifecycle.params.name == "DOMContentLoaded" {
-                        
-                        println!("{}",new_tab.get_url());
-                    }
-                }
-                _ => {}
+    let sync_event = Arc::new(move |event: &Event| match event {
+        Event::Lifecycle(lifecycle) => {
+            if lifecycle.params.name == "DOMContentLoaded" {
+                println!("{}", new_tab.get_url());
             }
-        });
+        }
+        _ => {}
+    });
 
     tab.add_event_listener(sync_event).unwrap();
 
