@@ -2,8 +2,6 @@ use failure::Fallible;
 
 use headless_chrome::{Browser, LaunchOptions};
 
-use serde_json::json;
-
 fn main() -> Fallible<()> {
     let browser = Browser::new(
         LaunchOptions::default_builder()
