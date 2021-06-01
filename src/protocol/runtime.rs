@@ -119,7 +119,7 @@ pub mod methods {
     #[derive(Debug, Clone, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CallArgument {
-        pub value: serde_json::Value
+        pub value: serde_json::Value,
     }
 
     #[derive(Serialize, Debug, Default)]
