@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use failure::Fallible;
 
-use headless_chrome::{Browser, LaunchOptions, Tab, protocol::Event};
+use headless_chrome::{Browser, LaunchOptions, protocol::Event};
 
 fn start() -> Fallible<()> {
     let browser = Browser::new(LaunchOptions {
