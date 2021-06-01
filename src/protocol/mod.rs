@@ -4,7 +4,6 @@ use std::fmt::Debug;
 
 use crate::protocol::types::{JsInt, JsUInt};
 use failure::{Fail, Fallible};
-use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
