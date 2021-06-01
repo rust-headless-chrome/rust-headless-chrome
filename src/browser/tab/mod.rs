@@ -8,7 +8,6 @@ use std::{
 
 use failure::{Error, Fail, Fallible};
 use log::*;
-use serde;
 
 use serde_json::{json, Value as Json};
 
@@ -66,7 +65,7 @@ pub type ResponseHandler = Box<
 type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 pub trait EventListener<T> {
-    fn on_event(&self, event: &T) -> ();
+    fn on_event(&self, event: &T);
 }
 
 impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {

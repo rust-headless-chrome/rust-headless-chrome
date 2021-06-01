@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use failure::Fallible;
 use log::*;
-use serde;
 
 use process::Process;
 pub use process::{LaunchOptions, LaunchOptionsBuilder};

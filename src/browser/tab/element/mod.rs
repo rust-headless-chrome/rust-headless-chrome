@@ -526,10 +526,10 @@ impl<'a> Element<'a> {
 
                     match res {
                         Ok(v) => {
-                            if v.x != 0.0 {
-                                Some(v)
-                            } else {
+                            if v.x == 0.0 {
                                 None
+                            } else {
+                                Some(v)
                             }
                         }
 
