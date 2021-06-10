@@ -35,7 +35,7 @@ mod point;
 
 #[derive(Debug)]
 pub enum RequestPausedDecision {
-    Fulfil(fetch::methods::FulfilRequest),
+   Fulfill(fetch::methods::FulfillRequest),
     Fail(fetch::methods::FailRequest),
     Continue(Option<fetch::methods::ContinueRequest>),
 }
@@ -61,9 +61,7 @@ pub trait RequestInterceptor {
     ) -> RequestPausedDecision;
 }
 
-impl<
-        F: Fn(Arc<Transport>, SessionId, RequestPausedEvent) -> RequestPausedDecision + Send + Sync,
-    > RequestInterceptor for F
+impl<F> RequestInterceptor for F where F:  Fn(Arc<Transport>, SessionId, RequestPausedEvent) -> RequestPausedDecision + Send + Sync
 {
     fn intercept(
         &self,
@@ -277,7 +275,7 @@ impl Tab {
                                         .map(|_| ())
                                 }
                             }
-                            RequestPausedDecision::Fulfil(fulfill_request) => transport
+                            RequestPausedDecision::Fulfill(fulfill_request) => transport
                                 .call_method_on_target(session_id.clone(), fulfill_request)
                                 .map(|_| ()),
                             RequestPausedDecision::Fail(fail_request) => transport
