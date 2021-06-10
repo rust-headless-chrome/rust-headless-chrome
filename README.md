@@ -63,7 +63,7 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
             const id = this.id;
             return id + id;
         }
-    ", false)? {
+    "#, false)? {
         serde_json::value::Value::String(returned_string) {
             assert_eq!(returned_string, "firstHeadingfirstHeading".to_string());
         }
