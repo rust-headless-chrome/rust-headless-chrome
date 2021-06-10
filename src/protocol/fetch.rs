@@ -88,7 +88,7 @@ pub mod methods {
     /// Fetch.fulfillRequest
     #[derive(Debug, Serialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct FulfilRequest {
+    pub struct FulfillRequest {
         pub request_id: String,
         pub response_code: JsUInt,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -103,11 +103,11 @@ pub mod methods {
 
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct FulfilRequestReturnObject {}
+    pub struct FulfillRequestReturnObject {}
 
-    impl Method for FulfilRequest {
+    impl Method for FulfillRequest {
         const NAME: &'static str = "Fetch.fulfillRequest";
-        type ReturnObject = FulfilRequestReturnObject;
+        type ReturnObject = FulfillRequestReturnObject;
     }
 
     /// Fetch.continueRequest
