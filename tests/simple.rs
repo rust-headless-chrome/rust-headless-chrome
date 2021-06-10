@@ -514,7 +514,7 @@ fn set_request_interception() -> Fallible<()> {
                     value: "application/javascript".to_string(),
                 }];
 
-                let fulful_request = FulfilRequest {
+                let fulfill_request = FulfillRequest {
                     request_id: intercepted.params.request_id,
                     response_code: 200,
                     response_headers: Some(headers),
@@ -523,7 +523,7 @@ fn set_request_interception() -> Fallible<()> {
                     response_phrase: None,
                 };
 
-                RequestPausedDecision::Fulfil(fulful_request)
+                RequestPausedDecision::Fulfill(fulfill_request)
             } else {
                 RequestPausedDecision::Continue(None)
             }
