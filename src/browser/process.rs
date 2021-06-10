@@ -103,6 +103,11 @@ pub struct LaunchOptions<'a> {
     #[builder(default)]
     pub extensions: Vec<&'a OsStr>,
 
+    /// Additional arguments to pass to the browser instance. The list of Chromium
+    /// flags can be found: http://peter.sh/experiments/chromium-command-line-switches/.
+    #[builder(default)]
+    args: Vec<&'a OsStr>,
+
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
     /// By default, we'll use a revision guaranteed to work with our API and will
@@ -272,6 +277,15 @@ impl Process {
         ];
 
         args.extend(&DEFAULT_ARGS);
+
+        if !launch_options.args.is_empty() {
+            let extra_args: Vec<&str> = launch_options
+                .args
+                .iter()
+                .map(|a| a.to_str().unwrap())
+                .collect();
+            args.extend(extra_args);
+        }
 
         if !window_size_option.is_empty() {
             args.extend(&[window_size_option.as_str()]);

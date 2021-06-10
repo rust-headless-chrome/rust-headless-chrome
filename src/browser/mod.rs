@@ -29,7 +29,7 @@ pub mod context;
 mod fetcher;
 mod process;
 pub mod tab;
-mod transport;
+pub mod transport;
 
 use protocol::dom::methods;
 

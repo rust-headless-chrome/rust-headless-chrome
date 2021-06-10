@@ -278,7 +278,6 @@ impl Transport {
                                     let raw_message = target_message_event.params.message;
 
                                     let msg_res = protocol::parse_raw_message(&raw_message);
-
                                     match msg_res {
                                         Ok(target_message) => match target_message {
                                             Message::Event(target_event) => {

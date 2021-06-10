@@ -14,19 +14,22 @@ use serde_json::{json, Value as Json};
 use element::Element;
 use point::Point;
 
-use crate::browser::Transport;
 use crate::protocol::dom::{Node, NodeId};
 use crate::protocol::page::methods::{
     FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
 };
 use crate::protocol::target::{TargetId, TargetInfo};
 use crate::protocol::{
-    dom, input, logs, network, page, profiler, runtime, target, Event, RemoteError,
+    dom, fetch, input, logs, network, page, profiler, runtime, target, Event, RemoteError,
 };
 use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
 
 use super::transport::SessionId;
-use crate::protocol::network::Cookie;
+use crate::browser::transport::Transport;
+use crate::protocol::fetch::events::RequestPausedEvent;
+use crate::protocol::fetch::methods::{AuthChallengeResponse, ContinueRequest};
+use crate::protocol::network::methods::SetExtraHTTPHeaders;
+use crate::protocol::network::{Cookie, CookieParam};
 use std::thread::sleep;
 
 pub mod element;
@@ -34,21 +37,11 @@ mod keys;
 pub mod point;
 
 #[derive(Debug)]
-pub enum RequestInterceptionDecision {
-    Continue,
-    // TODO: Error
-    Response(String),
+pub enum RequestPausedDecision {
+   Fulfill(fetch::methods::FulfillRequest),
+    Fail(fetch::methods::FailRequest),
+    Continue(Option<fetch::methods::ContinueRequest>),
 }
-
-pub type RequestInterceptor = Box<
-    dyn Fn(
-            Arc<Transport>,
-            SessionId,
-            protocol::network::events::RequestInterceptedEventParams,
-        ) -> RequestInterceptionDecision
-        + Send
-        + Sync,
->;
 
 #[rustfmt::skip]
 pub type ResponseHandler = Box<
@@ -63,6 +56,28 @@ pub type ResponseHandler = Box<
 >;
 
 type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
+pub trait RequestInterceptor {
+    fn intercept(
+        &self,
+        transport: Arc<Transport>,
+        session_id: SessionId,
+        event: RequestPausedEvent,
+    ) -> RequestPausedDecision;
+}
+
+impl<F> RequestInterceptor for F where F:  Fn(Arc<Transport>, SessionId, RequestPausedEvent) -> RequestPausedDecision + Send + Sync
+{
+    fn intercept(
+        &self,
+        transport: Arc<Transport>,
+        session_id: SessionId,
+        event: RequestPausedEvent,
+    ) -> RequestPausedDecision {
+        self(transport, session_id, event)
+    }
+}
+
+type RequestIntercept = dyn RequestInterceptor + Send + Sync;
 
 pub trait EventListener<T> {
     fn on_event(&self, event: &T);
@@ -92,8 +107,9 @@ pub struct Tab {
     session_id: SessionId,
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
-    request_interceptor: Arc<Mutex<RequestInterceptor>>,
+    request_interceptor: Arc<Mutex<Arc<RequestIntercept>>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
+    auth_handler: Arc<Mutex<fetch::methods::AuthChallengeResponse>>,
     default_timeout: Arc<RwLock<Duration>>,
     page_bindings: Arc<Mutex<FunctionBinding>>,
     event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
@@ -129,7 +145,7 @@ impl NoElementFound {
     }
 }
 
-impl<'a> Tab {
+impl Tab {
     pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Fallible<Self> {
         let target_id = target_info.target_id.clone();
 
@@ -152,10 +168,14 @@ impl<'a> Tab {
             navigating: Arc::new(AtomicBool::new(false)),
             target_info: target_info_mutex,
             page_bindings: Arc::new(Mutex::new(HashMap::new())),
-            request_interceptor: Arc::new(Mutex::new(Box::new(
-                |_transport, _session_id, _interception| RequestInterceptionDecision::Continue,
+            request_interceptor: Arc::new(Mutex::new(Arc::new(
+                |_transport, _session_id, _interception| RequestPausedDecision::Continue(None),
             ))),
             response_handler: Arc::new(Mutex::new(None)),
+            auth_handler: Arc::new(Mutex::new(AuthChallengeResponse {
+                response: "Default".to_string(),
+                ..Default::default()
+            })),
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
             event_listeners: Arc::new(Mutex::new(Vec::new())),
             slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
@@ -219,6 +239,7 @@ impl<'a> Tab {
         let navigating = Arc::clone(&self.navigating);
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
         let response_handler_mutex = self.response_handler.clone();
+        let auth_handler_mutex = self.auth_handler.clone();
         let session_id = self.session_id.clone();
         let listeners_mutex = Arc::clone(&self.event_listeners);
 
@@ -255,38 +276,53 @@ impl<'a> Tab {
 
                         func(json!(payload));
                     }
-                    Event::RequestIntercepted(interception_event) => {
-                        let id = interception_event.params.interception_id.clone();
+                    Event::RequestPaused(event) => {
                         let interceptor = interceptor_mutex.lock().unwrap();
-                        let decision = interceptor(
+                        let decision = interceptor.intercept(
                             Arc::clone(&transport),
                             session_id.clone(),
-                            interception_event.params,
+                            event.clone(),
                         );
-                        match decision {
-                            RequestInterceptionDecision::Continue => {
-                                let method = network::methods::ContinueInterceptedRequest {
-                                    interception_id: &id,
-                                    ..Default::default()
-                                };
-                                let result =
-                                    transport.call_method_on_target(session_id.clone(), method);
-                                if result.is_err() {
-                                    warn!("Tried to continue request after connection was closed");
+                        let result = match decision {
+                            RequestPausedDecision::Continue(continue_request) => {
+                                if let Some(continue_request) = continue_request {
+                                    transport
+                                        .call_method_on_target(session_id.clone(), continue_request)
+                                        .map(|_| ())
+                                } else {
+                                    transport
+                                        .call_method_on_target(
+                                            session_id.clone(),
+                                            ContinueRequest {
+                                                request_id: event.params.request_id,
+                                                ..Default::default()
+                                            },
+                                        )
+                                        .map(|_| ())
                                 }
                             }
-                            RequestInterceptionDecision::Response(response_str) => {
-                                let method = network::methods::ContinueInterceptedRequest {
-                                    interception_id: &id,
-                                    raw_response: Some(&response_str),
-                                    ..Default::default()
-                                };
-                                let result =
-                                    transport.call_method_on_target(session_id.clone(), method);
-                                if result.is_err() {
-                                    warn!("Tried to continue request after connection was closed");
-                                }
-                            }
+                            RequestPausedDecision::Fulfill(fulfill_request) => transport
+                                .call_method_on_target(session_id.clone(), fulfill_request)
+                                .map(|_| ()),
+                            RequestPausedDecision::Fail(fail_request) => transport
+                                .call_method_on_target(session_id.clone(), fail_request)
+                                .map(|_| ()),
+                        };
+                        if result.is_err() {
+                            warn!("Tried to handle request after connection was closed");
+                        }
+                    }
+                    Event::AuthRequired(event) => {
+                        let auth_challenge_response = auth_handler_mutex.lock().unwrap().clone();
+
+                        let request_id = event.params.request_id;
+                        let method = fetch::methods::ContinueWithAuth {
+                            request_id: &request_id,
+                            auth_challenge_response,
+                        };
+                        let result = transport.call_method_on_target(session_id.clone(), method);
+                        if result.is_err() {
+                            warn!("Tried to handle request after connection was closed");
                         }
                     }
                     Event::ResponseReceived(ev) => {
@@ -869,47 +905,50 @@ impl<'a> Tab {
         Ok(script_coverages)
     }
 
+    /// Enables fetch domain.
+    pub fn enable_fetch(
+        &self,
+        patterns: Option<&[fetch::methods::RequestPattern]>,
+        handle_auth_requests: Option<bool>,
+    ) -> Fallible<&Self> {
+        self.call_method(fetch::methods::Enable {
+            patterns,
+            handle_auth_requests,
+        })?;
+        Ok(self)
+    }
+
+    /// Disables fetch domain
+    pub fn disable_fetch(&self) -> Fallible<&Self> {
+        self.call_method(fetch::methods::Disable {})?;
+        Ok(self)
+    }
+
     /// Allows you to inspect outgoing network requests from the tab, and optionally return
     /// your own responses to them
     ///
     /// The `interceptor` argument is a closure which takes this tab's `Transport` and its SessionID
     /// so that you can call methods from within the closure using `transport.call_method_on_target`.
     ///
-    /// The closure needs to return a variant of `RequestInterceptionDecision` (so, `Continue` or
-    /// `Response(String)`).
-    pub fn enable_request_interception(
-        &self,
-        patterns: &[network::methods::RequestPattern],
-        interceptor: RequestInterceptor,
-    ) -> Fallible<()> {
+    /// The closure needs to return a variant of `RequestPausedDecision`.
+    pub fn enable_request_interception(&self, interceptor: Arc<RequestIntercept>) -> Fallible<()> {
         let mut current_interceptor = self.request_interceptor.lock().unwrap();
         *current_interceptor = interceptor;
-        self.call_method(network::methods::SetRequestInterception {
-            patterns: &patterns,
-        })?;
         Ok(())
     }
 
-    /// Once you have an intercepted request, you can choose to let it continue by calling this.
-    ///
-    /// If you specify a 'modified_response', that's what the requester in the page will receive
-    /// instead of what they normally would've received.
-    pub fn continue_intercepted_request(
+    pub fn authenticate(
         &self,
-        interception_id: &str,
-        modified_response: Option<&str>,
-    ) -> Fallible<()> {
-        self.call_method(network::methods::ContinueInterceptedRequest {
-            interception_id,
-            error_reason: None,
-            raw_response: modified_response,
-            url: None,
-            method: None,
-            post_data: None,
-            headers: None,
-            auth_challenge_response: None,
-        })?;
-        Ok(())
+        username: Option<String>,
+        password: Option<String>,
+    ) -> Fallible<&Self> {
+        let mut current_auth_handler = self.auth_handler.lock().unwrap();
+        *current_auth_handler = AuthChallengeResponse {
+            response: "ProvideCredentials".to_string(),
+            username,
+            password,
+        };
+        Ok(self)
     }
 
     /// Lets you listen for responses, and gives you a way to get the response body too.
@@ -934,14 +973,12 @@ impl<'a> Tab {
     /// Enables runtime domain.
     pub fn enable_runtime(&self) -> Fallible<&Self> {
         self.call_method(runtime::methods::Enable {})?;
-
         Ok(self)
     }
 
     /// Disables runtime domain
     pub fn disable_runtime(&self) -> Fallible<&Self> {
         self.call_method(runtime::methods::Disable {})?;
-
         Ok(self)
     }
 
@@ -1254,6 +1291,12 @@ impl<'a> Tab {
         files: Option<Vec<String>>,
     ) -> Fallible<()> {
         self.call_method(HandleFileChooser { action, files })?;
+        Ok(())
+    }
+
+    pub fn set_extra_http_headers(&self, headers: HashMap<&str, &str>) -> Fallible<()> {
+        self.call_method(network::methods::Enable {})?;
+        self.call_method(SetExtraHTTPHeaders { headers })?;
         Ok(())
     }
 }
