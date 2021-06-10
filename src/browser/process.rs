@@ -106,7 +106,7 @@ pub struct LaunchOptions<'a> {
     /// Additional arguments to pass to the browser instance. The list of Chromium
     /// flags can be found: http://peter.sh/experiments/chromium-command-line-switches/.
     #[builder(default)]
-    args: Vec<&'a OsStr>,
+    pub args: Vec<&'a OsStr>,
 
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
@@ -142,6 +142,7 @@ impl<'a> Default for LaunchOptions<'a> {
             process_envs: None,
             #[cfg(feature = "fetch")]
             fetcher_options: Default::default(),
+            args: Vec::new(),
         }
     }
 }
