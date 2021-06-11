@@ -9,6 +9,9 @@ use std::{
 use failure::{Error, Fail, Fallible};
 use log::*;
 
+use serde::__private::ser;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value as Json};
 
 use element::Element;
@@ -38,7 +41,7 @@ pub mod point;
 
 #[derive(Debug)]
 pub enum RequestPausedDecision {
-   Fulfill(fetch::methods::FulfillRequest),
+    Fulfill(fetch::methods::FulfillRequest),
     Fail(fetch::methods::FailRequest),
     Continue(Option<fetch::methods::ContinueRequest>),
 }
@@ -65,7 +68,9 @@ pub trait RequestInterceptor {
     ) -> RequestPausedDecision;
 }
 
-impl<F> RequestInterceptor for F where F:  Fn(Arc<Transport>, SessionId, RequestPausedEvent) -> RequestPausedDecision + Send + Sync
+impl<F> RequestInterceptor for F
+where
+    F: Fn(Arc<Transport>, SessionId, RequestPausedEvent) -> RequestPausedDecision + Send + Sync,
 {
     fn intercept(
         &self,
@@ -125,6 +130,10 @@ pub struct NoElementFound {}
 pub struct NavigationFailed {
     error_text: String,
 }
+
+#[derive(Debug, Fail)]
+#[fail(display = "No LocalStorage item was found")]
+pub struct NoLocalStorageItemFound {}
 
 impl NoElementFound {
     pub fn map(error: Error) -> Error {
@@ -1297,6 +1306,59 @@ impl Tab {
     pub fn set_extra_http_headers(&self, headers: HashMap<&str, &str>) -> Fallible<()> {
         self.call_method(network::methods::Enable {})?;
         self.call_method(SetExtraHTTPHeaders { headers })?;
+        Ok(())
+    }
+
+    pub fn set_storage<T>(&self, item_name: &str, item: T) -> Fallible<()>
+    where
+        T: Serialize,
+    {
+        let value = json!(item).to_string();
+
+        self.evaluate(
+            &format!(
+                r#"localStorage.setItem("{}",JSON.stringify({}))"#,
+                item_name, value
+            ),
+            false,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_storage<T>(&self, item_name: &str) -> Fallible<T>
+    where
+        T: DeserializeOwned,
+    {
+        let object = self.evaluate(&format!(r#"localStorage.getItem("{}")"#, item_name), false)?;
+
+        let json: Option<T> = object
+            .value
+            .and_then(|v| match v {
+                serde_json::Value::String(ref s) => {
+                    let result = serde_json::from_str(&s);
+
+                    if result.is_err() {
+                        Some(serde_json::from_value(v).unwrap())
+                    } else {
+                        Some(result.unwrap())
+                    }
+                },
+                _ => None
+            });
+
+        match json {
+            Some(v) => Ok(v),
+            None => Err(NoLocalStorageItemFound {}.into()),
+        }
+    }
+
+    pub fn remove_storage(&self, item_name: &str) -> Fallible<()> {
+        self.evaluate(
+            &format!(r#"localStorage.removeItem("{}")"#, item_name),
+            false,
+        )?;
+
         Ok(())
     }
 }
