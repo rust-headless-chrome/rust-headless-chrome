@@ -5,15 +5,16 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use failure::Fallible;
+use headless_chrome::LaunchOptionsBuilder;
 use log::*;
 use rand::prelude::*;
 
-use headless_chrome::protocol::network::methods::{SetCookie};
 use headless_chrome::browser::tab::RequestPausedDecision;
 use headless_chrome::browser::transport::{SessionId, Transport};
 use headless_chrome::protocol::fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::fetch::methods::{FulfillRequest, RequestPattern};
 use headless_chrome::protocol::fetch::HeaderEntry;
+use headless_chrome::protocol::network::methods::SetCookie;
 use headless_chrome::protocol::network::{Cookie, CookieParam};
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
@@ -23,6 +24,8 @@ use headless_chrome::{
     protocol::page::ScreenshotFormat,
     Browser, Tab,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::collections::HashMap;
 
 pub mod logging;
@@ -40,7 +43,13 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
 }
 
 fn browser() -> Browser {
-    Browser::default().unwrap()
+    Browser::new(
+        LaunchOptionsBuilder::default()
+            .headless(true)
+            .build()
+            .unwrap(),
+    )
+    .unwrap()
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
