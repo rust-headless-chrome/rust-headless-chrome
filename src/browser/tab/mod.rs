@@ -9,7 +9,6 @@ use std::{
 use failure::{Error, Fail, Fallible};
 use log::*;
 
-use serde::__private::ser;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value as Json};
