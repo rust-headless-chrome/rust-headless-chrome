@@ -9,9 +9,8 @@ use std::{
 use failure::{Error, Fail, Fallible};
 use log::*;
 
-use serde::__private::ser;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::{json, Value as Json};
 
 use element::Element;
@@ -32,7 +31,7 @@ use crate::browser::transport::Transport;
 use crate::protocol::fetch::events::RequestPausedEvent;
 use crate::protocol::fetch::methods::{AuthChallengeResponse, ContinueRequest};
 use crate::protocol::network::methods::SetExtraHTTPHeaders;
-use crate::protocol::network::{Cookie, CookieParam};
+use crate::protocol::network::Cookie;
 use std::thread::sleep;
 
 pub mod element;
