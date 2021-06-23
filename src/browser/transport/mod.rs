@@ -9,7 +9,6 @@ use std::time::Duration;
 
 use failure::{Fail, Fallible};
 use log::*;
-use serde;
 
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
@@ -152,9 +151,8 @@ impl Transport {
                 if let Err(e) = self.web_socket_connection.send_message(&message_text) {
                     self.waiting_call_registry.unregister_call(call.id);
                     return Err(e);
-                } else {
-                    trace!("sent method call to browser via websocket");
                 }
+                trace!("sent method call to browser via websocket");
             }
         }
 
@@ -280,7 +278,6 @@ impl Transport {
                                     let raw_message = target_message_event.params.message;
 
                                     let msg_res = protocol::parse_raw_message(&raw_message);
-
                                     match msg_res {
                                         Ok(target_message) => match target_message {
                                             Message::Event(target_event) => {

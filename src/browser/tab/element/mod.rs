@@ -504,8 +504,9 @@ impl<'a> Element<'a> {
             Ok(e) => return Ok(e),
             Err(_) => {
                 let p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
-                    let r = self.call_js_fn(
-                        r#"
+                    let r = self
+                        .call_js_fn(
+                            r#"
                     function() {
 
                         let rect = this.getBoundingClientRect();
@@ -525,17 +526,17 @@ impl<'a> Element<'a> {
 
                     match res {
                         Ok(v) => {
-                            if v.x != 0.0 {
-                                Some(v)
-                            } else {
+                            if v.x == 0.0 {
                                 None
+                            } else {
+                                Some(v)
                             }
                         }
 
-                        _ => None
+                        _ => None,
                     }
                 })?;
-       
+
                 return Ok(p);
             }
         }

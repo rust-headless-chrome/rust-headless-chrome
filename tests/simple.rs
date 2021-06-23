@@ -4,14 +4,18 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use base64;
 use failure::Fallible;
+use headless_chrome::LaunchOptionsBuilder;
 use log::*;
 use rand::prelude::*;
 
-use headless_chrome::browser::tab::RequestInterceptionDecision;
-use headless_chrome::protocol::network::methods::{RequestPattern, SetCookie};
-use headless_chrome::protocol::network::Cookie;
+use headless_chrome::browser::tab::RequestPausedDecision;
+use headless_chrome::browser::transport::{SessionId, Transport};
+use headless_chrome::protocol::fetch::events::RequestPausedEvent;
+use headless_chrome::protocol::fetch::methods::{FulfillRequest, RequestPattern};
+use headless_chrome::protocol::fetch::HeaderEntry;
+use headless_chrome::protocol::network::methods::SetCookie;
+use headless_chrome::protocol::network::{Cookie, CookieParam};
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
 use headless_chrome::util::Wait;
@@ -20,6 +24,9 @@ use headless_chrome::{
     protocol::page::ScreenshotFormat,
     Browser, Tab,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
 
 pub mod logging;
 pub mod server;
@@ -36,7 +43,13 @@ fn dumb_server(data: &'static str) -> (server::Server, Browser, Arc<Tab>) {
 }
 
 fn browser() -> Browser {
-    Browser::default().unwrap()
+    Browser::new(
+        LaunchOptionsBuilder::default()
+            .headless(true)
+            .build()
+            .unwrap(),
+    )
+    .unwrap()
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
@@ -353,6 +366,7 @@ fn find_elements() -> Fallible<()> {
     Ok(())
 }
 
+/*
 #[test]
 fn find_element_on_tab_and_other_elements() -> Fallible<()> {
     logging::enable_logging();
@@ -364,6 +378,7 @@ fn find_element_on_tab_and_other_elements() -> Fallible<()> {
     assert_eq!(attrs["id"], "strictly-above");
     Ok(())
 }
+*/
 
 #[test]
 fn find_element_on_tab_by_xpath() -> Fallible<()> {
@@ -505,54 +520,62 @@ fn set_request_interception() -> Fallible<()> {
         RequestPattern {
             url_pattern: None,
             resource_type: None,
-            interception_stage: Some("HeadersReceived"),
+            request_stage: Some("HeadersReceived"),
         },
         RequestPattern {
             url_pattern: None,
             resource_type: None,
-            interception_stage: Some("Request"),
+            request_stage: Some("Request"),
         },
     ];
+    tab.enable_fetch(Some(&patterns), None)?;
 
-    tab.enable_request_interception(
-        &patterns,
-        Box::new(|transport, session_id, intercepted| {
-            if intercepted.request.url.ends_with(".js") {
+    tab.enable_request_interception(Arc::new(
+        move |transport: Arc<Transport>, session_id: SessionId, intercepted: RequestPausedEvent| {
+            if intercepted.params.request.url.ends_with(".js") {
                 let js_body = r#"document.body.appendChild(document.createElement("hr"));"#;
-                let js_response = tiny_http::Response::new(
-                    200.into(),
-                    vec![tiny_http::Header::from_bytes(
-                        &b"Content-Type"[..],
-                        &b"application/javascript"[..],
-                    )
-                    .unwrap()],
-                    js_body.as_bytes(),
-                    Some(js_body.len()),
-                    None,
-                );
 
-                let mut wrapped_writer = Vec::new();
-                js_response
-                    .raw_print(&mut wrapped_writer, (1, 2).into(), &[], false, None)
-                    .unwrap();
+                let headers = vec![HeaderEntry {
+                    name: "Content-Type".to_string(),
+                    value: "application/javascript".to_string(),
+                }];
 
-                let base64_response = base64::encode(&wrapped_writer);
+                let fulfill_request = FulfillRequest {
+                    request_id: intercepted.params.request_id,
+                    response_code: 200,
+                    response_headers: Some(headers),
+                    binary_response_headers: None,
+                    body: Some(base64::encode(js_body)),
+                    response_phrase: None,
+                };
 
-                RequestInterceptionDecision::Response(base64_response)
+                RequestPausedDecision::Fulfill(fulfill_request)
             } else {
-                RequestInterceptionDecision::Continue
+                RequestPausedDecision::Continue(None)
             }
-        }),
-    )?;
+        },
+    ))?;
 
     // ignore cache:
+
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
-
     tab.wait_until_navigated()?;
-
     // There are two JS scripts that get loaded via network, they both append an element like this:
     assert_eq!(2, tab.wait_for_elements("hr")?.len());
+
+    Ok(())
+}
+
+#[test]
+fn authentication() -> Fallible<()> {
+    logging::enable_logging();
+    let browser = Browser::default()?;
+    let tab = browser.wait_for_initial_tab()?;
+    tab.authenticate(Some("login".to_string()), Some("password".to_string()))?;
+    tab.enable_fetch(None, Some(true))?;
+    tab.navigate_to("http://httpbin.org/basic-auth/login/password")?;
+    tab.wait_until_navigated()?;
 
     Ok(())
 }
@@ -772,3 +795,27 @@ fn parses_shadow_doms() -> Fallible<()> {
     tab.wait_for_element("html")?;
     Ok(())
 }
+
+#[test]
+fn set_extra_http_headers() -> Fallible<()> {
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+    let mut headers = HashMap::new();
+    headers.insert("test", "header");
+    tab.set_extra_http_headers(headers)?;
+    tab.enable_fetch(None, None)?;
+
+    tab.enable_request_interception(Arc::new(
+        |transport: Arc<Transport>, session_id: SessionId, intercepted: RequestPausedEvent| {
+            assert_eq!(
+                intercepted.params.request.headers.get("test"),
+                Some(&"header".to_string())
+            );
+            RequestPausedDecision::Continue(None)
+        },
+    ))?;
+
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
+    Ok(())
+}
+

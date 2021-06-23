@@ -4,13 +4,13 @@ use std::fmt::Debug;
 
 use crate::protocol::types::{JsInt, JsUInt};
 use failure::{Fail, Fallible};
-use serde;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub mod browser;
 pub mod debugger;
 pub mod dom;
+pub mod fetch;
 pub mod input;
 pub mod logs;
 pub mod network;
@@ -118,6 +118,10 @@ pub enum Event {
     RequestIntercepted(network::events::RequestInterceptedEvent),
     #[serde(rename = "Network.responseReceived")]
     ResponseReceived(network::events::ResponseReceivedEvent),
+    #[serde(rename = "Fetch.requestPaused")]
+    RequestPaused(fetch::events::RequestPausedEvent),
+    #[serde(rename = "Fetch.authRequired")]
+    AuthRequired(fetch::events::AuthRequiredEvent),
     #[serde(rename = "Log.entryAdded")]
     LogEntryAdded(logs::events::EntryAddedEvent),
     #[serde(rename = "Runtime.exceptionThrown")]

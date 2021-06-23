@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use failure::Fallible;
 use log::*;
-use serde;
 
 use process::Process;
 pub use process::{LaunchOptions, LaunchOptionsBuilder};
@@ -30,7 +29,7 @@ pub mod context;
 mod fetcher;
 mod process;
 pub mod tab;
-mod transport;
+pub mod transport;
 
 use protocol::dom::methods;
 
@@ -108,14 +107,17 @@ impl Browser {
     }
 
     /// Allows you to drive an externally-launched Chrome process instead of launch one via [`new`].
-	/// If the browser is idle for 30 seconds, the connection will be dropped.
+    /// If the browser is idle for 30 seconds, the connection will be dropped.
     pub fn connect(debug_ws_url: String) -> Fallible<Self> {
         Self::connect_with_timeout(debug_ws_url, Duration::from_secs(30))
     }
 
     /// Allows you to drive an externally-launched Chrome process instead of launch one via [`new`].
-	/// If the browser is idle for `idle_browser_timeout`, the connection will be dropped.
-    pub fn connect_with_timeout(debug_ws_url: String, idle_browser_timeout: Duration) -> Fallible<Self> {
+    /// If the browser is idle for `idle_browser_timeout`, the connection will be dropped.
+    pub fn connect_with_timeout(
+        debug_ws_url: String,
+        idle_browser_timeout: Duration,
+    ) -> Fallible<Self> {
         let transport = Arc::new(Transport::new(debug_ws_url, None, idle_browser_timeout)?);
         trace!("created transport");
 
@@ -152,7 +154,9 @@ impl Browser {
         trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
 
-        browser.wait_for_initial_tab()?.call_method(methods::Enable {})?;
+        browser
+            .wait_for_initial_tab()?
+            .call_method(methods::Enable {})?;
 
         Ok(browser)
     }

@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use headless_chrome::browser::tab::{SyncSendEvent, Tab};
-use headless_chrome::protocol::Event;
+use headless_chrome::browser::tab::Tab;
 use headless_chrome::Browser;
 
 mod server;
@@ -24,7 +23,7 @@ fn expose_function() -> Fallible<()> {
 
     tab.expose_function(
         "simple",
-        Box::new(move |value| {
+        Box::new(move |_value| {
             *function_called_entries_clone.lock().unwrap() += 1;
         }),
     )?;
