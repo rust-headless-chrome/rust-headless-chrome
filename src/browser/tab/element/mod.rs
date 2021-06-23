@@ -319,12 +319,18 @@ impl<'a> Element<'a> {
     pub fn call_js_fn(
         &self,
         function_declaration: &str,
+        args: Vec<serde_json::Value>,
         await_promise: bool,
     ) -> Fallible<runtime::methods::RemoteObject> {
+        let mut args = args.clone();
         let result = self
             .parent
             .call_method(runtime::methods::CallFunctionOn {
                 object_id: &self.remote_object_id,
+                arguments: args
+                    .iter_mut()
+                    .map(|v| runtime::methods::CallArgument { value: v.take() })
+                    .collect(),
                 function_declaration,
                 return_by_value: false,
                 generate_preview: true,
@@ -371,7 +377,7 @@ impl<'a> Element<'a> {
     /// ```
     pub fn get_inner_text(&self) -> Fallible<String> {
         let text: String = serde_json::from_value(
-            self.call_js_fn("function() { return this.innerText }", false)?
+            self.call_js_fn("function() { return this.innerText }", vec![], false)?
                 .value
                 .unwrap(),
         )?;
@@ -451,6 +457,7 @@ impl<'a> Element<'a> {
                     });
                 return false;
             }",
+            vec![],
             true,
         )?;
 
@@ -518,6 +525,7 @@ impl<'a> Element<'a> {
                         return this.getBoundingClientRect();
                     }
                     "#,
+                            vec![],
                             false,
                         )
                         .unwrap();
@@ -543,7 +551,11 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_js_midpoint(&self) -> Fallible<Point> {
-        let result = self.call_js_fn("function(){return this.getBoundingClientRect(); }", false)?;
+        let result = self.call_js_fn(
+            "function(){return this.getBoundingClientRect(); }",
+            vec![],
+            false,
+        )?;
 
         util::extract_midpoint(result)
     }
