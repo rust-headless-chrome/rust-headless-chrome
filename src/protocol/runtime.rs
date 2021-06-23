@@ -127,6 +127,7 @@ pub mod methods {
     pub struct CallFunctionOn<'a> {
         pub object_id: &'a str,
         pub function_declaration: &'a str,
+        pub arguments: Vec<CallArgument>,
         pub return_by_value: bool,
         pub generate_preview: bool,
         pub silent: bool,

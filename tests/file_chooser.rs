@@ -42,7 +42,7 @@ fn file_chooser_works() -> Fallible<()> {
         )?;
 
         let eval_result =
-            file_upload_button.call_js_fn("function() { return this.files[0]; }", false)?;
+            file_upload_button.call_js_fn("function() { return this.files[0]; }", vec![], false)?;
         let size_from_js: u64 = eval_result
             .preview
             .unwrap()

@@ -20,6 +20,7 @@ fn main() -> Fallible<()> {
 
     element.call_js_fn(
         "function(...args) {if(arg[0]) {return this.innerText;}}",
+        vec![],
         false,
     )?;
 
