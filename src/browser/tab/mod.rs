@@ -876,10 +876,10 @@ impl Tab {
     pub fn set_transparent_background_color(&self) -> Fallible<&Self> {
         self.call_method(page::methods::SetDefaultBackgroundColorOverride {
             color: protocol::dom::RGBA {
-                r: 0,
+                r: 255,
                 g: 0,
                 b: 0,
-                a: 0.,
+                a: 1.,
             },
         })?;
         Ok(self)
