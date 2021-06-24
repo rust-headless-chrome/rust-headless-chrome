@@ -11,6 +11,7 @@ use rand::prelude::*;
 
 use headless_chrome::browser::tab::RequestPausedDecision;
 use headless_chrome::browser::transport::{SessionId, Transport};
+use headless_chrome::protocol::dom::RGBA;
 use headless_chrome::protocol::fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::fetch::methods::{FulfillRequest, RequestPattern};
 use headless_chrome::protocol::fetch::HeaderEntry;
@@ -200,6 +201,37 @@ fn sum_of_errors(inp: &[u8], fixture: &[u8]) -> u32 {
                 .sum::<u32>()
         })
         .sum()
+}
+
+#[test]
+fn set_background_color() -> Fallible<()> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("transparent.html"));
+    tab.wait_for_element("body")?;
+    // Check that the top-left pixel on the page has the background color set in transparent.html
+    tab.set_background_color(RGBA {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 1.,
+    })?;
+    let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, None, true)?;
+    let buf = decode_png(&png_data[..])?;
+    assert!(sum_of_errors(&buf[0..4], &[0xff, 0x00, 0x00, 0xff]) < 5);
+    Ok(())
+}
+
+#[test]
+fn set_transparent_background_color() -> Fallible<()> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("transparent.html"));
+    tab.wait_for_element("body")?;
+    // Check that the top-left pixel on the page has the background color set in transparent.html
+    tab.set_transparent_background_color()?;
+    let png_data = tab.capture_screenshot(ScreenshotFormat::PNG, None, true)?;
+    let buf = decode_png(&png_data[..])?;
+    assert!(sum_of_errors(&buf[0..4], &[0x00, 0x00, 0x00, 0x00]) < 5);
+    Ok(())
 }
 
 #[test]
