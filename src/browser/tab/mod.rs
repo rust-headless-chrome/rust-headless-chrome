@@ -867,7 +867,7 @@ impl Tab {
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
     /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
     /// let tab = browser.wait_for_initial_tab()?;
-    /// tab.set_background_color( color: RGBA { r: 0, g: 0, b: 0, a: 0.,})?;
+    /// tab.set_transparent_background_color()?;
     ///
     /// #
     /// # Ok(())
@@ -876,10 +876,10 @@ impl Tab {
     pub fn set_transparent_background_color(&self) -> Fallible<&Self> {
         self.call_method(page::methods::SetDefaultBackgroundColorOverride {
             color: protocol::dom::RGBA {
-                r: 255,
+                r: 0,
                 g: 0,
                 b: 0,
-                a: 1.,
+                a: 0.,
             },
         })?;
         Ok(self)
@@ -896,7 +896,7 @@ impl Tab {
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
     /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
     /// let tab = browser.wait_for_initial_tab()?;
-    /// tab.set_transparent_background_color()?;
+    /// tab.set_background_color( color: RGBA { r: 255, g: 0, b: 0, a: 1.,})?;
     ///
     /// #
     /// # Ok(())
