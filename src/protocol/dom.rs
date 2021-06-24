@@ -14,10 +14,10 @@ pub type NodeAttributes = HashMap<String, String>;
 #[derive(Serialize,Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RGBA {
-  r: JsUInt,
-  g: JsUInt,
-  b: JsUInt,
-  a: JsFloat,
+  pub r: JsUInt,
+  pub g: JsUInt,
+  pub b: JsUInt,
+  pub a: JsFloat,
 }
 
 #[derive(Deserialize, Debug, Clone)]

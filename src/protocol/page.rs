@@ -315,7 +315,7 @@ pub mod methods {
     #[derive(Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct SetDefaultBackgroundColorOverride {
-        color: RGBA,
+        pub color: RGBA,
     }
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
