@@ -130,6 +130,7 @@ pub mod methods {
     use serde::{Deserialize, Serialize};
 
     use crate::protocol::Method;
+    use crate::protocol::dom::RGBA;
 
     use super::PrintToPdfOptions;
     use crate::protocol::types::JsUInt;
@@ -309,5 +310,18 @@ pub mod methods {
     impl Method for AddScriptToEvaluateOnNewDocument {
         const NAME: &'static str = "Page.addScriptToEvaluateOnNewDocument";
         type ReturnObject = AddScriptToEvaluateOnNewDocumentReturnObject;
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetDefaultBackgroundColorOverride {
+        color: RGBA,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct SetDefaultBackgroundColorOverrideReturnObject {}
+    impl Method for SetDefaultBackgroundColorOverride {
+        const NAME: &'static str = "Emulation.setDefaultBackgroundColorOverride";
+        type ReturnObject = SetDefaultBackgroundColorOverrideReturnObject;
     }
 }

@@ -856,6 +856,57 @@ impl Tab {
         Ok(self)
     }
 
+    /// Set the background color of the dom to transparent.
+    /// 
+    /// Useful when you want capture a .png
+    ///
+    /// ```rust,no_run
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
+    /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
+    /// let tab = browser.wait_for_initial_tab()?;
+    /// tab.set_background_color( color: RGBA { r: 0, g: 0, b: 0, a: 0.,})?;
+    ///
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn set_transparent_background_color(&self) -> Fallible<&Self> {
+        self.call_method(page::methods::SetDefaultBackgroundColorOverride {
+            color: protocol::dom::RGBA {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0.,
+            },
+        })?;
+        Ok(self)
+    }
+
+    /// Set the default background color of the dom.
+    /// 
+    /// Pass a RGBA to override the backrgound color of the dom.
+    ///
+    /// ```rust,no_run
+    /// # use failure::Fallible;
+    /// # fn main() -> Fallible<()> {
+    /// #
+    /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
+    /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
+    /// let tab = browser.wait_for_initial_tab()?;
+    /// tab.set_transparent_background_color()?;
+    ///
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn set_background_color(&self, color: protocol::dom::RGBA) -> Fallible<&Self> {
+        self.call_method(page::methods::SetDefaultBackgroundColorOverride { color })?;
+        Ok(self)
+    }
+
     /// Enables the profiler
     pub fn enable_profiler(&self) -> Fallible<&Self> {
         self.call_method(profiler::methods::Enable {})?;
@@ -1331,20 +1382,18 @@ impl Tab {
     {
         let object = self.evaluate(&format!(r#"localStorage.getItem("{}")"#, item_name), false)?;
 
-        let json: Option<T> = object
-            .value
-            .and_then(|v| match v {
-                serde_json::Value::String(ref s) => {
-                    let result = serde_json::from_str(&s);
+        let json: Option<T> = object.value.and_then(|v| match v {
+            serde_json::Value::String(ref s) => {
+                let result = serde_json::from_str(&s);
 
-                    if result.is_err() {
-                        Some(serde_json::from_value(v).unwrap())
-                    } else {
-                        Some(result.unwrap())
-                    }
-                },
-                _ => None
-            });
+                if result.is_err() {
+                    Some(serde_json::from_value(v).unwrap())
+                } else {
+                    Some(result.unwrap())
+                }
+            }
+            _ => None,
+        });
 
         match json {
             Some(v) => Ok(v),

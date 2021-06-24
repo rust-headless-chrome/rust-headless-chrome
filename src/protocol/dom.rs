@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::protocol::types::JsUInt;
-use serde::{Deserialize, Deserializer};
+use crate::protocol::types::{JsUInt,JsFloat};
+use serde::{Serialize,Deserialize, Deserializer};
 
 use super::types::UniqueSessionId;
 
@@ -10,6 +10,15 @@ pub type NodeId = JsUInt;
 pub type SearchId = UniqueSessionId;
 
 pub type NodeAttributes = HashMap<String, String>;
+
+#[derive(Serialize,Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RGBA {
+  r: JsUInt,
+  g: JsUInt,
+  b: JsUInt,
+  a: JsFloat,
+}
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
