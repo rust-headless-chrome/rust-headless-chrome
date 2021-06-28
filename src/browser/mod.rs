@@ -18,7 +18,7 @@ use crate::browser::context::Context;
 use crate::protocol::browser::methods::GetVersion;
 pub use crate::protocol::browser::methods::VersionInformationReturnObject;
 use crate::protocol::target::methods::{CreateTarget, SetDiscoverTargets};
-use crate::protocol::{self, Event};
+use crate::protocol::{self, css, Event};
 use crate::util;
 
 #[cfg(feature = "fetch")]
@@ -154,9 +154,10 @@ impl Browser {
         trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
 
-        browser
-            .wait_for_initial_tab()?
-            .call_method(methods::Enable {})?;
+        let tab = browser.wait_for_initial_tab()?;
+
+        tab.call_method(methods::Enable {})?;
+        tab.call_method(css::methods::Enable {})?;
 
         Ok(browser)
     }

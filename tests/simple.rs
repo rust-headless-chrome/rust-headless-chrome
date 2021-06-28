@@ -5,6 +5,7 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use failure::Fallible;
+use headless_chrome::protocol::css::ComputedStyleProperty;
 use headless_chrome::LaunchOptionsBuilder;
 use log::*;
 use rand::prelude::*;
@@ -848,5 +849,34 @@ fn set_extra_http_headers() -> Fallible<()> {
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
         .wait_until_navigated()?;
+    Ok(())
+}
+
+#[test]
+fn get_css_styles() -> Fallible<()> {
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
+
+    let element = tab.wait_for_element("#within")?;
+
+    let styles = element.get_computed_styles()?;
+
+    let v = styles
+        .iter()
+        .filter_map(|p| {
+            if p.name == "top" || p.name == "background-color" || p.name == "position" {
+                Some(p.value.as_str())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<&str>>();
+
+    assert!(v.len() > 0);
+
+    assert_eq!(["rgb(255, 255, 0)", "absolute", "5px"], v.as_slice());
+
     Ok(())
 }
