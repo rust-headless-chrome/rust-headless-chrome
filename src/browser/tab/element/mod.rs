@@ -6,6 +6,8 @@ use log::*;
 
 use crate::browser::tab::point::Point;
 use crate::browser::tab::NoElementFound;
+use crate::protocol::css;
+use crate::protocol::css::ComputedStyleProperty;
 use crate::protocol::dom;
 use crate::protocol::page;
 use crate::protocol::runtime;
@@ -394,6 +396,17 @@ impl<'a> Element<'a> {
             })?
             .node;
         Ok(node)
+    }
+
+    pub fn get_computed_styles(&self) -> Fallible<Vec<ComputedStyleProperty>> {
+        let styles = self
+            .parent
+            .call_method(css::methods::GetComputedStyleForNode {
+                node_id: self.node_id,
+            })?
+            .computed_style;
+
+        Ok(styles)
     }
 
     /// Capture a screenshot of this element.
