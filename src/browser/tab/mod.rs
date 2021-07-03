@@ -422,6 +422,20 @@ impl Tab {
         Ok(self)
     }
 
+    pub fn is_navigated(&self) -> Fallible<&Self> {
+        let navigating = Arc::clone(&self.navigating);
+   
+        if navigating.load(Ordering::SeqCst) {
+            Some(false)
+        } else {
+            Some(true)
+        }
+        
+        debug!("A tab finished navigating");
+
+        Ok(self)
+    }
+
     pub fn navigate_to(&self, url: &str) -> Fallible<&Self> {
         let return_object = self.call_method(Navigate { url })?;
         if let Some(error_text) = return_object.error_text {
