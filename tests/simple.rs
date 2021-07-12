@@ -5,7 +5,6 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use failure::Fallible;
-use headless_chrome::protocol::css::ComputedStyleProperty;
 use headless_chrome::LaunchOptionsBuilder;
 use log::*;
 use rand::prelude::*;
@@ -17,7 +16,7 @@ use headless_chrome::protocol::fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::fetch::methods::{FulfillRequest, RequestPattern};
 use headless_chrome::protocol::fetch::HeaderEntry;
 use headless_chrome::protocol::network::methods::SetCookie;
-use headless_chrome::protocol::network::{Cookie, CookieParam};
+use headless_chrome::protocol::network::{Cookie,};
 use headless_chrome::protocol::runtime::methods::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::RemoteError;
 use headless_chrome::util::Wait;
@@ -26,8 +25,6 @@ use headless_chrome::{
     protocol::page::ScreenshotFormat,
     Browser, Tab,
 };
-use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::collections::HashMap;
 
 pub mod logging;

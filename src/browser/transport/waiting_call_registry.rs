@@ -108,13 +108,13 @@ mod tests {
             result: Some(json! {false}),
             error: None,
         };
-        let resp2_clone = resp2.clone();
+        let cloned_resp = resp2.clone();
 
         waiting_calls.resolve_call(resp).unwrap();
         waiting_calls.resolve_call(resp2).unwrap();
 
         // note how they're in reverse order to that in which they were called!
-        assert_eq!(resp2_clone, call_rx2.recv().unwrap().unwrap());
+        assert_eq!(cloned_resp, call_rx2.recv().unwrap().unwrap());
         assert_eq!(resp_clone, call_rx.recv().unwrap().unwrap());
     }
 }
