@@ -332,7 +332,7 @@ impl Process {
     where
         R: Read,
     {
-        let port_taken_re = Regex::new(r"ERROR.*bind").unwrap();
+        let port_taken_re = Regex::new(r"ERROR.*bind\(\)").unwrap();
 
         let re = Regex::new(r"listening on (.*/devtools/browser/.*)$").unwrap();
 
@@ -475,6 +475,17 @@ mod tests {
         let reader = BufReader::new(lines.as_bytes());
         let ws_url_result = Process::ws_url_from_reader(reader);
         assert_eq!(true, ws_url_result.is_err());
+    }
+
+    #[test]
+    fn handle_errors_in_chrome_output_gvisor_netlink() {
+        // see https://github.com/atroche/rust-headless-chrome/issues/261
+        setup();
+        let lines = "[0703/145506.975691:ERROR:address_tracker_linux.cc(214)] Could not bind NETLINK socket: Permission denied (13)";
+        
+        let reader = BufReader::new(lines.as_bytes());
+        let ws_url_result = Process::ws_url_from_reader(reader);
+        assert_eq!(true, ws_url_result.is_ok());
     }
 
     #[cfg(target_os = "linux")]
