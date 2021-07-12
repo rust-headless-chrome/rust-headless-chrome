@@ -12,6 +12,7 @@ use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
+use websocket::url::Url;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 
@@ -25,7 +26,7 @@ use std::collections::HashMap;
 
 pub struct Process {
     child_process: TemporaryProcess,
-    pub debug_ws_url: String,
+    pub debug_ws_url: Url,
 }
 
 #[derive(Debug, Fail)]
@@ -358,7 +359,7 @@ impl Process {
         Ok(None)
     }
 
-    fn ws_url_from_output(child_process: &mut Child) -> Fallible<String> {
+    fn ws_url_from_output(child_process: &mut Child) -> Fallible<Url> {
         let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(30)).until(|| {
             let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
             match Self::ws_url_from_reader(my_stderr) {
@@ -374,7 +375,8 @@ impl Process {
         });
 
         if let Ok(output_result) = chrome_output_result {
-            output_result
+            
+            Ok(Url::parse(&output_result?)?)
         } else {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
         }
@@ -474,7 +476,7 @@ mod tests {
         let lines = "[0228/194641.093619:ERROR:socket_posix.cc(144)] bind() returned an error, errno=0: Cannot assign requested address (99)";
         let reader = BufReader::new(lines.as_bytes());
         let ws_url_result = Process::ws_url_from_reader(reader);
-        assert_eq!(true, ws_url_result.is_err());
+        assert!(ws_url_result.is_err());
     }
 
     #[test]

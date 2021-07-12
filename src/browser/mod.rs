@@ -12,6 +12,7 @@ pub use process::{LaunchOptions, LaunchOptionsBuilder};
 pub use tab::Tab;
 pub use transport::ConnectionClosed;
 use transport::Transport;
+use websocket::url::Url;
 use which::which;
 
 use crate::browser::context::Context;
@@ -118,7 +119,9 @@ impl Browser {
         debug_ws_url: String,
         idle_browser_timeout: Duration,
     ) -> Fallible<Self> {
-        let transport = Arc::new(Transport::new(debug_ws_url, None, idle_browser_timeout)?);
+        let url = Url::parse(&debug_ws_url)?;
+
+        let transport = Arc::new(Transport::new(url, None, idle_browser_timeout)?);
         trace!("created transport");
 
         Self::create_browser(None, transport, idle_browser_timeout)

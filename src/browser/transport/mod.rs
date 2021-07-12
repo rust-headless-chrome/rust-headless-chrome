@@ -12,6 +12,7 @@ use log::*;
 
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
+use websocket::url::Url;
 
 use crate::protocol::target;
 use crate::protocol::CallId;
@@ -66,7 +67,7 @@ pub struct ConnectionClosed {}
 
 impl Transport {
     pub fn new(
-        ws_url: String,
+        ws_url: Url,
         process_id: Option<u32>,
         idle_browser_timeout: Duration,
     ) -> Fallible<Self> {
