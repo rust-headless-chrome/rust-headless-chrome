@@ -252,6 +252,7 @@ impl Tab {
         let listeners_mutex = Arc::clone(&self.event_listeners);
 
         let bindings_mutex = Arc::clone(&self.page_bindings);
+        let received_event_params = Arc::new(Mutex::new(HashMap::new()));
 
         thread::spawn(move || {
             for event in incoming_events_rx {
@@ -334,6 +335,10 @@ impl Tab {
                         }
                     }
                     Event::ResponseReceived(ev) => {
+                        let request_id = ev.params.request_id.clone();
+                        received_event_params.lock().unwrap().insert(request_id, ev.params);
+                    }
+                    Event::LoadingFinished(ev) => {
                         if let Some(handler) = response_handler_mutex.lock().unwrap().as_ref() {
                             let request_id = ev.params.request_id.clone();
                             let retrieve_body = || {
@@ -342,7 +347,11 @@ impl Tab {
                                 };
                                 transport.call_method_on_target(session_id.clone(), method)
                             };
-                            handler(ev.params, &retrieve_body);
+
+                            match received_event_params.lock().unwrap().get(&request_id) {
+                                Some(params) => handler(params.to_owned(), &retrieve_body),
+                                _ => warn!("Request id does not exist")
+                            }
                         }
                     }
                     _ => {
