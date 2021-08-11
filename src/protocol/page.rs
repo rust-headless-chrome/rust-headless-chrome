@@ -324,4 +324,16 @@ pub mod methods {
         const NAME: &'static str = "Emulation.setDefaultBackgroundColorOverride";
         type ReturnObject = SetDefaultBackgroundColorOverrideReturnObject;
     }
+
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct StopLoading {}
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct StopLoadingReturnObject {}
+    impl Method for StopLoading {
+        const NAME: &'static str = "Page.stopLoading";
+        type ReturnObject = StopLoadingReturnObject;
+    }
 }

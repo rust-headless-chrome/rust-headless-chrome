@@ -1418,4 +1418,9 @@ impl Tab {
 
         Ok(())
     }
+
+    pub fn stop_loading(&self) -> Fallible<bool> {
+        self.call_method(protocol::page::methods::StopLoading {})
+            .map(|_| true)
+    }
 }
