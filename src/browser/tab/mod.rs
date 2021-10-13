@@ -706,6 +706,7 @@ impl Tab {
             if c == "" {
                 continue;
             }
+            let definition = keys::get_key_definition(c);
             // https://github.com/puppeteer/puppeteer/blob/b8806d5625ca7835abbaf2e997b0bf35a5679e29/src/common/Input.ts#L239-L245
             match definition {
                 Ok(key) => {
@@ -719,8 +720,7 @@ impl Tab {
         Ok(self)
     }
 
-    pub fn press_key(&self, key: &KeyDefinition) -> Fallible<&Self> {
-        let definition = keys::get_key_definition(key)?;
+    pub fn press_key(&self, definition: &KeyDefinition) -> Fallible<&Self> {
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
         let text = definition.text.or_else(|| {
