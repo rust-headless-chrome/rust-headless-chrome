@@ -56,4 +56,16 @@ pub mod methods {
         const NAME: &'static str = "Input.dispatchKeyEvent";
         type ReturnObject = DispatchKeyEventReturnObject;
     }
+    #[derive(Serialize, Debug)]
+    #[serde(rename_all = "camelCase")]
+    pub struct InsertText<'a> {
+        pub text: &'a str
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct InsertTextReturnObject {}
+    impl<'a> Method for InsertText<'a> {
+        const NAME: &'static str = "Input.insertText";
+        type ReturnObject = InsertTextReturnObject;
+    }
 }

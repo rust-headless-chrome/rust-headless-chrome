@@ -34,6 +34,8 @@ use crate::protocol::network::methods::SetExtraHTTPHeaders;
 use crate::protocol::network::Cookie;
 use std::thread::sleep;
 
+use self::keys::KeyDefinition;
+
 pub mod element;
 mod keys;
 pub mod point;
@@ -704,20 +706,21 @@ impl Tab {
             if c == "" {
                 continue;
             }
-            self.call_method(input::methods::DispatchKeyEvent {
-                event_type: "char",
-                key: None,
-                text : Some(c),
-                code: None,
-                windows_virtual_key_code: 0,
-                native_virtual_key_code: 0,
-            })?;
+            let definition = keys::get_key_definition(c);
+            // https://github.com/puppeteer/puppeteer/blob/b8806d5625ca7835abbaf2e997b0bf35a5679e29/src/common/Input.ts#L239-L245
+            match definition {
+                Ok(key) => {
+                    self.press_key(key)?;
+                }
+                Err(_) => {
+                    self.call_method(input::methods::InsertText { text: c })?;
+                }
+            }
         }
         Ok(self)
     }
 
-    pub fn press_key(&self, key: &str) -> Fallible<&Self> {
-        let definition = keys::get_key_definition(key)?;
+    pub fn press_key(&self, definition: &KeyDefinition) -> Fallible<&Self> {
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
         let text = definition.text.or_else(|| {
