@@ -704,7 +704,14 @@ impl Tab {
             if c == "" {
                 continue;
             }
-            self.press_key(c)?;
+            self.call_method(input::methods::DispatchKeyEvent {
+                event_type: "char",
+                key: None,
+                text : Some(c),
+                code: None,
+                windows_virtual_key_code: 0,
+                native_virtual_key_code: 0,
+            })?;
         }
         Ok(self)
     }
