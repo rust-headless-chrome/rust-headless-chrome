@@ -297,7 +297,7 @@ impl Process {
             args.extend(&["--headless"]);
         }
 
-        if !launch_options.ignore_certificate_errors {
+        if launch_options.ignore_certificate_errors {
             args.extend(&["--ignore-certificate-errors"])
         }
 
