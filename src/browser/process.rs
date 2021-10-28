@@ -119,7 +119,7 @@ pub struct LaunchOptions<'a> {
 
     /// How long to keep the WebSocket to the browser for after not receiving any events from it
     /// Defaults to 30 seconds
-    #[builder(default = "Duration::from_secs(300)")]
+    #[builder(default = "Duration::from_secs(30)")]
     pub idle_browser_timeout: Duration,
 
     /// Environment variables to set for the Chromium process.
@@ -133,7 +133,7 @@ impl<'a> Default for LaunchOptions<'a> {
         LaunchOptions {
             headless: true,
             sandbox: true,
-            idle_browser_timeout: Duration::from_secs(300),
+            idle_browser_timeout: Duration::from_secs(30),
             window_size: None,
             path: None,
             user_data_dir: None,
