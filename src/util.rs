@@ -1,14 +1,16 @@
 use std::time::{Duration, Instant};
 use std::{collections::HashMap, thread::sleep};
 
-use failure::{Error, Fail, Fallible};
+use anyhow::{Error,Result};
 
-use crate::protocol::runtime::methods::RemoteObject;
+use thiserror::Error;
+
+use crate::protocol::cdp::Runtime::RemoteObject;
 
 use crate::browser::tab::point::Point;
 
-#[derive(Debug, Fail)]
-#[fail(display = "The event waited for never came")]
+#[derive(Debug, Error)]
+#[error("The event waited for never came")]
 pub struct Timeout;
 
 /// A helper to wait until some event has passed.
@@ -27,7 +29,7 @@ impl Default for Wait {
     }
 }
 
-pub fn extract_midpoint(remote_obj: RemoteObject) -> Fallible<Point> {
+pub fn extract_midpoint(remote_obj: RemoteObject) -> Result<Point> {
     let mut prop_map = HashMap::new();
 
     match remote_obj.preview.and_then(|v| {
@@ -102,11 +104,10 @@ impl Wait {
     /// You can use `failure::Error::downcast::<YourStructName>` out-of-the-box,
     /// if you need to ignore one expected error, or you can implement a matching closure
     /// that responds to multiple error types.
-    pub fn strict_until<F, D, E, G>(&self, predicate: F, downcast: D) -> Fallible<G>
+    pub fn strict_until<F, D, E, G>(&self, predicate: F, downcast: D) -> Result<G>
     where
-        F: FnMut() -> Fallible<G>,
-        D: FnMut(Error) -> Fallible<E>,
-        E: Fail,
+        F: FnMut() -> Result<G>,
+        D: FnMut(Error) -> Result<E>,
     {
         let mut predicate = predicate;
         let mut downcast = downcast;
