@@ -207,7 +207,7 @@ impl Browser {
     /// ```
     pub fn new_tab(&self) -> Result<Arc<Tab>> {
         let default_blank_tab = CreateTarget {
-            url: "about:blank",
+            url: "about:blank".to_string(),
             width: None,
             height: None,
             browser_context_id: None,
@@ -329,7 +329,7 @@ impl Browser {
                             Event::TargetCreated(ev) => {
                                 let target_info = ev.params.target_info;
                                 trace!("Creating target: {:?}", target_info);
-                                if target_info.target_type.is_page() {
+                                if target_info.Type == "page" {
                                     match Tab::new(target_info, Arc::clone(&transport)) {
                                         Ok(new_tab) => {
                                             tabs.lock().unwrap().push(Arc::new(new_tab));
@@ -344,7 +344,7 @@ impl Browser {
                             Event::TargetInfoChanged(ev) => {
                                 let target_info = ev.params.target_info;
                                 trace!("Target info changed: {:?}", target_info);
-                                if target_info.target_type.is_page() {
+                                if target_info.Type == "page" {
                                     let locked_tabs = tabs.lock().unwrap();
                                     let updated_tab = locked_tabs
                                         .iter()
