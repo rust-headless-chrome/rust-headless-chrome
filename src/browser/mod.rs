@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use anyhow::{Context as C, Result};
+use anyhow::{Result};
 use log::*;
 
 use process::Process;
