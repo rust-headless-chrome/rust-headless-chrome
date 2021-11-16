@@ -23,10 +23,10 @@ impl<'a> Context<'a> {
     /// browsing context or any other contexts created
     pub fn new_tab(&self) -> Result<Arc<Tab>> {
         let tab_in_context = CreateTarget {
-            url: "about:blank",
+            url: "about:blank".to_string(),
             width: None,
             height: None,
-            browser_context_id: Some(&self.id),
+            browser_context_id: Some(self.id),
             enable_begin_frame_control: None,
             new_window: None,
             background: None,
