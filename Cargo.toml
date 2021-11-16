@@ -37,6 +37,9 @@ png = { version = "0.15" }
 jpeg-decoder = { version = "0.1", default_features = false }
 filepath = "0.1.1"
 
+[build-dependencies]
+auto_generate_cdp = "0.2.9"
+
 [lib]
 name = "headless_chrome"
 path = "src/lib.rs"
