@@ -138,7 +138,7 @@ impl Transport {
             MethodDestination::Target(session_id) => {
                 let target_method = Target::SendMessageToTarget {
                     target_id: None,
-                    session_id: Some(session_id),
+                    session_id: Some(session_id.0),
                     message: message_text,
                 };
                 let mut raw = message_text.clone();
