@@ -1,6 +1,6 @@
+use crate::protocol::cdp::Page;
+
 use crate::browser::tab::point::Point;
-use crate::protocol::page;
-use crate::protocol::types::JsUInt;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ElementQuad {
@@ -11,7 +11,7 @@ pub struct ElementQuad {
 }
 
 impl ElementQuad {
-    pub fn from_raw_points(raw_quad: &[f64; 8]) -> Self {
+    pub fn from_raw_points(raw_quad: &[f64]) -> Self {
         Self {
             top_left: Point {
                 x: raw_quad[0],
@@ -147,14 +147,14 @@ pub struct BoxModel {
     pub padding: ElementQuad,
     pub border: ElementQuad,
     pub margin: ElementQuad,
-    pub width: JsUInt,
-    pub height: JsUInt,
+    pub width: f64,
+    pub height: f64,
 }
 
 impl BoxModel {
     /// Create a `page::Viewport` equal to the content-box, using a scale of 1.0
-    pub fn content_viewport(&self) -> page::Viewport {
-        page::Viewport {
+    pub fn content_viewport(&self) -> Page::Viewport {
+        Page::Viewport {
             x: self.content.top_left.x,
             y: self.content.top_left.y,
             width: self.content.width(),
@@ -164,8 +164,8 @@ impl BoxModel {
     }
 
     /// Create a `page::Viewport` equal to the padding-box, using a scale of 1.0
-    pub fn padding_viewport(&self) -> page::Viewport {
-        page::Viewport {
+    pub fn padding_viewport(&self) -> Page::Viewport {
+        Page::Viewport {
             x: self.padding.top_left.x,
             y: self.padding.top_left.y,
             width: self.padding.width(),
@@ -175,8 +175,8 @@ impl BoxModel {
     }
 
     /// Create a `page::Viewport` equal to the border-box, using a scale of 1.0
-    pub fn border_viewport(&self) -> page::Viewport {
-        page::Viewport {
+    pub fn border_viewport(&self) -> Page::Viewport {
+        Page::Viewport {
             x: self.border.top_left.x,
             y: self.border.top_left.y,
             width: self.border.width(),
@@ -186,8 +186,8 @@ impl BoxModel {
     }
 
     /// Create a `page::Viewport` equal to the margin-box, using a scale of 1.0
-    pub fn margin_viewport(&self) -> page::Viewport {
-        page::Viewport {
+    pub fn margin_viewport(&self) -> Page::Viewport {
+        Page::Viewport {
             x: self.margin.top_left.x,
             y: self.margin.top_left.y,
             width: self.margin.width(),
