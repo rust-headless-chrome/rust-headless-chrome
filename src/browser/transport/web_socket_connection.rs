@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use std::sync::Mutex;
 
-use failure::Fallible;
+use anyhow::Result;
 use log::*;
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
@@ -9,7 +9,7 @@ use websocket::WebSocketError;
 use websocket::url::Url;
 use websocket::{ClientBuilder, OwnedMessage};
 
-use crate::protocol;
+use crate::types::{parse_raw_message,Message};
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
@@ -27,8 +27,8 @@ impl WebSocketConnection {
     pub fn new(
         ws_url: &Url,
         process_id: Option<u32>,
-        messages_tx: mpsc::Sender<protocol::Message>,
-    ) -> Fallible<Self> {
+        messages_tx: mpsc::Sender<Message>,
+    ) -> Result<Self> {
         let connection = Self::websocket_connection(&ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
@@ -59,7 +59,7 @@ impl WebSocketConnection {
 
     fn dispatch_incoming_messages(
         mut receiver: websocket::receiver::Reader<TcpStream>,
-        messages_tx: mpsc::Sender<protocol::Message>,
+        messages_tx: mpsc::Sender<Message>,
         process_id: Option<u32>,
     ) {
         for ws_message in receiver.incoming_messages() {
@@ -80,7 +80,7 @@ impl WebSocketConnection {
                 },
                 Ok(message) => {
                     if let OwnedMessage::Text(message_string) = message {
-                        if let Ok(message) = protocol::parse_raw_message(&message_string) {
+                        if let Ok(message) = parse_raw_message(&message_string) {
                             if messages_tx.send(message).is_err() {
                                 break;
                             }
@@ -99,14 +99,14 @@ impl WebSocketConnection {
 
         info!("Sending shutdown message to message handling loop");
         if messages_tx
-            .send(protocol::Message::ConnectionShutdown)
+            .send(Message::ConnectionShutdown)
             .is_err()
         {
             warn!("Couldn't send message to transport loop telling it to shut down")
         }
     }
 
-    pub fn websocket_connection(ws_url: &Url) -> Fallible<Client<TcpStream>> {
+    pub fn websocket_connection(ws_url: &Url) -> Result<Client<TcpStream>> {
         let client = ClientBuilder::from_url(ws_url).connect_insecure()?;
 
         debug!("Successfully connected to WebSocket: {}", ws_url);
@@ -114,7 +114,7 @@ impl WebSocketConnection {
         Ok(client)
     }
 
-    pub fn send_message(&self, message_text: &str) -> Fallible<()> {
+    pub fn send_message(&self, message_text: &str) -> Result<()> {
         let message = websocket::Message::text(message_text);
         let mut sender = self.sender.lock().unwrap();
         sender.send_message(&message)?;
