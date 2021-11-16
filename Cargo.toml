@@ -14,7 +14,8 @@ websocket = { version = "0.23", default_features = false, features = ["sync"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-failure = "0.1"
+anyhow = '1'
+thiserror = '1'
 log = "0.4"
 rand = "0.7"
 tempfile = "3"
