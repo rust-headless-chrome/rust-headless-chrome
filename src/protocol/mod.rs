@@ -129,6 +129,8 @@ pub enum Event {
     RuntimeExceptionThrown(runtime::events::ExceptionThrownEvent),
     #[serde(rename = "Runtime.bindingCalled")]
     BindingCalled(runtime::events::BindingCalledEvent),
+    #[serde(rename = "Runtime.consoleAPICalled")]
+    ConsoleApiCalled(runtime::events::ConsoleApiCalledEvent),
     #[serde(rename = "Network.loadingFinished")]
     LoadingFinished(network::events::LoadingFinishedEvent),
 }
