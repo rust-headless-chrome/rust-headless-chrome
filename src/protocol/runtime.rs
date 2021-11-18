@@ -251,6 +251,23 @@ pub mod events {
         pub execution_context_id: Option<JsInt>,
     }
 
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    pub struct ConsoleApiCalledEvent {
+        pub params: ConsoleApiCalledEventParams,
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ConsoleApiCalledEventParams {
+        #[serde(rename = "type")]
+        pub ty: String,
+        pub args: Vec<RemoteObject>,
+        pub execution_context_id: Option<JsInt>,
+        pub timestamp: f64,
+        pub stack_trace: Option<StackTrace>,
+        pub context: Option<String>,
+    }
+
     #[test]
     fn can_parse_exception_thrown_event() {
         let message = r#"
