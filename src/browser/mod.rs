@@ -158,8 +158,8 @@ impl Browser {
 
         let tab = browser.wait_for_initial_tab()?;
 
-        tab.call_method(DOM::Enable {})?;
-        tab.call_method(CSS::Enable {})?;
+        tab.call_method(DOM::Enable(None))?;
+        tab.call_method(CSS::Enable(None))?;
 
         Ok(browser)
     }
@@ -261,6 +261,7 @@ impl Browser {
                 dispose_on_detach: None,
                 proxy_server: None,
                 proxy_bypass_list: None,
+                origins_with_universal_network_access: None,
             })?
             .browser_context_id;
         debug!("Created new browser context: {:?}", context_id);
@@ -282,7 +283,7 @@ impl Browser {
     /// # }
     /// ```
     pub fn get_version(&self) -> Result<GetVersionReturnObject> {
-        self.call_method(GetVersion {})
+        self.call_method(GetVersion(None))
     }
 
     fn handle_browser_level_events(
