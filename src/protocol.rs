@@ -42,6 +42,10 @@ pub mod cdp {
         #[serde(tag = "method")]
         #[allow(clippy::large_enum_variant)]
         pub enum Event {
+            #[serde(rename = "Accessibility.loadComplete")]
+            AccessibilityLoadComplete(super::Accessibility::events::LoadCompleteEvent),
+            #[serde(rename = "Accessibility.nodesUpdated")]
+            AccessibilityNodesUpdated(super::Accessibility::events::NodesUpdatedEvent),
             #[serde(rename = "Animation.animationCanceled")]
             AnimationCanceled(super::Animation::events::AnimationCanceledEvent),
             #[serde(rename = "Animation.animationCreated")]
@@ -219,6 +223,10 @@ pub mod cdp {
             #[serde(rename = "Network.reportingApiReportUpdated")]
             NetworkReportingApiReportUpdated(
                 super::Network::events::ReportingApiReportUpdatedEvent,
+            ),
+            #[serde(rename = "Network.reportingApiEndpointsChangedForOrigin")]
+            NetworkReportingApiEndpointsChangedForOrigin(
+                super::Network::events::ReportingApiEndpointsChangedForOriginEvent,
             ),
             #[serde(rename = "Overlay.inspectNodeRequested")]
             OverlayInspectNodeRequested(super::Overlay::events::InspectNodeRequestedEvent),
@@ -484,13 +492,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearMessages {}
+        pub struct ClearMessages(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ClearMessagesReturnObject {}
@@ -694,7 +702,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct Enable {
@@ -756,7 +764,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Pause {}
+        pub struct Pause(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct PauseOnAsyncCall {
@@ -905,7 +913,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StepOut {}
+        pub struct StepOut(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct StepOver {
@@ -1205,7 +1213,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct ResumedEvent {}
+            pub struct ResumedEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             pub struct ScriptFailedToParseEvent {
                 pub params: ScriptFailedToParseEventParams,
@@ -1340,13 +1348,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct CollectGarbage {}
+        pub struct CollectGarbage(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetHeapObjectId {
@@ -1362,7 +1370,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetSamplingProfile {}
+        pub struct GetSamplingProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct StartSampling {
@@ -1379,7 +1387,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopSampling {}
+        pub struct StopSampling(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct StopTrackingHeapObjects {
@@ -1550,7 +1558,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct ResetProfilesEvent {}
+            pub struct ResetProfilesEvent(pub Option<serde_json::Value>);
         }
     }
     pub mod Profiler {
@@ -1650,13 +1658,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetBestEffortCoverage {}
+        pub struct GetBestEffortCoverage(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetSamplingInterval {
@@ -1665,7 +1673,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Start {}
+        pub struct Start(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct StartPreciseCoverage {
@@ -1681,22 +1689,22 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StartTypeProfile {}
+        pub struct StartTypeProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Stop {}
+        pub struct Stop(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopPreciseCoverage {}
+        pub struct StopPreciseCoverage(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopTypeProfile {}
+        pub struct StopTypeProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct TakePreciseCoverage {}
+        pub struct TakePreciseCoverage(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct TakeTypeProfile {}
+        pub struct TakeTypeProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct DisableReturnObject {}
@@ -2231,13 +2239,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct DiscardConsoleEntries {}
+        pub struct DiscardConsoleEntries(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct Evaluate {
@@ -2286,10 +2294,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetIsolateId {}
+        pub struct GetIsolateId(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetHeapUsage {}
+        pub struct GetHeapUsage(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetProperties {
@@ -2334,7 +2342,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct RunIfWaitingForDebugger {}
+        pub struct RunIfWaitingForDebugger(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct RunScript {
@@ -2380,7 +2388,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct TerminateExecution {}
+        pub struct TerminateExecution(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct AddBinding {
@@ -2668,7 +2676,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct ExecutionContextsClearedEvent {}
+            pub struct ExecutionContextsClearedEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             pub struct InspectRequestedEvent {
                 pub params: InspectRequestedEventParams,
@@ -2696,7 +2704,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetDomains {}
+        pub struct GetDomains(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetDomainsReturnObject {
@@ -2890,10 +2898,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetPartialAXTree {
@@ -3029,6 +3037,24 @@ pub mod cdp {
         pub mod events {
             use super::super::types::*;
             use serde::{Deserialize, Serialize};
+            #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+            pub struct LoadCompleteEvent {
+                pub params: LoadCompleteEventParams,
+            }
+            #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+            #[serde(rename_all = "camelCase")]
+            pub struct LoadCompleteEventParams {
+                pub root: super::AXNode,
+            }
+            #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+            pub struct NodesUpdatedEvent {
+                pub params: NodesUpdatedEventParams,
+            }
+            #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+            #[serde(rename_all = "camelCase")]
+            pub struct NodesUpdatedEventParams {
+                pub nodes: Vec<super::AXNode>,
+            }
         }
     }
     pub mod Animation {
@@ -3110,10 +3136,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetCurrentTime {
@@ -3122,7 +3148,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetPlaybackRate {}
+        pub struct GetPlaybackRate(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ReleaseAnimations {
@@ -3722,10 +3748,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct CheckContrast {
@@ -4073,19 +4099,19 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Close {}
+        pub struct Close(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Crash {}
+        pub struct Crash(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct CrashGpuProcess {}
+        pub struct CrashGpuProcess(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetVersion {}
+        pub struct GetVersion(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetBrowserCommandLine {}
+        pub struct GetBrowserCommandLine(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetHistograms {
@@ -4641,10 +4667,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ForcePseudoState {
@@ -4674,7 +4700,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetMediaQueries {}
+        pub struct GetMediaQueries(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetPlatformFontsForNode {
@@ -4692,7 +4718,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct TakeComputedStyleUpdates {}
+        pub struct TakeComputedStyleUpdates(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetEffectivePropertyValueForNode {
@@ -4748,13 +4774,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StartRuleUsageTracking {}
+        pub struct StartRuleUsageTracking(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopRuleUsageTracking {}
+        pub struct StopRuleUsageTracking(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct TakeCoverageDelta {}
+        pub struct TakeCoverageDelta(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetLocalFontsEnabled {
@@ -5022,7 +5048,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct MediaQueryResultChangedEvent {}
+            pub struct MediaQueryResultChangedEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             pub struct StyleSheetAddedEvent {
                 pub params: StyleSheetAddedEventParams,
@@ -5219,7 +5245,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetSinkToUse {
@@ -5524,7 +5550,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct DiscardSearchResults {
@@ -5533,7 +5559,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct Focus {
@@ -5639,16 +5665,16 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct HideHighlight {}
+        pub struct HideHighlight(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct HighlightNode {}
+        pub struct HighlightNode(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct HighlightRect {}
+        pub struct HighlightRect(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct MarkUndoableState {}
+        pub struct MarkUndoableState(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct MoveTo {
@@ -5693,7 +5719,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Redo {}
+        pub struct Redo(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct RemoveAttribute {
@@ -5810,7 +5836,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Undo {}
+        pub struct Undo(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetFrameOwner {
@@ -6313,7 +6339,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct DocumentUpdatedEvent {}
+            pub struct DocumentUpdatedEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             pub struct InlineStyleInvalidatedEvent {
                 pub params: InlineStyleInvalidatedEventParams,
@@ -6855,10 +6881,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetSnapshot {
@@ -6952,10 +6978,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetDOMStorageItems {
@@ -7100,10 +7126,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ExecuteSQL {
@@ -7173,7 +7199,7 @@ pub mod cdp {
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearDeviceOrientationOverride {}
+        pub struct ClearDeviceOrientationOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetDeviceOrientationOverride {
@@ -7310,16 +7336,16 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct CanEmulate {}
+        pub struct CanEmulate(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearDeviceMetricsOverride {}
+        pub struct ClearDeviceMetricsOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearGeolocationOverride {}
+        pub struct ClearGeolocationOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ResetPageScaleFactor {}
+        pub struct ResetPageScaleFactor(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetFocusEmulationEnabled {
@@ -7438,7 +7464,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearIdleOverride {}
+        pub struct ClearIdleOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetNavigatorOverrides {
@@ -7722,7 +7748,7 @@ pub mod cdp {
             use serde::{Deserialize, Serialize};
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct VirtualTimeBudgetExpiredEvent {}
+            pub struct VirtualTimeBudgetExpiredEvent(pub Option<serde_json::Value>);
         }
     }
     pub mod HeadlessExperimental {
@@ -7763,10 +7789,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct BeginFrameReturnObject {
@@ -8000,10 +8026,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct RequestData {
@@ -8599,10 +8625,10 @@ pub mod cdp {
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct DisableReturnObject {}
@@ -8632,10 +8658,10 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct TargetCrashedEvent {}
+            pub struct TargetCrashedEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct TargetReloadedAfterCrashEvent {}
+            pub struct TargetReloadedAfterCrashEvent(pub Option<serde_json::Value>);
         }
     }
     pub mod LayerTree {
@@ -8726,10 +8752,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct LoadSnapshot {
@@ -8959,13 +8985,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Clear {}
+        pub struct Clear(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct StartViolationsReport {
@@ -8973,7 +8999,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopViolationsReport {}
+        pub struct StopViolationsReport(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ClearReturnObject {}
@@ -9063,13 +9089,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetDOMCounters {}
+        pub struct GetDOMCounters(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct PrepareForLeakDetection {}
+        pub struct PrepareForLeakDetection(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ForciblyPurgeJavaScriptMemory {}
+        pub struct ForciblyPurgeJavaScriptMemory(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetPressureNotificationsSuppressed {
@@ -9093,16 +9119,16 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopSampling {}
+        pub struct StopSampling(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetAllTimeSamplingProfile {}
+        pub struct GetAllTimeSamplingProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetBrowserSamplingProfile {}
+        pub struct GetBrowserSamplingProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetSamplingProfile {}
+        pub struct GetSamplingProfile(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetDOMCountersReturnObject {
@@ -9520,7 +9546,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Headers {}
+        pub struct Headers(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ResourceTiming {
@@ -9810,6 +9836,12 @@ pub mod cdp {
             pub source_scheme: CookieSourceScheme,
             #[serde(default)]
             pub source_port: JsUInt,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            pub partition_key: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            pub partition_key_opaque: Option<bool>,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
@@ -9862,6 +9894,9 @@ pub mod cdp {
             #[serde(skip_serializing_if = "Option::is_none")]
             #[serde(default)]
             pub source_port: Option<JsUInt>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            pub partition_key: Option<String>,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
@@ -10021,6 +10056,14 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
+        pub struct ReportingApiEndpoint {
+            #[serde(default)]
+            pub url: String,
+            #[serde(default)]
+            pub group_name: String,
+        }
+        #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+        #[serde(rename_all = "camelCase")]
         pub struct LoadNetworkResourcePageResult {
             #[serde(default)]
             pub success: bool,
@@ -10053,22 +10096,22 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearAcceptedEncodingsOverride {}
+        pub struct ClearAcceptedEncodingsOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct CanClearBrowserCache {}
+        pub struct CanClearBrowserCache(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct CanClearBrowserCookies {}
+        pub struct CanClearBrowserCookies(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct CanEmulateNetworkConditions {}
+        pub struct CanEmulateNetworkConditions(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearBrowserCache {}
+        pub struct ClearBrowserCache(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearBrowserCookies {}
+        pub struct ClearBrowserCookies(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ContinueInterceptedRequest {
@@ -10109,7 +10152,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct EmulateNetworkConditions {
@@ -10139,7 +10182,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetAllCookies {}
+        pub struct GetAllCookies(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetCertificate {
@@ -10245,6 +10288,9 @@ pub mod cdp {
             #[serde(skip_serializing_if = "Option::is_none")]
             #[serde(default)]
             pub source_port: Option<JsUInt>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            pub partition_key: Option<String>,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
@@ -10978,6 +11024,17 @@ pub mod cdp {
             pub struct ReportingApiReportUpdatedEventParams {
                 pub report: super::ReportingApiReport,
             }
+            #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+            pub struct ReportingApiEndpointsChangedForOriginEvent {
+                pub params: ReportingApiEndpointsChangedForOriginEventParams,
+            }
+            #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+            #[serde(rename_all = "camelCase")]
+            pub struct ReportingApiEndpointsChangedForOriginEventParams {
+                #[serde(default)]
+                pub origin: String,
+                pub endpoints: Vec<super::ReportingApiEndpoint>,
+            }
         }
     }
     pub mod Overlay {
@@ -11241,10 +11298,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetHighlightObjectForTest {
@@ -11273,7 +11330,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct HideHighlight {}
+        pub struct HideHighlight(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct HighlightFrame {
@@ -11660,7 +11717,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct InspectModeCanceledEvent {}
+            pub struct InspectModeCanceledEvent(pub Option<serde_json::Value>);
         }
     }
     pub mod Page {
@@ -12379,7 +12436,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct BringToFront {}
+        pub struct BringToFront(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct CaptureScreenshot {
@@ -12405,13 +12462,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearDeviceMetricsOverride {}
+        pub struct ClearDeviceMetricsOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearDeviceOrientationOverride {}
+        pub struct ClearDeviceOrientationOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearGeolocationOverride {}
+        pub struct ClearGeolocationOverride(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct CreateIsolatedWorld {
@@ -12433,37 +12490,37 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetAppManifest {}
+        pub struct GetAppManifest(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetInstallabilityErrors {}
+        pub struct GetInstallabilityErrors(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetManifestIcons {}
+        pub struct GetManifestIcons(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetAppId {}
+        pub struct GetAppId(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetCookies {}
+        pub struct GetCookies(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetFrameTree {}
+        pub struct GetFrameTree(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetLayoutMetrics {}
+        pub struct GetLayoutMetrics(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetNavigationHistory {}
+        pub struct GetNavigationHistory(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ResetNavigationHistory {}
+        pub struct ResetNavigationHistory(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetResourceContent {
@@ -12473,7 +12530,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetResourceTree {}
+        pub struct GetResourceTree(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct HandleJavaScriptDialog {
@@ -12734,13 +12791,13 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopLoading {}
+        pub struct StopLoading(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Crash {}
+        pub struct Crash(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Close {}
+        pub struct Close(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetWebLifecycleState {
@@ -12748,7 +12805,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopScreencast {}
+        pub struct StopScreencast(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ProduceCompilationCache {
@@ -12764,7 +12821,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct ClearCompilationCache {}
+        pub struct ClearCompilationCache(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetSPCTransactionMode {
@@ -12781,7 +12838,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct WaitForDebugger {}
+        pub struct WaitForDebugger(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetInterceptFileChooserDialog {
@@ -13343,7 +13400,7 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct FrameResizedEvent {}
+            pub struct FrameResizedEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             pub struct FrameRequestedNavigationEvent {
                 pub params: FrameRequestedNavigationEventParams,
@@ -13421,10 +13478,10 @@ pub mod cdp {
             }
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct InterstitialHiddenEvent {}
+            pub struct InterstitialHiddenEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             #[serde(rename_all = "camelCase")]
-            pub struct InterstitialShownEvent {}
+            pub struct InterstitialShownEvent(pub Option<serde_json::Value>);
             #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
             pub struct JavascriptDialogClosedEvent {
                 pub params: JavascriptDialogClosedEventParams,
@@ -13578,7 +13635,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct Enable {
@@ -13592,7 +13649,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetMetrics {}
+        pub struct GetMetrics(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct DisableReturnObject {}
@@ -13854,10 +13911,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SetIgnoreCertificateErrors {
@@ -14036,7 +14093,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct DispatchSyncEvent {
@@ -14059,7 +14116,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct InspectWorker {
@@ -14086,7 +14143,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct StopAllWorkers {}
+        pub struct StopAllWorkers(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct StopWorker {
@@ -14332,7 +14389,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetTrustTokens {}
+        pub struct GetTrustTokens(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct ClearTrustTokens {
@@ -14586,10 +14643,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetInfo {}
+        pub struct GetInfo(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetProcessInfo {}
+        pub struct GetProcessInfo(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetInfoReturnObject {
@@ -14671,7 +14728,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct AttachToBrowserTarget {}
+        pub struct AttachToBrowserTarget(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct CloseTarget {
@@ -14697,10 +14754,13 @@ pub mod cdp {
             #[serde(skip_serializing_if = "Option::is_none")]
             #[serde(default)]
             pub proxy_bypass_list: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            pub origins_with_universal_network_access: Option<Vec<String>>,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetBrowserContexts {}
+        pub struct GetBrowserContexts(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct CreateTarget {
@@ -14745,7 +14805,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetTargets {}
+        pub struct GetTargets(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct SendMessageToTarget {
@@ -15096,7 +15156,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct MemoryDumpConfig {}
+        pub struct MemoryDumpConfig(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct TraceConfig {
@@ -15125,10 +15185,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct End {}
+        pub struct End(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct GetCategories {}
+        pub struct GetCategories(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct RecordClockSyncMarker {
@@ -15328,7 +15388,7 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct Enable {
@@ -15629,10 +15689,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct GetRealtimeData {
@@ -15888,10 +15948,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct AddVirtualAuthenticator {
@@ -16085,10 +16145,10 @@ pub mod cdp {
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Enable {}
+        pub struct Enable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
-        pub struct Disable {}
+        pub struct Disable(pub Option<serde_json::Value>);
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
         #[serde(rename_all = "camelCase")]
         pub struct EnableReturnObject {}
