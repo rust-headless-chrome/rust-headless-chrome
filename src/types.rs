@@ -3,6 +3,7 @@ use crate::protocol::cdp::{
     Browser,
     Page,
     DOM::Node,
+    Network::{CookieParam,DeleteCookies},
     Page::PrintToPDF
 };
 
@@ -138,6 +139,17 @@ impl Bounds {
             top: None,
             width: None,
             height: None,
+        }
+    }
+}
+
+impl From<CookieParam> for DeleteCookies {
+    fn from(v: CookieParam) -> Self {
+        Self {
+            name: v.name,
+            url: v.url,
+            domain: v.domain,
+            path: v.path,
         }
     }
 }
