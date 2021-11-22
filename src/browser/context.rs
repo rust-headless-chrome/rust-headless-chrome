@@ -26,7 +26,7 @@ impl<'a> Context<'a> {
             url: "about:blank".to_string(),
             width: None,
             height: None,
-            browser_context_id: Some(self.id),
+            browser_context_id: Some(self.id.clone()),
             enable_begin_frame_control: None,
             new_window: None,
             background: None,
