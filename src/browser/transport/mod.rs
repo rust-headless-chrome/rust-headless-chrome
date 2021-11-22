@@ -136,10 +136,11 @@ impl Transport {
 
         match destination {
             MethodDestination::Target(session_id) => {
+                let message = message_text.clone();
                 let target_method = Target::SendMessageToTarget {
                     target_id: None,
                     session_id: Some(session_id.0),
-                    message: message_text,
+                    message: message,
                 };
                 let mut raw = message_text.clone();
                 raw.truncate(300);
