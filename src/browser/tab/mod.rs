@@ -721,7 +721,6 @@ impl Tab {
                         event_type: "keyUp",
                         ..v
                     })?;
-                    self.press_key(c)?;
                 }
                 Err(_) => {
                     self.call_method(input::methods::InsertText { text: c })?;
