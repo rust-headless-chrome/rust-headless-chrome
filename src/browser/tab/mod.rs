@@ -716,11 +716,11 @@ impl Tab {
                 Ok(key) => {
                     let v: DispatchKeyEvent = key.into();
 
-                    self.call_method(v)?;
+                    self.call_method(v.clone())?;
                     self.call_method(DispatchKeyEvent {
                         event_type: "keyUp",
                         ..v
-                    });
+                    })?;
                     self.press_key(c)?;
                 }
                 Err(_) => {

@@ -35,7 +35,7 @@ pub mod methods {
         type ReturnObject = DispatchMouseEventReturnObject;
     }
 
-    #[derive(Serialize, Debug)]
+    #[derive(Serialize,Clone, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct DispatchKeyEvent<'a> {
         #[serde(rename = "type")]
