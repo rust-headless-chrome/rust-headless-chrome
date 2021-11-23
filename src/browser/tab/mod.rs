@@ -17,6 +17,7 @@ use element::Element;
 use point::Point;
 
 use crate::protocol::dom::{Node, NodeId};
+use crate::protocol::input::methods::DispatchKeyEvent;
 use crate::protocol::page::methods::{
     FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
 };
@@ -338,7 +339,10 @@ impl Tab {
                     }
                     Event::ResponseReceived(ev) => {
                         let request_id = ev.params.request_id.clone();
-                        received_event_params.lock().unwrap().insert(request_id, ev.params);
+                        received_event_params
+                            .lock()
+                            .unwrap()
+                            .insert(request_id, ev.params);
                     }
                     Event::LoadingFinished(ev) => {
                         if let Some(handler) = response_handler_mutex.lock().unwrap().as_ref() {
@@ -352,7 +356,7 @@ impl Tab {
 
                             match received_event_params.lock().unwrap().get(&request_id) {
                                 Some(params) => handler(params.to_owned(), &retrieve_body),
-                                _ => warn!("Request id does not exist")
+                                _ => warn!("Request id does not exist"),
                             }
                         }
                     }
@@ -710,7 +714,14 @@ impl Tab {
             // https://github.com/puppeteer/puppeteer/blob/b8806d5625ca7835abbaf2e997b0bf35a5679e29/src/common/Input.ts#L239-L245
             match definition {
                 Ok(key) => {
-                    self.press_key(key)?;
+                    let v: DispatchKeyEvent = key.into();
+
+                    self.call_method(v)?;
+                    self.call_method(DispatchKeyEvent {
+                        event_type: "keyUp",
+                        ..v
+                    });
+                    self.press_key(c)?;
                 }
                 Err(_) => {
                     self.call_method(input::methods::InsertText { text: c })?;
@@ -720,7 +731,8 @@ impl Tab {
         Ok(self)
     }
 
-    pub fn press_key(&self, definition: &KeyDefinition) -> Fallible<&Self> {
+    pub fn press_key(&self, key: &str) -> Fallible<&Self> {
+        let definition = keys::get_key_definition(key)?;
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
         let text = definition.text.or_else(|| {
@@ -876,7 +888,7 @@ impl Tab {
     }
 
     /// Set the background color of the dom to transparent.
-    /// 
+    ///
     /// Useful when you want capture a .png
     ///
     /// ```rust,no_run
@@ -905,7 +917,7 @@ impl Tab {
     }
 
     /// Set the default background color of the dom.
-    /// 
+    ///
     /// Pass a RGBA to override the backrgound color of the dom.
     ///
     /// ```rust,no_run
