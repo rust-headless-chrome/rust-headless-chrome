@@ -90,12 +90,12 @@ pub struct Fetcher {
 }
 
 impl Fetcher {
-    pub fn new(options: FetcherOptions) -> Fallible<Self> {
+    pub fn new(options: FetcherOptions) -> Result<Self> {
         Ok(Self { options })
     }
 
     // look for good existing installation, if none exists then download and install
-    pub fn fetch(&self) -> Fallible<PathBuf> {
+    pub fn fetch(&self) -> Result<PathBuf> {
         if let Ok(chrome_path) = self.chrome_path() {
             // we found it!
             return Ok(chrome_path);
@@ -115,7 +115,7 @@ impl Fetcher {
     }
 
     // Look for an installation directory matching self.options.revision
-    fn base_path(&self) -> Fallible<PathBuf> {
+    fn base_path(&self) -> Result<PathBuf> {
         // we want to look in install_dir first, then data dir
         let mut search_dirs: Vec<&Path> = Vec::new();
         let project_dirs = get_project_dirs()?;
@@ -149,7 +149,7 @@ impl Fetcher {
     }
 
     // find full path to chrome executable from base_path
-    fn chrome_path(&self) -> Fallible<PathBuf> {
+    fn chrome_path(&self) -> Result<PathBuf> {
         let mut path = self.base_path()?;
         path.push(archive_name(&self.options.revision)?);
 
@@ -173,7 +173,7 @@ impl Fetcher {
     }
 
     // download a .zip of the revision we want
-    fn download(&self) -> Fallible<PathBuf> {
+    fn download(&self) -> Result<PathBuf> {
         let url = dl_url(&self.options.revision)?;
         info!("Chrome download url: {}", url);
         let total = get_size(&url)?;
@@ -212,7 +212,7 @@ impl Fetcher {
     }
 
     #[cfg(target_os = "macos")]
-    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Fallible<()> {
+    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Result<()> {
         let out = std::process::Command::new("unzip")
             .arg(zip_path.as_ref().as_os_str())
             .current_dir(&extract_path)
@@ -229,7 +229,7 @@ impl Fetcher {
     }
 
     #[cfg(not(target_os = "macos"))]
-    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Fallible<()> {
+    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Result<()> {
         let mut archive = zip::ZipArchive::new(File::open(zip_path.as_ref())?)?;
 
         for i in 0..archive.len() {
@@ -277,7 +277,7 @@ impl Fetcher {
         Ok(())
     }
     // unzip the downloaded file and do all the needed file manipulation
-    fn unzip<P: AsRef<Path>>(&self, zip_path: P) -> Fallible<PathBuf> {
+    fn unzip<P: AsRef<Path>>(&self, zip_path: P) -> Result<PathBuf> {
         let mut extract_path: PathBuf = zip_path
             .as_ref()
             .parent()
@@ -310,7 +310,7 @@ impl Fetcher {
     }
 }
 
-fn get_size<U: AsRef<str>>(url: U) -> Fallible<u64> {
+fn get_size<U: AsRef<str>>(url: U) -> Result<u64> {
     let resp = ureq::get(url.as_ref()).call();
     match resp.header("Content-Length") {
         Some(len) => Ok(u64::from_str(len)? / 2_u64.pow(20)),
@@ -318,7 +318,7 @@ fn get_size<U: AsRef<str>>(url: U) -> Fallible<u64> {
     }
 }
 
-fn get_project_dirs() -> Fallible<ProjectDirs> {
+fn get_project_dirs() -> Result<ProjectDirs> {
     info!("Getting project dir");
     match ProjectDirs::from("", "", APP_NAME) {
         Some(dirs) => Ok(dirs),
@@ -326,7 +326,7 @@ fn get_project_dirs() -> Fallible<ProjectDirs> {
     }
 }
 
-fn dl_url<R>(revision: R) -> Fallible<String>
+fn dl_url<R>(revision: R) -> Result<String>
 where
     R: AsRef<str>,
 {
@@ -361,7 +361,7 @@ where
     }
 }
 
-fn archive_name<R: AsRef<str>>(revision: R) -> Fallible<&'static str> {
+fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str> {
     #[cfg(target_os = "linux")]
     {
         drop(revision);
