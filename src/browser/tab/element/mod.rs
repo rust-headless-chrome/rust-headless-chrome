@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use log::*;
 
-use crate::browser::tab::point::Point;
+use crate::{browser::tab::point::Point, protocol::cdp::CSS::CSSComputedStyleProperty};
 use crate::browser::tab::NoElementFound;
 
 mod box_model;
@@ -15,7 +15,7 @@ mod box_model;
 use crate::util;
 pub use box_model::{BoxModel, ElementQuad};
 
-use crate::protocol::cdp::{Page, Runtime, DOM};
+use crate::protocol::cdp::{Page,CSS, Runtime, DOM};
 
 #[derive(Debug, Error)]
 #[error("Couldnt get element quad")]
@@ -349,6 +349,17 @@ impl<'a> Element<'a> {
                 .unwrap(),
         )?;
         Ok(text)
+    }
+
+    pub fn get_computed_styles(&self) -> Result<Vec<CSSComputedStyleProperty>> {
+        let styles = self
+            .parent
+            .call_method(CSS::GetComputedStyleForNode {
+                node_id: self.node_id,
+            })?
+            .computed_style;
+
+        Ok(styles)
     }
 
     pub fn get_description(&self) -> Result<DOM::Node> {
