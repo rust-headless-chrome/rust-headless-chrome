@@ -51,7 +51,7 @@ pub mod transport;
 ///
 /// Option 1: Managing a Chrome process
 /// ```rust
-/// # use failure::Fallible;
+/// # use anyhow::Result;
 /// # fn main() -> Result<()> {
 /// #
 /// use headless_chrome::Browser;
@@ -192,7 +192,7 @@ impl Browser {
     /// If you want to specify its starting options, see `new_tab_with_options`.
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// #
     /// # use headless_chrome::Browser;
@@ -220,7 +220,7 @@ impl Browser {
 
     /// Create a new tab with a starting url, height / width, context ID and 'frame control'
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// #
     /// # use headless_chrome::{Browser, protocol::target::methods::CreateTarget};
@@ -271,7 +271,7 @@ impl Browser {
     /// Get version information
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// #
     /// # use headless_chrome::Browser;
