@@ -1,8 +1,8 @@
-use failure::Fallible;
+use anyhow::Result;
 
 use headless_chrome::{Browser, LaunchOptions};
 
-fn query(input: &str) -> Fallible<()> {
+fn query(input: &str) -> Result<()> {
     let browser = Browser::new(
         LaunchOptions::default_builder()
             .build()
@@ -23,7 +23,7 @@ fn query(input: &str) -> Fallible<()> {
     Ok(())
 }
 
-fn main() -> Fallible<()> {
+fn main() -> Result<()> {
     let input = "Elvis Aaron Presley";
     query(input)
 }
