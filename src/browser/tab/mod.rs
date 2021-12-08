@@ -26,6 +26,8 @@ use crate::protocol::cdp::{
 
 use Runtime::AddBinding;
 
+use Input::{DispatchKeyEvent};
+
 use Page::{AddScriptToEvaluateOnNewDocument, Navigate, SetInterceptFileChooserDialog};
 
 use Target::AttachToTarget;
@@ -757,7 +759,13 @@ impl Tab {
             // https://github.com/puppeteer/puppeteer/blob/b8806d5625ca7835abbaf2e997b0bf35a5679e29/src/common/Input.ts#L239-L245
             match definition {
                 Ok(key) => {
-                    self.press_key(key)?;
+                    let v: DispatchKeyEvent = key.into();
+
+                    self.call_method(v.clone())?;
+                    self.call_method(DispatchKeyEvent {
+                        Type: Input::DispatchKeyEventTypeOption::KeyUp,
+                        ..v
+                    })?;
                 }
                 Err(_) => {
                     self.call_method(Input::InsertText { text: c.to_string() })?;
@@ -767,11 +775,13 @@ impl Tab {
         Ok(self)
     }
 
-    pub fn press_key(&self, definition: &KeyDefinition) -> Result<&Self> {
+    pub fn press_key(&self, key: &str) -> Result<&Self> {
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
-        let text = definition.text.or_else(|| {
-            if definition.key.len() == 1 {
-                Some(definition.key)
+        let definiton = keys::get_key_definition(key)?;
+
+        let text = definiton.text.or_else(|| {
+            if definiton.key.len() == 1 {
+                Some(definiton.key)
             } else {
                 None
             }
@@ -784,8 +794,8 @@ impl Tab {
             Input::DispatchKeyEventTypeOption::RawKeyDown
         };
 
-        let key = Some(definition.key.to_string());
-        let code = Some(definition.code.to_string());
+        let key = Some(definiton.key.to_string());
+        let code = Some(definiton.code.to_string());
 
         self.optional_slow_motion_sleep(25);
 
@@ -794,8 +804,8 @@ impl Tab {
             key: key.clone(),
             text: text.clone(),
             code: code.clone(),
-            windows_virtual_key_code: Some(definition.key_code),
-            native_virtual_key_code: Some(definition.key_code),
+            windows_virtual_key_code: Some(definiton.key_code),
+            native_virtual_key_code: Some(definiton.key_code),
             modifiers: None,
             timestamp: None,
             unmodified_text: None,
@@ -811,8 +821,8 @@ impl Tab {
             key,
             text,
             code,
-            windows_virtual_key_code: Some(definition.key_code),
-            native_virtual_key_code: Some(definition.key_code),
+            windows_virtual_key_code: Some(definiton.key_code),
+            native_virtual_key_code: Some(definiton.key_code),
             modifiers: None,
             timestamp: None,
             unmodified_text: None,
