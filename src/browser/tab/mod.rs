@@ -491,7 +491,7 @@ impl Tab {
     /// This will be applied to all [wait_for_element](Tab::wait_for_element) and [wait_for_elements](Tab::wait_for_elements) calls for this tab
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// # use headless_chrome::Browser;
     /// # let browser = Browser::default()?;
@@ -598,7 +598,7 @@ impl Tab {
     /// ```
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # // Awful hack to get access to testing utils common between integration, doctest, and unit tests
     /// # mod server {
     /// #     include!("../../testing_utils/server.rs");
@@ -914,7 +914,7 @@ impl Tab {
     /// the view.
     ///
     /// ```rust,no_run
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
@@ -1007,7 +1007,7 @@ impl Tab {
     /// Useful when you want capture a .png
     ///
     /// ```rust,no_run
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
@@ -1036,7 +1036,7 @@ impl Tab {
     /// Pass a RGBA to override the backrgound color of the dom.
     ///
     /// ```rust,no_run
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
@@ -1284,7 +1284,7 @@ impl Tab {
     /// ## Usage example
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # use std::sync::Arc;
     /// # fn main() -> Result<()> {
     /// #
@@ -1463,7 +1463,7 @@ impl Tab {
     /// Returns the title of the document.
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # use headless_chrome::Browser;
     /// # fn main() -> Result<()> {
     /// #
