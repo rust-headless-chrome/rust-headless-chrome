@@ -5,10 +5,10 @@ use headless_chrome::Browser;
 
 mod server;
 
-use failure::Fallible;
+use anyhow::Result;
 
 #[test]
-fn expose_function() -> Fallible<()> {
+fn expose_function() -> Result<()> {
     let server = server::Server::with_dumb_html(include_str!("simple.html"));
 
     let function_called_entries = Arc::new(Mutex::new(0));
