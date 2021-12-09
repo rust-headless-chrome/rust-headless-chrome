@@ -175,6 +175,7 @@ impl<'a> Element<'a> {
     }
 
     pub fn find_elements_by_xpath(&self, query: &str) -> Result<Vec<Element<'_>>> {
+        self.parent.get_document()?;
         self.parent
             .call_method(DOM::PerformSearch {
                 query: query.to_string(),
