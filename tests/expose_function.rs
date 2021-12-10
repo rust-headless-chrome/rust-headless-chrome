@@ -23,7 +23,7 @@ fn expose_function() -> Result<()> {
 
     tab.expose_function(
         "simple",
-        Box::new(move |_value| {
+        Arc::new(move |_value| {
             *function_called_entries_clone.lock().unwrap() += 1;
         }),
     )?;
