@@ -443,6 +443,16 @@ impl Tab {
         Ok(())
     }
 
+    pub fn remove_function(&self, name: &str) -> Result<()> {
+        let bindings_mutex = Arc::clone(&self.page_bindings);
+
+        let mut bindings = bindings_mutex.lock().unwrap();
+
+        bindings.remove(name).unwrap();
+
+        Ok(())
+    }
+
     pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject>
     where
         C: Method + serde::Serialize + std::fmt::Debug,
