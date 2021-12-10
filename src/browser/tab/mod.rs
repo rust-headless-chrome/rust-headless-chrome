@@ -21,12 +21,12 @@ use point::Point;
 
 use crate::protocol::cdp::{
     types::{Event, Method},
-    Fetch, Input, Log, Network,Debugger,Browser,Emulation, Page, Profiler, Runtime, Target, DOM,
+    Browser, Debugger, Emulation, Fetch, Input, Log, Network, Page, Profiler, Runtime, Target, DOM,
 };
 
 use Runtime::AddBinding;
 
-use Input::{DispatchKeyEvent};
+use Input::DispatchKeyEvent;
 
 use Page::{AddScriptToEvaluateOnNewDocument, Navigate, SetInterceptFileChooserDialog};
 
@@ -50,7 +50,7 @@ use Network::{
 
 use crate::util;
 
-use crate::types::{PrintToPdfOptions,Bounds,CurrentBounds, RemoteError};
+use crate::types::{Bounds, CurrentBounds, PrintToPdfOptions, RemoteError};
 
 use super::transport::SessionId;
 use crate::browser::transport::Transport;
@@ -115,11 +115,15 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-pub struct Binding(Box<dyn Fn(Json)>);
+pub trait Binding {
+    fn call_binding(&self, data: Json);
+}
 
-unsafe impl Send for Binding {}
-
-unsafe impl Sync for Binding {}
+impl<T: Fn(Json) + Send + Sync> Binding for T {
+    fn call_binding(&self, data: Json) {
+        self(data);
+    }
+}
 
 pub type FunctionBinding = HashMap<String, Arc<Binding>>;
 
@@ -658,7 +662,10 @@ impl Tab {
         selector: &str,
     ) -> Result<Element<'_>> {
         let node_id = self
-            .call_method(DOM::QuerySelector { node_id, selector: selector.to_string() })
+            .call_method(DOM::QuerySelector {
+                node_id,
+                selector: selector.to_string(),
+            })
             .map_err(NoElementFound::map)?
             .node_id;
 
@@ -671,7 +678,10 @@ impl Tab {
         selector: &str,
     ) -> Result<Vec<Element<'_>>> {
         let node_ids = self
-            .call_method(DOM::QuerySelectorAll { node_id, selector: selector.to_string() })
+            .call_method(DOM::QuerySelectorAll {
+                node_id,
+                selector: selector.to_string(),
+            })
             .map_err(NoElementFound::map)?
             .node_ids;
 
@@ -766,7 +776,9 @@ impl Tab {
                     })?;
                 }
                 Err(_) => {
-                    self.call_method(Input::InsertText { text: c.to_string() })?;
+                    self.call_method(Input::InsertText {
+                        text: c.to_string(),
+                    })?;
                 }
             }
         }
@@ -777,13 +789,16 @@ impl Tab {
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
         let definiton = keys::get_key_definition(key)?;
 
-        let text = definiton.text.or_else(|| {
-            if definiton.key.len() == 1 {
-                Some(definiton.key)
-            } else {
-                None
-            }
-        }).and_then(|v| Some(v.to_string()));;
+        let text = definiton
+            .text
+            .or_else(|| {
+                if definiton.key.len() == 1 {
+                    Some(definiton.key)
+                } else {
+                    None
+                }
+            })
+            .and_then(|v| Some(v.to_string()));
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L52
         let key_down_event_type = if text.is_some() {
@@ -1005,7 +1020,8 @@ impl Tab {
         self.optional_slow_motion_sleep(100);
         self.call_method(Page::Reload {
             ignore_cache: Some(ignore_cache),
-            script_to_evaluate_on_load: script_to_evaluate_on_load.and_then(|s| Some(s.to_string())),
+            script_to_evaluate_on_load: script_to_evaluate_on_load
+                .and_then(|s| Some(s.to_string())),
         })?;
         Ok(self)
     }
@@ -1113,7 +1129,9 @@ impl Tab {
     /// The format of the data is a little unintuitive, see here for details:
     /// https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
     pub fn take_precise_js_coverage(&self) -> Result<Vec<Profiler::ScriptCoverage>> {
-        let script_coverages = self.call_method(Profiler::TakePreciseCoverage(None))?.result;
+        let script_coverages = self
+            .call_method(Profiler::TakePreciseCoverage(None))?
+            .result;
         Ok(script_coverages)
     }
 
@@ -1200,7 +1218,9 @@ impl Tab {
 
     /// Enables Debugger
     pub fn enable_debugger(&self) -> Result<()> {
-        self.call_method(Debugger::Enable { max_scripts_cache_size: None })?;
+        self.call_method(Debugger::Enable {
+            max_scripts_cache_size: None,
+        })?;
         Ok(())
     }
 
@@ -1215,7 +1235,9 @@ impl Tab {
     /// Debugger must be enabled.
     pub fn get_script_source(&self, script_id: &str) -> Result<String> {
         Ok(self
-            .call_method(Debugger::GetScriptSource { script_id: script_id.to_string() })?
+            .call_method(Debugger::GetScriptSource {
+                script_id: script_id.to_string(),
+            })?
             .script_source)
     }
 
@@ -1258,11 +1280,7 @@ impl Tab {
     }
 
     /// Evaluates expression on global object.
-    pub fn evaluate(
-        &self,
-        expression: &str,
-        await_promise: bool,
-    ) -> Result<Runtime::RemoteObject> {
+    pub fn evaluate(&self, expression: &str, await_promise: bool) -> Result<Runtime::RemoteObject> {
         let result = self
             .call_method(Runtime::Evaluate {
                 expression: expression.to_string(),
@@ -1423,7 +1441,7 @@ impl Tab {
     /// Set cookies with tab's current URL
     pub fn set_cookies(&self, cs: Vec<Network::CookieParam>) -> Result<()> {
         // puppeteer 7b24e5435b:src/common/Page.ts :1009-1028
-        use Network::{SetCookies};
+        use Network::SetCookies;
         let url = self.get_url();
         let starts_with_http = url.starts_with("http");
         let cookies: Vec<Network::CookieParam> = cs
@@ -1521,7 +1539,9 @@ impl Tab {
             max_resource_buffer_size: None,
             max_post_data_size: None,
         })?;
-        self.call_method(SetExtraHTTPHeaders { headers: Network::Headers(Some(json!(headers))) })?;
+        self.call_method(SetExtraHTTPHeaders {
+            headers: Network::Headers(Some(json!(headers))),
+        })?;
         Ok(())
     }
 
@@ -1577,7 +1597,6 @@ impl Tab {
     }
 
     pub fn stop_loading(&self) -> Result<bool> {
-        self.call_method(Page::StopLoading(None))
-            .map(|_| true)
+        self.call_method(Page::StopLoading(None)).map(|_| true)
     }
 }
