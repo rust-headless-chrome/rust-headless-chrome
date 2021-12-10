@@ -1,15 +1,15 @@
 use std::sync::{Arc, Mutex};
 
-use failure::Fallible;
+use anyhow::Result;
 
 use headless_chrome::browser::tab::Tab;
-use headless_chrome::protocol::Event;
 use headless_chrome::Browser;
+use headless_chrome::protocol::cdp::types::Event;
 
 mod server;
 
 #[test]
-fn listen_to_events() -> Fallible<()> {
+fn listen_to_events() -> Result<()> {
     let server = server::Server::with_dumb_html(include_str!("events_fixtures/events_page.html"));
 
     let counter_log_entries = Arc::new(Mutex::new(0));
@@ -44,7 +44,7 @@ fn listen_to_events() -> Fallible<()> {
 }
 
 #[test]
-fn remove_event_listener() -> Fallible<()> {
+fn remove_event_listener() -> Result<()> {
     let server = server::Server::with_dumb_html(include_str!("events_fixtures/events_page.html"));
 
     let counter_log_entries = Arc::new(Mutex::new(0));
