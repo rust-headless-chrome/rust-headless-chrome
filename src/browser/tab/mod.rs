@@ -56,8 +56,6 @@ use super::transport::SessionId;
 use crate::browser::transport::Transport;
 use std::thread::sleep;
 
-use self::keys::KeyDefinition;
-
 pub mod element;
 mod keys;
 pub mod point;
