@@ -125,7 +125,9 @@ impl<T: Fn(Json) + Send + Sync> Binding for T {
     }
 }
 
-pub type FunctionBinding = HashMap<String, Arc<Binding>>;
+pub type SafeBinding = dyn Binding + Send + Sync;
+
+pub type FunctionBinding = HashMap<String, Arc<SafeBinding>>;
 
 // type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
@@ -309,9 +311,9 @@ impl Tab {
                         let name = binding.params.name;
                         let payload = binding.params.payload;
 
-                        let func = &Arc::clone(bindings.get(&name).unwrap()).0;
+                        let func = &Arc::clone(bindings.get(&name).unwrap());
 
-                        func(json!(payload));
+                        func.call_binding(json!(payload));
                     }
                     Event::FetchRequestPaused(event) => {
                         let interceptor = interceptor_mutex.lock().unwrap();
@@ -400,12 +402,12 @@ impl Tab {
         });
     }
 
-    pub fn expose_function(&self, name: &str, func: Box<dyn Fn(Json)>) -> Result<()> {
+    pub fn expose_function(&self, name: &str, func: Arc<SafeBinding>) -> Result<()> {
         let bindings_mutex = Arc::clone(&self.page_bindings);
 
         let mut bindings = bindings_mutex.lock().unwrap();
 
-        bindings.insert(name.to_string(), Arc::new(Binding(func)));
+        bindings.insert(name.to_string(), func);
 
         let expression = r#"
         (function addPageBinding(bindingName) {
