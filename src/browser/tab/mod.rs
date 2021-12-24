@@ -482,6 +482,11 @@ impl Tab {
         Ok(self)
     }
 
+    // Pulls focus to this tab
+    pub fn bring_to_front(&self) -> Result<Page::BringToFrontReturnObject> {
+        Ok(self.call_method(Page::BringToFront(None))?)
+    }
+
     pub fn navigate_to(&self, url: &str) -> Result<&Self> {
         let return_object = self.call_method(Navigate {
             url: url.to_string(),
