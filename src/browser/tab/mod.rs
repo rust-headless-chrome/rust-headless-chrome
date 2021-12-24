@@ -6,7 +6,10 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use failure::{Error, Fail, Fallible};
+use anyhow::{Error, Result};
+
+use thiserror::Error;
+
 use log::*;
 
 use serde::de::DeserializeOwned;
@@ -16,26 +19,42 @@ use serde_json::{json, Value as Json};
 use element::Element;
 use point::Point;
 
-use crate::protocol::dom::{Node, NodeId};
-use crate::protocol::input::methods::DispatchKeyEvent;
-use crate::protocol::page::methods::{
-    FileChooserAction, HandleFileChooser, Navigate, SetInterceptFileChooserDialog,
+use crate::protocol::cdp::{
+    types::{Event, Method},
+    Browser, Debugger, Emulation, Fetch, Input, Log, Network, Page, Profiler, Runtime, Target, DOM,
 };
-use crate::protocol::target::{TargetId, TargetInfo};
-use crate::protocol::{
-    dom, fetch, input, logs, network, page, profiler, runtime, target, Event, RemoteError,
+
+use Runtime::AddBinding;
+
+use Input::DispatchKeyEvent;
+
+use Page::{AddScriptToEvaluateOnNewDocument, Navigate, SetInterceptFileChooserDialog};
+
+use Target::AttachToTarget;
+
+use DOM::{Node, NodeId};
+
+use Target::{TargetID, TargetInfo};
+
+use Log::ViolationSetting;
+
+use Fetch::{
+    events::RequestPausedEvent, AuthChallengeResponse, ContinueRequest, ContinueWithAuth,
+    FailRequest, FulfillRequest,
 };
-use crate::{protocol, protocol::logs::methods::ViolationSetting, util};
+
+use Network::{
+    events::ResponseReceivedEventParams, Cookie, GetResponseBody, GetResponseBodyReturnObject,
+    SetExtraHTTPHeaders, SetUserAgentOverride,
+};
+
+use crate::util;
+
+use crate::types::{Bounds, CurrentBounds, PrintToPdfOptions, RemoteError};
 
 use super::transport::SessionId;
 use crate::browser::transport::Transport;
-use crate::protocol::fetch::events::RequestPausedEvent;
-use crate::protocol::fetch::methods::{AuthChallengeResponse, ContinueRequest};
-use crate::protocol::network::methods::SetExtraHTTPHeaders;
-use crate::protocol::network::Cookie;
 use std::thread::sleep;
-
-use self::keys::KeyDefinition;
 
 pub mod element;
 mod keys;
@@ -43,18 +62,18 @@ pub mod point;
 
 #[derive(Debug)]
 pub enum RequestPausedDecision {
-    Fulfill(fetch::methods::FulfillRequest),
-    Fail(fetch::methods::FailRequest),
-    Continue(Option<fetch::methods::ContinueRequest>),
+    Fulfill(FulfillRequest),
+    Fail(FailRequest),
+    Continue(Option<ContinueRequest>),
 }
 
 #[rustfmt::skip]
 pub type ResponseHandler = Box<
     dyn Fn(
-        protocol::network::events::ResponseReceivedEventParams,
+        ResponseReceivedEventParams,
         &dyn Fn() -> Result<
-            protocol::network::methods::GetResponseBodyReturnObject,
-            failure::Error,
+            GetResponseBodyReturnObject,
+            Error,
         >,
     ) + Send
     + Sync,
@@ -96,45 +115,51 @@ impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     }
 }
 
-pub struct Binding(Box<dyn Fn(Json)>);
+pub trait Binding {
+    fn call_binding(&self, data: Json);
+}
 
-unsafe impl Send for Binding {}
+impl<T: Fn(Json) + Send + Sync> Binding for T {
+    fn call_binding(&self, data: Json) {
+        self(data);
+    }
+}
 
-unsafe impl Sync for Binding {}
+pub type SafeBinding = dyn Binding + Send + Sync;
 
-pub type FunctionBinding = HashMap<String, Arc<Binding>>;
+pub type FunctionBinding = HashMap<String, Arc<SafeBinding>>;
 
 // type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 
 /// A handle to a single page. Exposes methods for simulating user actions (clicking,
 /// typing), and also for getting information about the DOM and other parts of the page.
 pub struct Tab {
-    target_id: TargetId,
+    target_id: TargetID,
     transport: Arc<Transport>,
     session_id: SessionId,
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<Arc<RequestIntercept>>>,
     response_handler: Arc<Mutex<Option<ResponseHandler>>>,
-    auth_handler: Arc<Mutex<fetch::methods::AuthChallengeResponse>>,
+    auth_handler: Arc<Mutex<AuthChallengeResponse>>,
     default_timeout: Arc<RwLock<Duration>>,
     page_bindings: Arc<Mutex<FunctionBinding>>,
     event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
     slow_motion_multiplier: Arc<RwLock<f64>>, // there's no AtomicF64, otherwise would use that
 }
 
-#[derive(Debug, Fail)]
-#[fail(display = "No element found")]
+#[derive(Debug, Error)]
+#[error("No element found")]
 pub struct NoElementFound {}
 
-#[derive(Debug, Fail)]
-#[fail(display = "Navigate failed: {}", error_text)]
+#[derive(Debug, Error)]
+#[error("Navigate failed: {}", error_text)]
 pub struct NavigationFailed {
     error_text: String,
 }
 
-#[derive(Debug, Fail)]
-#[fail(display = "No LocalStorage item was found")]
+#[derive(Debug, Error)]
+#[error("No LocalStorage item was found")]
 pub struct NoLocalStorageItemFound {}
 
 impl NoElementFound {
@@ -157,12 +182,12 @@ impl NoElementFound {
 }
 
 impl Tab {
-    pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Fallible<Self> {
+    pub fn new(target_info: TargetInfo, transport: Arc<Transport>) -> Result<Self> {
         let target_id = target_info.target_id.clone();
 
         let session_id = transport
-            .call_method_on_browser(target::methods::AttachToTarget {
-                target_id: &target_id,
+            .call_method_on_browser(AttachToTarget {
+                target_id: target_id.clone(),
                 flatten: None,
             })?
             .session_id
@@ -173,7 +198,7 @@ impl Tab {
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
         let tab = Self {
-            target_id,
+            target_id: target_id,
             transport,
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
@@ -184,16 +209,17 @@ impl Tab {
             ))),
             response_handler: Arc::new(Mutex::new(None)),
             auth_handler: Arc::new(Mutex::new(AuthChallengeResponse {
-                response: "Default".to_string(),
-                ..Default::default()
+                response: Fetch::AuthChallengeResponseResponse::Default,
+                username: None,
+                password: None,
             })),
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
             event_listeners: Arc::new(Mutex::new(Vec::new())),
             slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
         };
 
-        tab.call_method(page::methods::Enable {})?;
-        tab.call_method(page::methods::SetLifecycleEventsEnabled { enabled: true })?;
+        tab.call_method(Page::Enable(None))?;
+        tab.call_method(Page::SetLifecycleEventsEnabled { enabled: true })?;
 
         tab.start_event_handler_thread();
 
@@ -205,20 +231,20 @@ impl Tab {
         *info = target_info;
     }
 
-    pub fn get_target_id(&self) -> &TargetId {
+    pub fn get_target_id(&self) -> &TargetID {
         &self.target_id
     }
 
     /// Fetches the most recent info about this target
-    pub fn get_target_info(&self) -> Fallible<TargetInfo> {
+    pub fn get_target_info(&self) -> Result<TargetInfo> {
         Ok(self
-            .call_method(target::methods::GetTargetInfo {
-                target_id: self.get_target_id(),
+            .call_method(Target::GetTargetInfo {
+                target_id: Some(self.get_target_id().to_string()),
             })?
             .target_info)
     }
 
-    pub fn get_browser_context_id(&self) -> Fallible<Option<String>> {
+    pub fn get_browser_context_id(&self) -> Result<Option<String>> {
         Ok(self.get_target_info()?.browser_context_id)
     }
 
@@ -233,11 +259,12 @@ impl Tab {
         user_agent: &str,
         accept_language: Option<&str>,
         platform: Option<&str>,
-    ) -> Fallible<()> {
-        self.call_method(network::methods::SetUserAgentOverride {
-            user_agent,
-            accept_language,
-            platform,
+    ) -> Result<()> {
+        self.call_method(SetUserAgentOverride {
+            user_agent: user_agent.to_string(),
+            accept_language: accept_language.and_then(|v| Some(v.to_string())),
+            platform: platform.and_then(|v| Some(v.to_string())),
+            user_agent_metadata: None,
         })
         .map(|_| ())
     }
@@ -265,7 +292,7 @@ impl Tab {
                 });
 
                 match event {
-                    Event::Lifecycle(lifecycle_event) => {
+                    Event::PageLifecycleEvent(lifecycle_event) => {
                         let event_name = lifecycle_event.params.name.as_ref();
                         trace!("Lifecycle event: {}", event_name);
                         match event_name {
@@ -278,17 +305,17 @@ impl Tab {
                             _ => {}
                         }
                     }
-                    Event::BindingCalled(binding) => {
+                    Event::RuntimeBindingCalled(binding) => {
                         let bindings = bindings_mutex.lock().unwrap().clone();
 
                         let name = binding.params.name;
                         let payload = binding.params.payload;
 
-                        let func = &Arc::clone(bindings.get(&name).unwrap()).0;
+                        let func = &Arc::clone(bindings.get(&name).unwrap());
 
-                        func(json!(payload));
+                        func.call_binding(json!(payload));
                     }
-                    Event::RequestPaused(event) => {
+                    Event::FetchRequestPaused(event) => {
                         let interceptor = interceptor_mutex.lock().unwrap();
                         let decision = interceptor.intercept(
                             Arc::clone(&transport),
@@ -307,7 +334,11 @@ impl Tab {
                                             session_id.clone(),
                                             ContinueRequest {
                                                 request_id: event.params.request_id,
-                                                ..Default::default()
+                                                url: None,
+                                                method: None,
+                                                post_data: None,
+                                                headers: None,
+                                                intercept_response: None,
                                             },
                                         )
                                         .map(|_| ())
@@ -324,12 +355,12 @@ impl Tab {
                             warn!("Tried to handle request after connection was closed");
                         }
                     }
-                    Event::AuthRequired(event) => {
+                    Event::FetchAuthRequired(event) => {
                         let auth_challenge_response = auth_handler_mutex.lock().unwrap().clone();
 
                         let request_id = event.params.request_id;
-                        let method = fetch::methods::ContinueWithAuth {
-                            request_id: &request_id,
+                        let method = ContinueWithAuth {
+                            request_id: request_id,
                             auth_challenge_response,
                         };
                         let result = transport.call_method_on_target(session_id.clone(), method);
@@ -337,19 +368,19 @@ impl Tab {
                             warn!("Tried to handle request after connection was closed");
                         }
                     }
-                    Event::ResponseReceived(ev) => {
+                    Event::NetworkResponseReceived(ev) => {
                         let request_id = ev.params.request_id.clone();
                         received_event_params
                             .lock()
                             .unwrap()
                             .insert(request_id, ev.params);
                     }
-                    Event::LoadingFinished(ev) => {
+                    Event::NetworkLoadingFinished(ev) => {
                         if let Some(handler) = response_handler_mutex.lock().unwrap().as_ref() {
                             let request_id = ev.params.request_id.clone();
                             let retrieve_body = || {
-                                let method = network::methods::GetResponseBody {
-                                    request_id: &request_id,
+                                let method = GetResponseBody {
+                                    request_id: request_id.clone(),
                                 };
                                 transport.call_method_on_target(session_id.clone(), method)
                             };
@@ -371,12 +402,12 @@ impl Tab {
         });
     }
 
-    pub fn expose_function(&self, name: &str, func: Box<dyn Fn(Json)>) -> Fallible<()> {
+    pub fn expose_function(&self, name: &str, func: Arc<SafeBinding>) -> Result<()> {
         let bindings_mutex = Arc::clone(&self.page_bindings);
 
         let mut bindings = bindings_mutex.lock().unwrap();
 
-        bindings.insert(name.to_string(), Arc::new(Binding(func)));
+        bindings.insert(name.to_string(), func);
 
         let expression = r#"
         (function addPageBinding(bindingName) {
@@ -397,20 +428,34 @@ impl Tab {
           })()
         "#; // https://github.com/puppeteer/puppeteer/blob/97c9fe2520723d45a5a86da06b888ae888d400be/src/common/helper.ts#L183
 
-        self.call_method(runtime::methods::AddBinding {
+        self.call_method(AddBinding {
             name: name.to_string(),
+            execution_context_id: None,
+            execution_context_name: None,
         })?;
 
-        self.call_method(page::methods::AddScriptToEvaluateOnNewDocument {
+        self.call_method(AddScriptToEvaluateOnNewDocument {
             source: expression.to_string(),
+            world_name: None,
+            include_command_line_api: None,
         })?;
 
         Ok(())
     }
 
-    pub fn call_method<C>(&self, method: C) -> Fallible<C::ReturnObject>
+    pub fn remove_function(&self, name: &str) -> Result<()> {
+        let bindings_mutex = Arc::clone(&self.page_bindings);
+
+        let mut bindings = bindings_mutex.lock().unwrap();
+
+        bindings.remove(name).unwrap();
+
+        Ok(())
+    }
+
+    pub fn call_method<C>(&self, method: C) -> Result<C::ReturnObject>
     where
-        C: protocol::Method + serde::Serialize + std::fmt::Debug,
+        C: Method + serde::Serialize + std::fmt::Debug,
     {
         trace!("Calling method: {:?}", method);
         let result = self
@@ -422,7 +467,7 @@ impl Tab {
         result
     }
 
-    pub fn wait_until_navigated(&self) -> Fallible<&Self> {
+    pub fn wait_until_navigated(&self) -> Result<&Self> {
         let navigating = Arc::clone(&self.navigating);
 
         util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
@@ -437,8 +482,19 @@ impl Tab {
         Ok(self)
     }
 
-    pub fn navigate_to(&self, url: &str) -> Fallible<&Self> {
-        let return_object = self.call_method(Navigate { url })?;
+    // Pulls focus to this tab
+    pub fn bring_to_front(&self) -> Result<Page::BringToFrontReturnObject> {
+        Ok(self.call_method(Page::BringToFront(None))?)
+    }
+
+    pub fn navigate_to(&self, url: &str) -> Result<&Self> {
+        let return_object = self.call_method(Navigate {
+            url: url.to_string(),
+            referrer: None,
+            transition_Type: None,
+            frame_id: None,
+            referrer_policy: None,
+        })?;
         if let Some(error_text) = return_object.error_text {
             return Err(NavigationFailed { error_text }.into());
         }
@@ -456,8 +512,8 @@ impl Tab {
     /// This will be applied to all [wait_for_element](Tab::wait_for_element) and [wait_for_elements](Tab::wait_for_elements) calls for this tab
     ///
     /// ```rust
-    /// # use failure::Fallible;
-    /// # fn main() -> Fallible<()> {
+    /// # use anyhow::Result;
+    /// # fn main() -> Result<()> {
     /// # use headless_chrome::Browser;
     /// # let browser = Browser::default()?;
     /// let tab = browser.wait_for_initial_tab()?;
@@ -506,11 +562,11 @@ impl Tab {
         sleep(Duration::from_millis(scaled_millis));
     }
 
-    pub fn wait_for_element(&self, selector: &str) -> Fallible<Element<'_>> {
+    pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>> {
         self.wait_for_element_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
 
-    pub fn wait_for_xpath(&self, selector: &str) -> Fallible<Element<'_>> {
+    pub fn wait_for_xpath(&self, selector: &str) -> Result<Element<'_>> {
         self.wait_for_xpath_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
 
@@ -518,7 +574,7 @@ impl Tab {
         &self,
         selector: &str,
         timeout: std::time::Duration,
-    ) -> Fallible<Element<'_>> {
+    ) -> Result<Element<'_>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element(selector),
@@ -530,7 +586,7 @@ impl Tab {
         &self,
         selector: &str,
         timeout: std::time::Duration,
-    ) -> Fallible<Element<'_>> {
+    ) -> Result<Element<'_>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element_by_xpath(selector),
@@ -538,7 +594,7 @@ impl Tab {
         )
     }
 
-    pub fn wait_for_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+    pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements(selector),
@@ -546,7 +602,7 @@ impl Tab {
         )
     }
 
-    pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+    pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Result<Vec<Element<'_>>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements_by_xpath(selector),
@@ -563,12 +619,12 @@ impl Tab {
     /// ```
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # // Awful hack to get access to testing utils common between integration, doctest, and unit tests
     /// # mod server {
     /// #     include!("../../testing_utils/server.rs");
     /// # }
-    /// # fn main() -> Fallible<()> {
+    /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::Browser;
     ///
@@ -585,42 +641,48 @@ impl Tab {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn find_element(&self, selector: &str) -> Fallible<Element<'_>> {
+    pub fn find_element(&self, selector: &str) -> Result<Element<'_>> {
         let root_node_id = self.get_document()?.node_id;
         trace!("Looking up element via selector: {}", selector);
 
         self.run_query_selector_on_node(root_node_id, selector)
     }
 
-    pub fn find_element_by_xpath(&self, query: &str) -> Fallible<Element<'_>> {
+    pub fn find_element_by_xpath(&self, query: &str) -> Result<Element<'_>> {
         self.get_document()?;
 
-        self.call_method(dom::methods::PerformSearch { query })
-            .and_then(|o| {
-                Ok(self
-                    .call_method(dom::methods::GetSearchResults {
-                        search_id: &o.search_id,
-                        from_index: 0,
-                        to_index: o.result_count,
-                    })?
-                    .node_ids[0])
-            })
-            .and_then(|id| {
-                if id == 0 {
-                    Err(NoElementFound {}.into())
-                } else {
-                    Ok(Element::new(&self, id)?)
-                }
-            })
+        self.call_method(DOM::PerformSearch {
+            query: query.to_string(),
+            include_user_agent_shadow_dom: None,
+        })
+        .and_then(|o| {
+            Ok(self
+                .call_method(DOM::GetSearchResults {
+                    search_id: o.search_id,
+                    from_index: 0,
+                    to_index: o.result_count,
+                })?
+                .node_ids[0])
+        })
+        .and_then(|id| {
+            if id == 0 {
+                Err(NoElementFound {}.into())
+            } else {
+                Ok(Element::new(&self, id)?)
+            }
+        })
     }
 
     pub fn run_query_selector_on_node(
         &self,
         node_id: NodeId,
         selector: &str,
-    ) -> Fallible<Element<'_>> {
+    ) -> Result<Element<'_>> {
         let node_id = self
-            .call_method(dom::methods::QuerySelector { node_id, selector })
+            .call_method(DOM::QuerySelector {
+                node_id,
+                selector: selector.to_string(),
+            })
             .map_err(NoElementFound::map)?
             .node_id;
 
@@ -631,9 +693,12 @@ impl Tab {
         &self,
         node_id: NodeId,
         selector: &str,
-    ) -> Fallible<Vec<Element<'_>>> {
+    ) -> Result<Vec<Element<'_>>> {
         let node_ids = self
-            .call_method(dom::methods::QuerySelectorAll { node_id, selector })
+            .call_method(DOM::QuerySelectorAll {
+                node_id,
+                selector: selector.to_string(),
+            })
             .map_err(NoElementFound::map)?
             .node_ids;
 
@@ -643,23 +708,23 @@ impl Tab {
             .collect()
     }
 
-    pub fn get_document(&self) -> Fallible<Node> {
+    pub fn get_document(&self) -> Result<Node> {
         Ok(self
-            .call_method(dom::methods::GetDocument {
+            .call_method(DOM::GetDocument {
                 depth: Some(0),
                 pierce: Some(false),
             })?
             .root)
     }
 
-    pub fn find_elements(&self, selector: &str) -> Fallible<Vec<Element<'_>>> {
+    pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
         trace!("Looking up elements via selector: {}", selector);
 
         let root_node_id = self.get_document()?.node_id;
         let node_ids = self
-            .call_method(dom::methods::QuerySelectorAll {
+            .call_method(DOM::QuerySelectorAll {
                 node_id: root_node_id,
-                selector,
+                selector: selector.to_string(),
             })
             .map_err(NoElementFound::map)?
             .node_ids;
@@ -674,37 +739,42 @@ impl Tab {
             .collect()
     }
 
-    pub fn find_elements_by_xpath(&self, query: &str) -> Fallible<Vec<Element<'_>>> {
-        self.call_method(dom::methods::PerformSearch { query })
-            .and_then(|o| {
-                Ok(self
-                    .call_method(dom::methods::GetSearchResults {
-                        search_id: &o.search_id,
-                        from_index: 0,
-                        to_index: o.result_count,
-                    })?
-                    .node_ids)
-            })
-            .and_then(|ids| {
-                ids.iter()
-                    .filter(|id| **id != 0)
-                    .map(|id| Element::new(self, *id))
-                    .collect()
-            })
+    pub fn find_elements_by_xpath(&self, query: &str) -> Result<Vec<Element<'_>>> {
+        self.call_method(DOM::PerformSearch {
+            query: query.to_string(),
+            include_user_agent_shadow_dom: None,
+        })
+        .and_then(|o| {
+            Ok(self
+                .call_method(DOM::GetSearchResults {
+                    search_id: o.search_id,
+                    from_index: 0,
+                    to_index: o.result_count,
+                })?
+                .node_ids)
+        })
+        .and_then(|ids| {
+            ids.iter()
+                .filter(|id| **id != 0)
+                .map(|id| Element::new(self, *id))
+                .collect()
+        })
     }
 
-    pub fn describe_node(&self, node_id: dom::NodeId) -> Fallible<dom::Node> {
+    pub fn describe_node(&self, node_id: NodeId) -> Result<Node> {
         let node = self
-            .call_method(dom::methods::DescribeNode {
+            .call_method(DOM::DescribeNode {
                 node_id: Some(node_id),
                 backend_node_id: None,
                 depth: Some(100),
+                object_id: None,
+                pierce: None,
             })?
             .node;
         Ok(node)
     }
 
-    pub fn type_str(&self, string_to_type: &str) -> Fallible<&Self> {
+    pub fn type_str(&self, string_to_type: &str) -> Result<&Self> {
         for c in string_to_type.split("") {
             // split call above will have empty string at start and end which we won't type
             if c == "" {
@@ -718,80 +788,115 @@ impl Tab {
 
                     self.call_method(v.clone())?;
                     self.call_method(DispatchKeyEvent {
-                        event_type: "keyUp",
+                        Type: Input::DispatchKeyEventTypeOption::KeyUp,
                         ..v
                     })?;
                 }
                 Err(_) => {
-                    self.call_method(input::methods::InsertText { text: c })?;
+                    self.call_method(Input::InsertText {
+                        text: c.to_string(),
+                    })?;
                 }
             }
         }
         Ok(self)
     }
 
-    pub fn press_key(&self, key: &str) -> Fallible<&Self> {
-        let definition = keys::get_key_definition(key)?;
-
+    pub fn press_key(&self, key: &str) -> Result<&Self> {
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
-        let text = definition.text.or_else(|| {
-            if definition.key.len() == 1 {
-                Some(definition.key)
-            } else {
-                None
-            }
-        });
+        let definiton = keys::get_key_definition(key)?;
+
+        let text = definiton
+            .text
+            .or_else(|| {
+                if definiton.key.len() == 1 {
+                    Some(definiton.key)
+                } else {
+                    None
+                }
+            })
+            .and_then(|v| Some(v.to_string()));
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L52
         let key_down_event_type = if text.is_some() {
-            "keyDown"
+            Input::DispatchKeyEventTypeOption::KeyDown
         } else {
-            "rawKeyDown"
+            Input::DispatchKeyEventTypeOption::RawKeyDown
         };
 
-        let key = Some(definition.key);
-        let code = Some(definition.code);
+        let key = Some(definiton.key.to_string());
+        let code = Some(definiton.code.to_string());
 
         self.optional_slow_motion_sleep(25);
 
-        self.call_method(input::methods::DispatchKeyEvent {
-            event_type: key_down_event_type,
-            key,
-            text,
-            code: Some(definition.code),
-            windows_virtual_key_code: definition.key_code,
-            native_virtual_key_code: definition.key_code,
+        self.call_method(Input::DispatchKeyEvent {
+            Type: key_down_event_type,
+            key: key.clone(),
+            text: text.clone(),
+            code: code.clone(),
+            windows_virtual_key_code: Some(definiton.key_code),
+            native_virtual_key_code: Some(definiton.key_code),
+            modifiers: None,
+            timestamp: None,
+            unmodified_text: None,
+            key_identifier: None,
+            auto_repeat: None,
+            is_keypad: None,
+            is_system_key: None,
+            location: None,
+            commands: None,
         })?;
-        self.call_method(input::methods::DispatchKeyEvent {
-            event_type: "keyUp",
+        self.call_method(Input::DispatchKeyEvent {
+            Type: Input::DispatchKeyEventTypeOption::KeyUp,
             key,
             text,
             code,
-            windows_virtual_key_code: definition.key_code,
-            native_virtual_key_code: definition.key_code,
+            windows_virtual_key_code: Some(definiton.key_code),
+            native_virtual_key_code: Some(definiton.key_code),
+            modifiers: None,
+            timestamp: None,
+            unmodified_text: None,
+            key_identifier: None,
+            auto_repeat: None,
+            is_keypad: None,
+            is_system_key: None,
+            location: None,
+            commands: None,
         })?;
         Ok(self)
     }
 
     /// Moves the mouse to this point (dispatches a mouseMoved event)
-    pub fn move_mouse_to_point(&self, point: Point) -> Fallible<&Self> {
+    pub fn move_mouse_to_point(&self, point: Point) -> Result<&Self> {
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
         }
 
         self.optional_slow_motion_sleep(100);
 
-        self.call_method(input::methods::DispatchMouseEvent {
-            event_type: "mouseMoved",
+        self.call_method(Input::DispatchMouseEvent {
+            Type: Input::DispatchMouseEventTypeOption::MouseMoved,
             x: point.x,
             y: point.y,
-            ..Default::default()
+            modifiers: None,
+            timestamp: None,
+            button: None,
+            buttons: None,
+            click_count: None,
+            force: None,
+            tangential_pressure: None,
+            tilt_x: None,
+            tilt_y: None,
+            twist: None,
+            delta_x: None,
+            delta_y: None,
+            pointer_Type: None,
         })?;
 
         Ok(self)
     }
 
-    pub fn click_point(&self, point: Point) -> Fallible<&Self> {
+    pub fn click_point(&self, point: Point) -> Result<&Self> {
         trace!("Clicking point: {:?}", point);
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
@@ -800,19 +905,41 @@ impl Tab {
         self.move_mouse_to_point(point)?;
 
         self.optional_slow_motion_sleep(250);
-        self.call_method(input::methods::DispatchMouseEvent {
-            event_type: "mousePressed",
+        self.call_method(Input::DispatchMouseEvent {
+            Type: Input::DispatchMouseEventTypeOption::MousePressed,
             x: point.x,
             y: point.y,
-            button: Some("left"),
+            button: Some(Input::MouseButton::Left),
             click_count: Some(1),
+            modifiers: None,
+            timestamp: None,
+            buttons: None,
+            force: None,
+            tangential_pressure: None,
+            tilt_x: None,
+            tilt_y: None,
+            twist: None,
+            delta_x: None,
+            delta_y: None,
+            pointer_Type: None,
         })?;
-        self.call_method(input::methods::DispatchMouseEvent {
-            event_type: "mouseReleased",
+        self.call_method(Input::DispatchMouseEvent {
+            Type: Input::DispatchMouseEventTypeOption::MouseReleased,
             x: point.x,
             y: point.y,
-            button: Some("left"),
+            button: Some(Input::MouseButton::Left),
             click_count: Some(1),
+            modifiers: None,
+            timestamp: None,
+            buttons: None,
+            force: None,
+            tangential_pressure: None,
+            tilt_x: None,
+            tilt_y: None,
+            twist: None,
+            delta_x: None,
+            delta_y: None,
+            pointer_Type: None,
         })?;
         Ok(self)
     }
@@ -827,8 +954,8 @@ impl Tab {
     /// the view.
     ///
     /// ```rust,no_run
-    /// # use failure::Fallible;
-    /// # fn main() -> Fallible<()> {
+    /// # use anyhow::Result;
+    /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
     /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
@@ -844,32 +971,57 @@ impl Tab {
     /// ```
     pub fn capture_screenshot(
         &self,
-        format: page::ScreenshotFormat,
-        clip: Option<page::Viewport>,
+        format: Page::CaptureScreenshotFormatOption,
+        quality: Option<u32>,
+        clip: Option<Page::Viewport>,
         from_surface: bool,
-    ) -> Fallible<Vec<u8>> {
-        let (format, quality) = match format {
-            page::ScreenshotFormat::JPEG(quality) => {
-                (page::InternalScreenshotFormat::JPEG, quality)
-            }
-            page::ScreenshotFormat::PNG => (page::InternalScreenshotFormat::PNG, None),
-        };
+    ) -> Result<Vec<u8>> {
         let data = self
-            .call_method(page::methods::CaptureScreenshot {
-                format,
+            .call_method(Page::CaptureScreenshot {
+                format: Some(format),
                 clip,
                 quality,
-                from_surface,
+                from_surface: Some(from_surface),
+                capture_beyond_viewport: None,
             })?
             .data;
         base64::decode(&data).map_err(Into::into)
     }
 
-    pub fn print_to_pdf(&self, options: Option<page::PrintToPdfOptions>) -> Fallible<Vec<u8>> {
-        let data = self
-            .call_method(page::methods::PrintToPdf { options })?
-            .data;
-        base64::decode(&data).map_err(Into::into)
+    pub fn print_to_pdf(&self, options: Option<PrintToPdfOptions>) -> Result<Vec<u8>> {
+        if let Some(options) = options {
+            let transfer_mode: Option<Page::PrintToPDFTransfer_modeOption> =
+                options.transfer_mode.and_then(|f| f.into());
+            let data = self
+                .call_method(Page::PrintToPDF {
+                    landscape: options.landscape,
+                    display_header_footer: options.display_header_footer,
+                    print_background: options.print_background,
+                    scale: options.scale,
+                    paper_width: options.paper_width,
+                    paper_height: options.paper_height,
+                    margin_top: options.margin_top,
+                    margin_bottom: options.margin_bottom,
+                    margin_left: options.margin_left,
+                    margin_right: options.margin_right,
+                    page_ranges: options.page_ranges,
+                    ignore_invalid_page_ranges: options.ignore_invalid_page_ranges,
+                    header_template: options.header_template,
+                    footer_template: options.footer_template,
+                    prefer_css_page_size: options.prefer_css_page_size,
+                    transfer_mode,
+                })?
+                .data;
+            base64::decode(&data).map_err(Into::into)
+        } else {
+            let data = self
+                .call_method(Page::PrintToPDF {
+                    ..Default::default()
+                })?
+                .data;
+
+            base64::decode(&data).map_err(Into::into)
+        }
     }
 
     /// Reloads given page optionally ignoring the cache
@@ -877,11 +1029,16 @@ impl Tab {
     /// If `ignore_cache` is true, the browser cache is ignored (as if the user pressed Shift+F5).
     /// If `script_to_evaluate` is given, the script will be injected into all frames of the
     /// inspected page after reload. Argument will be ignored if reloading dataURL origin.
-    pub fn reload(&self, ignore_cache: bool, script_to_evaluate: Option<&str>) -> Fallible<&Self> {
+    pub fn reload(
+        &self,
+        ignore_cache: bool,
+        script_to_evaluate_on_load: Option<&str>,
+    ) -> Result<&Self> {
         self.optional_slow_motion_sleep(100);
-        self.call_method(page::methods::Reload {
-            ignore_cache,
-            script_to_evaluate,
+        self.call_method(Page::Reload {
+            ignore_cache: Some(ignore_cache),
+            script_to_evaluate_on_load: script_to_evaluate_on_load
+                .and_then(|s| Some(s.to_string())),
         })?;
         Ok(self)
     }
@@ -891,8 +1048,8 @@ impl Tab {
     /// Useful when you want capture a .png
     ///
     /// ```rust,no_run
-    /// # use failure::Fallible;
-    /// # fn main() -> Fallible<()> {
+    /// # use anyhow::Result;
+    /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
     /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
@@ -903,14 +1060,14 @@ impl Tab {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn set_transparent_background_color(&self) -> Fallible<&Self> {
-        self.call_method(page::methods::SetDefaultBackgroundColorOverride {
-            color: protocol::dom::RGBA {
+    pub fn set_transparent_background_color(&self) -> Result<&Self> {
+        self.call_method(Emulation::SetDefaultBackgroundColorOverride {
+            color: Some(DOM::RGBA {
                 r: 0,
                 g: 0,
                 b: 0,
-                a: 0.,
-            },
+                a: Some(0.0),
+            }),
         })?;
         Ok(self)
     }
@@ -920,8 +1077,8 @@ impl Tab {
     /// Pass a RGBA to override the backrgound color of the dom.
     ///
     /// ```rust,no_run
-    /// # use failure::Fallible;
-    /// # fn main() -> Fallible<()> {
+    /// # use anyhow::Result;
+    /// # fn main() -> Result<()> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser, LaunchOptions};
     /// let browser = Browser::new(LaunchOptions::default_builder().build().unwrap())?;
@@ -932,21 +1089,21 @@ impl Tab {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn set_background_color(&self, color: protocol::dom::RGBA) -> Fallible<&Self> {
-        self.call_method(page::methods::SetDefaultBackgroundColorOverride { color })?;
+    pub fn set_background_color(&self, color: DOM::RGBA) -> Result<&Self> {
+        self.call_method(Emulation::SetDefaultBackgroundColorOverride { color: Some(color) })?;
         Ok(self)
     }
 
     /// Enables the profiler
-    pub fn enable_profiler(&self) -> Fallible<&Self> {
-        self.call_method(profiler::methods::Enable {})?;
+    pub fn enable_profiler(&self) -> Result<&Self> {
+        self.call_method(Profiler::Enable(None))?;
 
         Ok(self)
     }
 
     /// Disables the profiler
-    pub fn disable_profiler(&self) -> Fallible<&Self> {
-        self.call_method(profiler::methods::Disable {})?;
+    pub fn disable_profiler(&self) -> Result<&Self> {
+        self.call_method(Profiler::Disable(None))?;
 
         Ok(self)
     }
@@ -961,18 +1118,19 @@ impl Tab {
     /// By default we enable the 'detailed' flag on StartPreciseCoverage, which enables block-level
     /// granularity, and also enable 'call_count' (which when disabled always sets count to 1 or 0).
     ///
-    pub fn start_js_coverage(&self) -> Fallible<&Self> {
-        self.call_method(profiler::methods::StartPreciseCoverage {
+    pub fn start_js_coverage(&self) -> Result<&Self> {
+        self.call_method(Profiler::StartPreciseCoverage {
             call_count: Some(true),
             detailed: Some(true),
+            allow_triggered_updates: None,
         })?;
         Ok(self)
     }
 
     /// Stops tracking which lines of JS have been executed
     /// If you're finished with the profiler, don't forget to call `disable_profiler`.
-    pub fn stop_js_coverage(&self) -> Fallible<&Self> {
-        self.call_method(profiler::methods::StopPreciseCoverage {})?;
+    pub fn stop_js_coverage(&self) -> Result<&Self> {
+        self.call_method(Profiler::StopPreciseCoverage(None))?;
         Ok(self)
     }
 
@@ -987,9 +1145,9 @@ impl Tab {
     ///
     /// The format of the data is a little unintuitive, see here for details:
     /// https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
-    pub fn take_precise_js_coverage(&self) -> Fallible<Vec<profiler::ScriptCoverage>> {
+    pub fn take_precise_js_coverage(&self) -> Result<Vec<Profiler::ScriptCoverage>> {
         let script_coverages = self
-            .call_method(profiler::methods::TakePreciseCoverage {})?
+            .call_method(Profiler::TakePreciseCoverage(None))?
             .result;
         Ok(script_coverages)
     }
@@ -997,19 +1155,19 @@ impl Tab {
     /// Enables fetch domain.
     pub fn enable_fetch(
         &self,
-        patterns: Option<&[fetch::methods::RequestPattern]>,
+        patterns: Option<&[Fetch::RequestPattern]>,
         handle_auth_requests: Option<bool>,
-    ) -> Fallible<&Self> {
-        self.call_method(fetch::methods::Enable {
-            patterns,
+    ) -> Result<&Self> {
+        self.call_method(Fetch::Enable {
+            patterns: patterns.and_then(|v| Some(v.to_vec())),
             handle_auth_requests,
         })?;
         Ok(self)
     }
 
     /// Disables fetch domain
-    pub fn disable_fetch(&self) -> Fallible<&Self> {
-        self.call_method(fetch::methods::Disable {})?;
+    pub fn disable_fetch(&self) -> Result<&Self> {
+        self.call_method(Fetch::Disable(None))?;
         Ok(self)
     }
 
@@ -1020,7 +1178,7 @@ impl Tab {
     /// so that you can call methods from within the closure using `transport.call_method_on_target`.
     ///
     /// The closure needs to return a variant of `RequestPausedDecision`.
-    pub fn enable_request_interception(&self, interceptor: Arc<RequestIntercept>) -> Fallible<()> {
+    pub fn enable_request_interception(&self, interceptor: Arc<RequestIntercept>) -> Result<()> {
         let mut current_interceptor = self.request_interceptor.lock().unwrap();
         *current_interceptor = interceptor;
         Ok(())
@@ -1030,10 +1188,10 @@ impl Tab {
         &self,
         username: Option<String>,
         password: Option<String>,
-    ) -> Fallible<&Self> {
+    ) -> Result<&Self> {
         let mut current_auth_handler = self.auth_handler.lock().unwrap();
         *current_auth_handler = AuthChallengeResponse {
-            response: "ProvideCredentials".to_string(),
+            response: Fetch::AuthChallengeResponseResponse::ProvideCredentials,
             username,
             password,
         };
@@ -1053,42 +1211,50 @@ impl Tab {
     ///
     /// Currently you can only have one handler registered, but ideally there would be no limit and
     /// we'd give you a mechanism to deregister the handler too.
-    pub fn enable_response_handling(&self, handler: ResponseHandler) -> Fallible<()> {
-        self.call_method(network::methods::Enable {})?;
+    pub fn enable_response_handling(&self, handler: ResponseHandler) -> Result<()> {
+        self.call_method(Network::Enable {
+            max_total_buffer_size: None,
+            max_resource_buffer_size: None,
+            max_post_data_size: None,
+        })?;
         *(self.response_handler.lock().unwrap()) = Some(handler);
         Ok(())
     }
 
     /// Enables runtime domain.
-    pub fn enable_runtime(&self) -> Fallible<&Self> {
-        self.call_method(runtime::methods::Enable {})?;
+    pub fn enable_runtime(&self) -> Result<&Self> {
+        self.call_method(Runtime::Enable(None))?;
         Ok(self)
     }
 
     /// Disables runtime domain
-    pub fn disable_runtime(&self) -> Fallible<&Self> {
-        self.call_method(runtime::methods::Disable {})?;
+    pub fn disable_runtime(&self) -> Result<&Self> {
+        self.call_method(Runtime::Disable(None))?;
         Ok(self)
     }
 
     /// Enables Debugger
-    pub fn enable_debugger(&self) -> Fallible<()> {
-        self.call_method(protocol::debugger::methods::Enable {})?;
+    pub fn enable_debugger(&self) -> Result<()> {
+        self.call_method(Debugger::Enable {
+            max_scripts_cache_size: None,
+        })?;
         Ok(())
     }
 
     /// Disables Debugger
-    pub fn disable_debugger(&self) -> Fallible<()> {
-        self.call_method(protocol::debugger::methods::Disable {})?;
+    pub fn disable_debugger(&self) -> Result<()> {
+        self.call_method(Debugger::Disable(None))?;
         Ok(())
     }
 
     /// Returns source for the script with given id.
     ///
     /// Debugger must be enabled.
-    pub fn get_script_source(&self, script_id: &str) -> Fallible<String> {
+    pub fn get_script_source(&self, script_id: &str) -> Result<String> {
         Ok(self
-            .call_method(protocol::debugger::methods::GetScriptSource { script_id })?
+            .call_method(Debugger::GetScriptSource {
+                script_id: script_id.to_string(),
+            })?
             .script_source)
     }
 
@@ -1097,8 +1263,8 @@ impl Tab {
     /// Sends the entries collected so far to the client by means of the entryAdded notification.
     ///
     /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-enable
-    pub fn enable_log(&self) -> Fallible<&Self> {
-        self.call_method(logs::methods::Enable {})?;
+    pub fn enable_log(&self) -> Result<&Self> {
+        self.call_method(Log::Enable(None))?;
 
         Ok(self)
     }
@@ -1108,8 +1274,8 @@ impl Tab {
     /// Prevents further log entries from being reported to the client
     ///
     /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-disable
-    pub fn disable_log(&self) -> Fallible<&Self> {
-        self.call_method(logs::methods::Disable {})?;
+    pub fn disable_log(&self) -> Result<&Self> {
+        self.call_method(Log::Disable(None))?;
 
         Ok(self)
     }
@@ -1117,34 +1283,38 @@ impl Tab {
     /// Starts violation reporting
     ///
     /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-startViolationsReport
-    pub fn start_violations_report(&self, config: Vec<ViolationSetting>) -> Fallible<&Self> {
-        self.call_method(logs::methods::StartViolationsReport { config })?;
+    pub fn start_violations_report(&self, config: Vec<ViolationSetting>) -> Result<&Self> {
+        self.call_method(Log::StartViolationsReport { config })?;
         Ok(self)
     }
 
     /// Stop violation reporting
     ///
     /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-stopViolationsReport
-    pub fn stop_violations_report(&self) -> Fallible<&Self> {
-        self.call_method(logs::methods::StopViolationsReport {})?;
+    pub fn stop_violations_report(&self) -> Result<&Self> {
+        self.call_method(Log::StopViolationsReport(None))?;
         Ok(self)
     }
 
     /// Evaluates expression on global object.
-    pub fn evaluate(
-        &self,
-        expression: &str,
-        await_promise: bool,
-    ) -> Fallible<protocol::runtime::methods::RemoteObject> {
+    pub fn evaluate(&self, expression: &str, await_promise: bool) -> Result<Runtime::RemoteObject> {
         let result = self
-            .call_method(protocol::runtime::methods::Evaluate {
-                expression,
-                return_by_value: false,
-                generate_preview: true,
-                silent: false,
-                await_promise,
-                include_command_line_api: false,
-                user_gesture: false,
+            .call_method(Runtime::Evaluate {
+                expression: expression.to_string(),
+                return_by_value: Some(false),
+                generate_preview: Some(true),
+                silent: Some(false),
+                await_promise: Some(await_promise),
+                include_command_line_api: Some(false),
+                user_gesture: Some(false),
+                object_group: None,
+                context_id: None,
+                throw_on_side_effect: None,
+                timeout: None,
+                disable_breaks: None,
+                repl_mode: None,
+                allow_unsafe_eval_blocked_by_csp: None,
+                unique_context_id: None,
             })?
             .result;
         Ok(result)
@@ -1157,9 +1327,9 @@ impl Tab {
     /// ## Usage example
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # use std::sync::Arc;
-    /// # fn main() -> Fallible<()> {
+    /// # fn main() -> Result<()> {
     /// #
     /// # use headless_chrome::Browser;
     /// # use headless_chrome::protocol::Event;
@@ -1179,16 +1349,13 @@ impl Tab {
     /// # }
     /// ```
     ///
-    pub fn add_event_listener(
-        &self,
-        listener: Arc<SyncSendEvent>,
-    ) -> Fallible<Weak<SyncSendEvent>> {
+    pub fn add_event_listener(&self, listener: Arc<SyncSendEvent>) -> Result<Weak<SyncSendEvent>> {
         let mut listeners = self.event_listeners.lock().unwrap();
         listeners.push(listener);
         Ok(Arc::downgrade(listeners.last().unwrap()))
     }
 
-    pub fn remove_event_listener(&self, listener: &Weak<SyncSendEvent>) -> Fallible<()> {
+    pub fn remove_event_listener(&self, listener: &Weak<SyncSendEvent>) -> Result<()> {
         let listener = listener.upgrade();
         if listener.is_none() {
             return Ok(());
@@ -1204,21 +1371,20 @@ impl Tab {
     }
 
     /// Closes the target Page
-    pub fn close_target(&self) -> Fallible<bool> {
-        self.call_method(protocol::target::methods::CloseTarget {
-            target_id: self.get_target_id(),
+    pub fn close_target(&self) -> Result<bool> {
+        self.call_method(Target::CloseTarget {
+            target_id: self.get_target_id().to_string(),
         })
         .map(|r| r.success)
     }
 
     /// Tries to close page, running its beforeunload hooks, if any
-    pub fn close_with_unload(&self) -> Fallible<bool> {
-        self.call_method(protocol::page::methods::Close {})
-            .map(|_| true)
+    pub fn close_with_unload(&self) -> Result<bool> {
+        self.call_method(Page::Close(None)).map(|_| true)
     }
 
     /// Calls one of the close_* methods depending on fire_unload option
-    pub fn close(&self, fire_unload: bool) -> Fallible<bool> {
+    pub fn close(&self, fire_unload: bool) -> Result<bool> {
         self.optional_slow_motion_sleep(50);
 
         if fire_unload {
@@ -1228,9 +1394,9 @@ impl Tab {
     }
 
     /// Activates (focuses) the target.
-    pub fn activate(&self) -> Fallible<&Self> {
-        self.call_method(protocol::target::methods::ActivateTarget {
-            target_id: self.get_target_id(),
+    pub fn activate(&self) -> Result<&Self> {
+        self.call_method(Target::ActivateTarget {
+            target_id: self.get_target_id().clone(),
         })
         .map(|_| self)
     }
@@ -1240,10 +1406,10 @@ impl Tab {
     /// Note that the returned bounds are always specified for normal (windowed)
     /// state; they do not change when minimizing, maximizing or setting to
     /// fullscreen.
-    pub fn get_bounds(&self) -> Result<protocol::browser::CurrentBounds, Error> {
+    pub fn get_bounds(&self) -> Result<CurrentBounds, Error> {
         self.transport
-            .call_method_on_browser(protocol::browser::methods::GetWindowForTarget {
-                target_id: self.get_target_id(),
+            .call_method_on_browser(Browser::GetWindowForTarget {
+                target_id: Some(self.get_target_id().to_string()),
             })
             .map(|r| r.bounds.into())
     }
@@ -1252,30 +1418,30 @@ impl Tab {
     ///
     /// When setting the window to normal (windowed) state, unspecified fields
     /// are left unchanged.
-    pub fn set_bounds(&self, bounds: protocol::browser::Bounds) -> Result<&Self, Error> {
+    pub fn set_bounds(&self, bounds: Bounds) -> Result<&Self, Error> {
         let window_id = self
             .transport
-            .call_method_on_browser(protocol::browser::methods::GetWindowForTarget {
-                target_id: self.get_target_id(),
+            .call_method_on_browser(Browser::GetWindowForTarget {
+                target_id: Some(self.get_target_id().to_string()),
             })?
             .window_id;
         // If we set Normal window state, we *have* to make two API calls
         // to set the state before setting the coordinates; despite what the docs say...
-        if let protocol::browser::Bounds::Normal { .. } = &bounds {
+        if let Bounds::Normal { .. } = &bounds {
             self.transport
-                .call_method_on_browser(protocol::browser::methods::SetWindowBounds {
+                .call_method_on_browser(Browser::SetWindowBounds {
                     window_id,
-                    bounds: protocol::browser::methods::Bounds {
+                    bounds: Browser::Bounds {
                         left: None,
                         top: None,
                         width: None,
                         height: None,
-                        window_state: protocol::browser::WindowState::Normal,
+                        window_state: Some(Browser::WindowState::Normal),
                     },
                 })?;
         }
         self.transport
-            .call_method_on_browser(protocol::browser::methods::SetWindowBounds {
+            .call_method_on_browser(Browser::SetWindowBounds {
                 window_id,
                 bounds: bounds.into(),
             })?;
@@ -1283,23 +1449,23 @@ impl Tab {
     }
 
     /// Returns all cookies that match the tab's current URL.
-    pub fn get_cookies(&self) -> Fallible<Vec<Cookie>> {
+    pub fn get_cookies(&self) -> Result<Vec<Cookie>> {
         Ok(self
-            .call_method(network::methods::GetCookies { urls: None })?
+            .call_method(Network::GetCookies { urls: None })?
             .cookies)
     }
 
     /// Set cookies with tab's current URL
-    pub fn set_cookies(&self, cs: Vec<network::methods::SetCookie>) -> Fallible<()> {
+    pub fn set_cookies(&self, cs: Vec<Network::CookieParam>) -> Result<()> {
         // puppeteer 7b24e5435b:src/common/Page.ts :1009-1028
-        use network::methods::{SetCookie, SetCookies};
+        use Network::SetCookies;
         let url = self.get_url();
         let starts_with_http = url.starts_with("http");
-        let cookies: Vec<SetCookie> = cs
+        let cookies: Vec<Network::CookieParam> = cs
             .into_iter()
             .map(|c| {
                 if c.url.is_none() && starts_with_http {
-                    SetCookie {
+                    Network::CookieParam {
                         url: Some(url.clone()),
                         ..c
                     }
@@ -1314,7 +1480,7 @@ impl Tab {
     }
 
     /// Delete cookies with tab's current URL
-    pub fn delete_cookies(&self, cs: Vec<network::methods::DeleteCookies>) -> Fallible<()> {
+    pub fn delete_cookies(&self, cs: Vec<Network::DeleteCookies>) -> Result<()> {
         // puppeteer 7b24e5435b:src/common/Page.ts :998-1007
         let url = self.get_url();
         let starts_with_http = url.starts_with("http");
@@ -1322,7 +1488,7 @@ impl Tab {
             .map(|c| {
                 // REVIEW: if c.url is blank string
                 if c.url.is_none() && starts_with_http {
-                    network::methods::DeleteCookies {
+                    Network::DeleteCookies {
                         url: Some(url.clone()),
                         ..c
                     }
@@ -1330,7 +1496,7 @@ impl Tab {
                     c
                 }
             })
-            .try_for_each(|c| -> Result<(), failure::Error> {
+            .try_for_each(|c| -> Result<(), anyhow::Error> {
                 let _ = self.call_method(c)?;
                 Ok(())
             })?;
@@ -1340,9 +1506,9 @@ impl Tab {
     /// Returns the title of the document.
     ///
     /// ```rust
-    /// # use failure::Fallible;
+    /// # use anyhow::Result;
     /// # use headless_chrome::Browser;
-    /// # fn main() -> Fallible<()> {
+    /// # fn main() -> Result<()> {
     /// #
     /// # let browser = Browser::default()?;
     /// # let tab = browser.wait_for_initial_tab()?;
@@ -1354,7 +1520,7 @@ impl Tab {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_title(&self) -> Fallible<String> {
+    pub fn get_title(&self) -> Result<String> {
         let remote_object = self.evaluate("document.title", false)?;
         Ok(serde_json::from_value(remote_object.value.unwrap())?)
     }
@@ -1362,7 +1528,7 @@ impl Tab {
     /// If enabled, instead of using the GUI to select files, the browser will
     /// wait for the `Tab.handle_file_chooser` method to be called.
     /// **WARNING**: Only works on Chromium / Chrome 77 and above.
-    pub fn set_file_chooser_dialog_interception(&self, enabled: bool) -> Fallible<()> {
+    pub fn set_file_chooser_dialog_interception(&self, enabled: bool) -> Result<()> {
         self.call_method(SetInterceptFileChooserDialog { enabled })?;
         Ok(())
     }
@@ -1374,22 +1540,29 @@ impl Tab {
     /// Supports selecting files or closing the file chooser dialog.
     ///
     /// NOTE: the filepaths listed in `files` must be absolute.
-    pub fn handle_file_chooser(
-        &self,
-        action: FileChooserAction,
-        files: Option<Vec<String>>,
-    ) -> Fallible<()> {
-        self.call_method(HandleFileChooser { action, files })?;
+    pub fn handle_file_chooser(&self, files: Vec<String>, node_id: u32) -> Result<()> {
+        self.call_method(DOM::SetFileInputFiles {
+            files,
+            node_id: Some(node_id),
+            backend_node_id: None,
+            object_id: None,
+        })?;
         Ok(())
     }
 
-    pub fn set_extra_http_headers(&self, headers: HashMap<&str, &str>) -> Fallible<()> {
-        self.call_method(network::methods::Enable {})?;
-        self.call_method(SetExtraHTTPHeaders { headers })?;
+    pub fn set_extra_http_headers(&self, headers: HashMap<&str, &str>) -> Result<()> {
+        self.call_method(Network::Enable {
+            max_total_buffer_size: None,
+            max_resource_buffer_size: None,
+            max_post_data_size: None,
+        })?;
+        self.call_method(SetExtraHTTPHeaders {
+            headers: Network::Headers(Some(json!(headers))),
+        })?;
         Ok(())
     }
 
-    pub fn set_storage<T>(&self, item_name: &str, item: T) -> Fallible<()>
+    pub fn set_storage<T>(&self, item_name: &str, item: T) -> Result<()>
     where
         T: Serialize,
     {
@@ -1406,7 +1579,7 @@ impl Tab {
         Ok(())
     }
 
-    pub fn get_storage<T>(&self, item_name: &str) -> Fallible<T>
+    pub fn get_storage<T>(&self, item_name: &str) -> Result<T>
     where
         T: DeserializeOwned,
     {
@@ -1431,7 +1604,7 @@ impl Tab {
         }
     }
 
-    pub fn remove_storage(&self, item_name: &str) -> Fallible<()> {
+    pub fn remove_storage(&self, item_name: &str) -> Result<()> {
         self.evaluate(
             &format!(r#"localStorage.removeItem("{}")"#, item_name),
             false,
@@ -1440,8 +1613,7 @@ impl Tab {
         Ok(())
     }
 
-    pub fn stop_loading(&self) -> Fallible<bool> {
-        self.call_method(protocol::page::methods::StopLoading {})
-            .map(|_| true)
+    pub fn stop_loading(&self) -> Result<bool> {
+        self.call_method(Page::StopLoading(None)).map(|_| true)
     }
 }

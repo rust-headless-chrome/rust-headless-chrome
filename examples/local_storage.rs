@@ -1,8 +1,8 @@
-use failure::Fallible;
+use anyhow::Result;
 
 use headless_chrome::{Browser, LaunchOptions};
 
-fn main() -> Fallible<()> {
+fn main() -> Result<()> {
     let browser = Browser::new(
         LaunchOptions::default_builder()
             .build()

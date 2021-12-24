@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use failure::Fallible;
+use anyhow::Result;
 
 use headless_chrome::browser::tab::Tab;
 use headless_chrome::Browser;
@@ -9,7 +9,7 @@ pub mod logging;
 mod server;
 
 #[test]
-fn enable_and_disable_logs() -> Fallible<()> {
+fn enable_and_disable_logs() -> Result<()> {
     logging::enable_logging();
     let server = server::Server::with_dumb_html(include_str!(
         "logs_fixtures/basic_page_with_console_messages.html"

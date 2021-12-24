@@ -1,11 +1,11 @@
 use std::ffi::OsStr;
 
-use failure::Fallible;
+use anyhow::Result;
 
 use headless_chrome::{browser::default_executable, Browser, LaunchOptions};
 
 #[test]
-fn test_extension() -> Fallible<()> {
+fn test_extension() -> Result<()> {
     Browser::new(
         LaunchOptions::default_builder()
             .path(Some(default_executable().unwrap()))

@@ -7,7 +7,8 @@ use std::{
     time::Duration,
 };
 
-use failure::{format_err, Fail, Fallible};
+use anyhow::{anyhow,Result};
+use thiserror::Error;
 use log::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -29,13 +30,13 @@ pub struct Process {
     pub debug_ws_url: Url,
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 enum ChromeLaunchError {
-    #[fail(display = "Chrome launched, but didn't give us a WebSocket URL before we timed out")]
+    #[error("Chrome launched, but didn't give us a WebSocket URL before we timed out")]
     PortOpenTimeout,
-    #[fail(display = "There are no available ports between 8000 and 9000 for debugging")]
+    #[error("There are no available ports between 8000 and 9000 for debugging")]
     NoAvailablePorts,
-    #[fail(display = "The chosen debugging port is already in use")]
+    #[error("The chosen debugging port is already in use")]
     DebugPortInUse,
 }
 
@@ -184,7 +185,7 @@ static DEFAULT_ARGS: [&str; 23] = [
 ];
 
 impl Process {
-    pub fn new(mut launch_options: LaunchOptions) -> Fallible<Self> {
+    pub fn new(mut launch_options: LaunchOptions) -> Result<Self> {
         if launch_options.path.is_none() {
             #[cfg(feature = "fetch")]
             {
@@ -193,7 +194,7 @@ impl Process {
             }
             #[cfg(not(feature = "fetch"))]
             {
-                launch_options.path = Some(default_executable().map_err(|e| format_err!("{}", e))?);
+                launch_options.path = Some(default_executable().map_err(|e| anyhow!("{}", e))?);
             }
         }
 
@@ -240,7 +241,7 @@ impl Process {
         })
     }
 
-    fn start_process(launch_options: &LaunchOptions) -> Fallible<TemporaryProcess> {
+    fn start_process(launch_options: &LaunchOptions) -> Result<TemporaryProcess> {
         let debug_port = if let Some(port) = launch_options.port {
             port
         } else {
@@ -319,7 +320,7 @@ impl Process {
         let path = launch_options
             .path
             .as_ref()
-            .ok_or_else(|| format_err!("Chrome path required"))?;
+            .ok_or_else(|| anyhow!("Chrome path required"))?;
 
         info!("Launching Chrome binary at {:?}", &path);
         let mut command = Command::new(&path);
@@ -332,7 +333,7 @@ impl Process {
         Ok(process)
     }
 
-    fn ws_url_from_reader<R>(reader: BufReader<R>) -> Fallible<Option<String>>
+    fn ws_url_from_reader<R>(reader: BufReader<R>) -> Result<Option<String>>
     where
         R: Read,
     {
@@ -362,7 +363,7 @@ impl Process {
         Ok(None)
     }
 
-    fn ws_url_from_output(child_process: &mut Child) -> Fallible<Url> {
+    fn ws_url_from_output(child_process: &mut Child) -> Result<Url> {
         let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(30)).until(|| {
             let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
             match Self::ws_url_from_reader(my_stderr) {

@@ -7,18 +7,21 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use failure::{Fail, Fallible};
+use anyhow::{Result};
+
+use thiserror::Error;
+
 use log::*;
 
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 use websocket::url::Url;
 
-use crate::protocol::target;
-use crate::protocol::CallId;
-use crate::protocol::Event;
-use crate::protocol::Message;
-use crate::{protocol, util};
+use crate::protocol::cdp::{types::Event,types::Method, Target};
+
+use crate::types::{CallId, Message, parse_raw_message, parse_response};
+
+use crate::util;
 
 mod waiting_call_registry;
 mod web_socket_connection;
@@ -61,8 +64,8 @@ pub struct Transport {
     loop_shutdown_tx: Mutex<mpsc::Sender<()>>,
 }
 
-#[derive(Debug, Fail)]
-#[fail(display = "Unable to make method calls because underlying connection is closed")]
+#[derive(Debug, Error)]
+#[error("Unable to make method calls because underlying connection is closed")]
 pub struct ConnectionClosed {}
 
 impl Transport {
@@ -70,7 +73,7 @@ impl Transport {
         ws_url: Url,
         process_id: Option<u32>,
         idle_browser_timeout: Duration,
-    ) -> Fallible<Self> {
+    ) -> Result<Self> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let web_socket_connection =
             Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
@@ -116,9 +119,9 @@ impl Transport {
         &self,
         method: C,
         destination: MethodDestination,
-    ) -> Fallible<C::ReturnObject>
+    ) -> Result<C::ReturnObject>
     where
-        C: protocol::Method + serde::Serialize,
+        C: Method + serde::Serialize,
     {
         // TODO: use get_mut to get exclusive access for entire block... maybe.
         if !self.open.load(Ordering::SeqCst) {
@@ -133,10 +136,11 @@ impl Transport {
 
         match destination {
             MethodDestination::Target(session_id) => {
-                let target_method = target::methods::SendMessageToTarget {
+                let message = message_text.clone();
+                let target_method = Target::SendMessageToTarget {
                     target_id: None,
-                    session_id: Some(session_id.as_str()),
-                    message: &message_text,
+                    session_id: Some(session_id.0),
+                    message: message,
                 };
                 let mut raw = message_text.clone();
                 raw.truncate(300);
@@ -168,24 +172,24 @@ impl Transport {
         let response_result = util::Wait::new(Duration::from_secs(15), Duration::from_millis(5))
             .until(|| response_rx.try_recv().ok());
         trace!("received response for: {} {:?}", &call_id, params_string);
-        protocol::parse_response::<C::ReturnObject>((response_result?)?)
+        parse_response::<C::ReturnObject>((response_result?)?)
     }
 
     pub fn call_method_on_target<C>(
         &self,
         session_id: SessionId,
         method: C,
-    ) -> Fallible<C::ReturnObject>
+    ) -> Result<C::ReturnObject>
     where
-        C: protocol::Method + serde::Serialize,
+        C: Method + serde::Serialize,
     {
         // TODO: remove clone
         self.call_method(method, MethodDestination::Target(session_id))
     }
 
-    pub fn call_method_on_browser<C>(&self, method: C) -> Fallible<C::ReturnObject>
+    pub fn call_method_on_browser<C>(&self, method: C) -> Result<C::ReturnObject>
     where
-        C: protocol::Method + serde::Serialize,
+        C: Method + serde::Serialize,
     {
         self.call_method(method, MethodDestination::Browser)
     }
@@ -216,7 +220,7 @@ impl Transport {
 
     #[allow(clippy::too_many_arguments)]
     fn handle_incoming_messages(
-        messages_rx: Receiver<protocol::Message>,
+        messages_rx: Receiver<Message>,
         waiting_call_registry: Arc<WaitingCallRegistry>,
         listeners: Listeners,
         open: Arc<AtomicBool>,
@@ -278,7 +282,7 @@ impl Transport {
                                     let session_id = target_message_event.params.session_id.into();
                                     let raw_message = target_message_event.params.message;
 
-                                    let msg_res = protocol::parse_raw_message(&raw_message);
+                                    let msg_res = parse_raw_message(&raw_message);
                                     match msg_res {
                                         Ok(target_message) => match target_message {
                                             Message::Event(target_event) => {

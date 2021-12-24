@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Mutex;
 
-use failure::Fallible;
+use anyhow::Result;
 use log::*;
 
-use crate::protocol::{CallId, Response};
+use crate::types::{CallId, Response};
 
 use super::ConnectionClosed;
 
@@ -15,7 +15,7 @@ trait IdentifiableResponse {
 
 #[derive(Debug)]
 pub struct WaitingCallRegistry {
-    calls: Mutex<HashMap<CallId, mpsc::Sender<Fallible<Response>>>>,
+    calls: Mutex<HashMap<CallId, mpsc::Sender<Result<Response>>>>,
 }
 
 impl IdentifiableResponse for Response {
@@ -37,9 +37,9 @@ impl WaitingCallRegistry {
         Default::default()
     }
 
-    pub fn resolve_call(&self, response: Response) -> Fallible<()> {
+    pub fn resolve_call(&self, response: Response) -> Result<()> {
         trace!("Resolving call");
-        let waiting_call_tx: mpsc::Sender<Fallible<Response>> = {
+        let waiting_call_tx: mpsc::Sender<Result<Response>> = {
             let mut waiting_calls = self.calls.lock().unwrap();
             waiting_calls.remove(&response.call_id()).unwrap()
         };
@@ -47,8 +47,8 @@ impl WaitingCallRegistry {
         Ok(())
     }
 
-    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Fallible<Response>> {
-        let (tx, rx) = mpsc::channel::<Fallible<Response>>();
+    pub fn register_call(&self, call_id: CallId) -> mpsc::Receiver<Result<Response>> {
+        let (tx, rx) = mpsc::channel::<Result<Response>>();
         let mut calls = self.calls.lock().unwrap();
         calls.insert(call_id, tx);
         trace!("registered {:?}", call_id);

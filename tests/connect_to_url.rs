@@ -2,10 +2,10 @@ use std::env;
 
 use headless_chrome::Browser;
 
-use failure::Fallible;
+use anyhow::Result;
 
 #[test]
-fn connect_to_url() -> Fallible<()> {
+fn connect_to_url() -> Result<()> {
 
     let debug_ws_url = env::args().nth(1).expect("Must provide debug_ws_url");
 
