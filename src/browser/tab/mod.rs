@@ -471,7 +471,7 @@ impl Tab {
         let navigating = Arc::clone(&self.navigating);
         let timeout = *self.default_timeout.read().unwrap();
 
-        util::Wait::with_timeout(Duration::from_secs(timeout)).until(|| {
+        util::Wait::with_timeout(timeout).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 None
             } else {
