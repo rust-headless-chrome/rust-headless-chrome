@@ -213,7 +213,7 @@ impl Tab {
                 username: None,
                 password: None,
             })),
-            default_timeout: Arc::new(RwLock::new(Duration::from_secs(3))),
+            default_timeout: Arc::new(RwLock::new(Duration::from_secs(20))),
             event_listeners: Arc::new(Mutex::new(Vec::new())),
             slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
         };
@@ -469,8 +469,9 @@ impl Tab {
 
     pub fn wait_until_navigated(&self) -> Result<&Self> {
         let navigating = Arc::clone(&self.navigating);
+        let timeout = *self.default_timeout.read().unwrap();
 
-        util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
+        util::Wait::with_timeout(Duration::from_secs(timeout)).until(|| {
             if navigating.load(Ordering::SeqCst) {
                 None
             } else {
