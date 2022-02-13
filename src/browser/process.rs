@@ -110,6 +110,10 @@ pub struct LaunchOptions<'a> {
     #[builder(default)]
     pub args: Vec<&'a OsStr>,
 
+    /// Disable default arguments
+    #[builder(default)]
+    pub disable_default_args: bool,    
+
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
     /// By default, we'll use a revision guaranteed to work with our API and will
@@ -145,6 +149,7 @@ impl<'a> Default for LaunchOptions<'a> {
             #[cfg(feature = "fetch")]
             fetcher_options: Default::default(),
             args: Vec::new(),
+            disable_default_args: false,
         }
     }
 }
@@ -157,7 +162,7 @@ impl<'a> LaunchOptions<'a> {
 
 /// These are passed to the Chrome binary by default.
 /// Via https://github.com/GoogleChrome/puppeteer/blob/master/lib/Launcher.js#L38
-static DEFAULT_ARGS: [&str; 23] = [
+pub static DEFAULT_ARGS: [&str; 23] = [
     "--disable-background-networking",
     "--enable-features=NetworkService,NetworkServiceInProcess",
     "--disable-background-timer-throttling",
@@ -282,7 +287,9 @@ impl Process {
             data_dir_option.as_str(),
         ];
 
-        args.extend(&DEFAULT_ARGS);
+        if !launch_options.disable_default_args {
+            args.extend(&DEFAULT_ARGS);
+        }
 
         if !launch_options.args.is_empty() {
             let extra_args: Vec<&str> = launch_options
