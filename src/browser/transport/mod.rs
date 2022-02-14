@@ -61,7 +61,7 @@ pub struct Transport {
     listeners: Listeners,
     open: Arc<AtomicBool>,
     call_id_counter: Arc<AtomicU32>,
-    loop_shutdown_tx: Mutex<mpsc::Sender<()>>,
+    loop_shutdown_tx: Mutex<mpsc::SyncSender<()>>,
 }
 
 #[derive(Debug, Error)]
@@ -84,7 +84,7 @@ impl Transport {
 
         let open = Arc::new(AtomicBool::new(true));
 
-        let (shutdown_tx, shutdown_rx) = mpsc::channel();
+        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(1);
 
         let guarded_shutdown_tx = Mutex::new(shutdown_tx);
 

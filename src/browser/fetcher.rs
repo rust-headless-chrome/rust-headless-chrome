@@ -5,6 +5,7 @@ use std::{
     str::FromStr,
 };
 
+use anyhow::Result;
 use directories::ProjectDirs;
 use failure::{format_err, Fallible};
 use log::*;
