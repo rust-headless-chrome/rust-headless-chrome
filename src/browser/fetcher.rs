@@ -5,9 +5,8 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use directories::ProjectDirs;
-use failure::{format_err, Fallible};
 use log::*;
 use ureq;
 use walkdir::WalkDir;
@@ -112,7 +111,7 @@ impl Fetcher {
         }
 
         // couldn't find and not allowed to download
-        Err(format_err!("Could not fetch"))
+        Err(anyhow!("Could not fetch"))
     }
 
     // Look for an installation directory matching self.options.revision
@@ -133,7 +132,7 @@ impl Fetcher {
                 let filename_parts = entry
                     .file_name()
                     .to_str()
-                    .ok_or_else(|| format_err!("Failed conversion to UTF-8"))?
+                    .ok_or_else(|| anyhow!("Failed conversion to UTF-8"))?
                     .split('-')
                     .collect::<Vec<_>>();
 
@@ -146,7 +145,7 @@ impl Fetcher {
             }
         }
 
-        Err(format_err!("Could not find an existing revision"))
+        Err(anyhow!("Could not find an existing revision"))
     }
 
     // find full path to chrome executable from base_path
@@ -191,15 +190,15 @@ impl Fetcher {
         } else {
             // No preferred install dir and not allowed to use standard dirs.
             // Not likely for someone to try and do this on purpose.
-            return Err(format_err!("No allowed installation directory"));
+            return Err(anyhow!("No allowed installation directory"));
         };
         path = path.with_extension("zip");
         // we need to create this directory in case it doesn't exist yet
         fs::create_dir_all(
             path.parent()
-                .ok_or_else(|| format_err!("Path {:?} does not have a parent directory", path))?,
+                .ok_or_else(|| anyhow!("Path {:?} does not have a parent directory", path))?,
         )
-        .map_err(|_err| format_err!("Could not create directory at {:?}", path.parent()))?;
+        .map_err(|_err| anyhow!("Could not create directory at {:?}", path.parent()))?;
 
         println!("{:?}", path);
 
@@ -282,13 +281,13 @@ impl Fetcher {
         let mut extract_path: PathBuf = zip_path
             .as_ref()
             .parent()
-            .ok_or_else(|| format_err!("zip_path does not have a parent directory"))?
+            .ok_or_else(|| anyhow!("zip_path does not have a parent directory"))?
             .to_path_buf();
 
         let folder_name = zip_path
             .as_ref()
             .file_stem()
-            .ok_or_else(|| format_err!("zip_path does not have a file stem"))?;
+            .ok_or_else(|| anyhow!("zip_path does not have a file stem"))?;
 
         extract_path.push(folder_name);
 
@@ -315,7 +314,7 @@ fn get_size<U: AsRef<str>>(url: U) -> Result<u64> {
     let resp = ureq::get(url.as_ref()).call();
     match resp.header("Content-Length") {
         Some(len) => Ok(u64::from_str(len)? / 2_u64.pow(20)),
-        None => Err(format_err!("response doesn't include the content length")),
+        None => Err(anyhow!("response doesn't include the content length")),
     }
 }
 
@@ -323,7 +322,7 @@ fn get_project_dirs() -> Result<ProjectDirs> {
     info!("Getting project dir");
     match ProjectDirs::from("", "", APP_NAME) {
         Some(dirs) => Ok(dirs),
-        None => Err(format_err!("Failed to retrieve project dirs")),
+        None => Err(anyhow!("Failed to retrieve project dirs")),
     }
 }
 
