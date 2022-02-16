@@ -137,7 +137,7 @@ impl Browser {
     ) -> Result<Self> {
         let tabs = Arc::new(Mutex::new(vec![]));
 
-        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(1);
+        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(100);
 
         let browser = Browser {
             inner: Arc::new(BrowserInner {

@@ -84,7 +84,7 @@ impl Transport {
 
         let open = Arc::new(AtomicBool::new(true));
 
-        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(1);
+        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(100);
 
         let guarded_shutdown_tx = Mutex::new(shutdown_tx);
 
