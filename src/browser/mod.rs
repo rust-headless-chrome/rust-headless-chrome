@@ -8,7 +8,7 @@ use anyhow::{Result};
 use log::*;
 
 use process::Process;
-pub use process::{LaunchOptions, LaunchOptionsBuilder};
+pub use process::{LaunchOptions, LaunchOptionsBuilder, DEFAULT_ARGS};
 pub use tab::Tab;
 pub use transport::ConnectionClosed;
 use transport::Transport;
