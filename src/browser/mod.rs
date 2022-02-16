@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use anyhow::{Result};
+use anyhow::Result;
 use log::*;
 
 use process::Process;
@@ -71,10 +71,14 @@ pub mod transport;
 /// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
 /// (such as for resizing the window in non-headless mode), we currently don't implement those.
 pub struct Browser {
+    inner: Arc<BrowserInner>,
+}
+
+pub struct BrowserInner {
     process: Option<Process>,
     transport: Arc<Transport>,
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
-    loop_shutdown_tx: mpsc::Sender<()>,
+    loop_shutdown_tx: mpsc::SyncSender<()>,
 }
 
 impl Browser {
@@ -133,16 +137,18 @@ impl Browser {
     ) -> Result<Self> {
         let tabs = Arc::new(Mutex::new(vec![]));
 
-        let (shutdown_tx, shutdown_rx) = mpsc::channel();
+        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(100);
 
-        let browser = Self {
-            process,
-            tabs,
-            transport,
-            loop_shutdown_tx: shutdown_tx,
+        let browser = Browser {
+            inner: Arc::new(BrowserInner {
+                process,
+                tabs,
+                transport,
+                loop_shutdown_tx: shutdown_tx,
+            }),
         };
 
-        let incoming_events_rx = browser.transport.listen_to_browser_events();
+        let incoming_events_rx = browser.inner.transport.listen_to_browser_events();
 
         browser.handle_browser_level_events(
             incoming_events_rx,
@@ -165,7 +171,7 @@ impl Browser {
     }
 
     pub fn get_process_id(&self) -> Option<u32> {
-        if let Some(process) = &self.process {
+        if let Some(process) = &self.inner.process {
             Some(process.get_id())
         } else {
             None
@@ -175,15 +181,17 @@ impl Browser {
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
     /// (including the one that handles incoming protocol events about new or changed tabs).
     pub fn get_tabs(&self) -> &Arc<Mutex<Vec<Arc<Tab>>>> {
-        &self.tabs
+        &self.inner.tabs
     }
 
     /// Chrome always launches with at least one tab. The reason we have to 'wait' is because information
     /// about that tab isn't available *immediately* after starting the process. Tabs are behind `Arc`s
     /// because they each have their own thread which handles events and method responses directed to them.
+    ///
+    /// Wait timeout: 10 secs
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>> {
         util::Wait::with_timeout(Duration::from_secs(10))
-            .until(|| self.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)))
+            .until(|| self.inner.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)))
             .map_err(Into::into)
     }
 
@@ -241,7 +249,7 @@ impl Browser {
 
         util::Wait::with_timeout(Duration::from_secs(20))
             .until(|| {
-                let tabs = self.tabs.lock().unwrap();
+                let tabs = self.inner.tabs.lock().unwrap();
                 tabs.iter().find_map(|tab| {
                     if *tab.get_target_id() == target_id {
                         Some(tab.clone())
@@ -293,8 +301,8 @@ impl Browser {
         shutdown_rx: mpsc::Receiver<()>,
         idle_browser_timeout: Duration,
     ) {
-        let tabs = Arc::clone(&self.tabs);
-        let transport = Arc::clone(&self.transport);
+        let tabs = Arc::clone(&self.inner.tabs);
+        let transport = Arc::clone(&self.inner.transport);
 
         std::thread::spawn(move || {
             trace!("Starting browser's event handling loop");
@@ -385,18 +393,20 @@ impl Browser {
     where
         C: Method + serde::Serialize,
     {
-        self.transport.call_method_on_browser(method)
+        self.inner.transport.call_method_on_browser(method)
     }
 
     #[allow(dead_code)]
     #[cfg(test)]
     pub(crate) fn process(&self) -> Option<&Process> {
         #[allow(clippy::used_underscore_binding)]
-        self.process.as_ref()
+        self.inner.process.as_ref()
     }
 }
 
-impl Drop for Browser {
+/// [`Browser`] is being dropped!
+/// Dropping the inner browser means that there are no more references in the `Arc` inside [`Browser`].
+impl Drop for BrowserInner {
     fn drop(&mut self) {
         info!("Dropping browser");
         let _ = self.loop_shutdown_tx.send(());
@@ -431,7 +441,7 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
         "microsoft-edge-dev",
         "chrome",
         "chrome-browser",
-        "msedge"
+        "msedge",
     ] {
         if let Ok(path) = which(app) {
             return Ok(path);
@@ -449,8 +459,9 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
             "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
             "/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta",
             "/Applications/Microsoft Edge Dev.app/Contents/MacOS/Microsoft Edge Dev",
-            "/Applications/Microsoft Edge Canary.app/Contents/MacOS/Microsoft Edge Canary"
-        ][..] {
+            "/Applications/Microsoft Edge Canary.app/Contents/MacOS/Microsoft Edge Canary",
+        ][..]
+        {
             if std::path::Path::new(path).exists() {
                 return Ok(path.into());
             }
@@ -465,9 +476,7 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
             if path.exists() {
                 return Ok(path);
             } else {
-                for path in &[
-                    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-                ][..] {
+                for path in &[r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"][..] {
                     if std::path::Path::new(path).exists() {
                         return Ok(path.into());
                     }
@@ -477,4 +486,17 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
     }
 
     Err("Could not auto detect a chrome executable".to_string())
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::Browser;
+
+    fn is_sync<T>() where T: Sync {}
+
+    #[test]
+    fn test_if_browser_is_sync() {
+        is_sync::<Browser>();
+    }
 }

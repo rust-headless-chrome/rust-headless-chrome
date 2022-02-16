@@ -118,9 +118,9 @@ pub struct LaunchOptions<'a> {
     ///
     /// By default, we'll use a revision guaranteed to work with our API and will
     /// download and install that revision of chrome the first time a Process is created.
+    #[cfg_attr(feature = "fetch", builder(default))]
     #[cfg(feature = "fetch")]
-    #[builder(default)]
-    fetcher_options: FetcherOptions,
+    pub fetcher_options: FetcherOptions,
 
     /// How long to keep the WebSocket to the browser for after not receiving any events from it
     /// Defaults to 30 seconds

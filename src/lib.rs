@@ -53,7 +53,6 @@
 //! assert!(browse_wikipedia().is_ok());
 //! ```
 
-#![cfg_attr(feature = "nightly", feature(external_doc))]
 #![deny(clippy::pedantic)]
 #![warn(renamed_and_removed_lints)]
 #![allow(
@@ -86,6 +85,6 @@ pub mod protocol;
 pub mod util;
 
 #[cfg(feature = "nightly")]
-#[doc(include = "../README.md")]
+#[doc = include_str!("../README.md")]
 #[allow(dead_code)]
 type _READMETEST = ();
