@@ -487,3 +487,16 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
 
     Err("Could not auto detect a chrome executable".to_string())
 }
+
+
+#[cfg(test)]
+mod test {
+    use super::Browser;
+
+    fn is_sync<T>() where T: Sync {}
+
+    #[test]
+    fn test_if_browser_is_sync() {
+        is_sync::<Browser>();
+    }
+}
