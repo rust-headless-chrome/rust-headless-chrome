@@ -76,6 +76,15 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
 assert!(browse_wikipedia().is_ok());
 ```
 
+# Auto fetching chrome binary
+
+```rust
+[dependencies]
+headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"]}
+```
+
+
+
 For fuller examples, take a look at [`tests/simple.rs`](tests/simple.rs) and [`examples`](examples/).
 
 > Before running examples. Make sure add [failure](https://crates.io/crates/failure) crate in your cargo project dependency of `Cargo.toml`
