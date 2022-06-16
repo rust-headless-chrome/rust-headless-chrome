@@ -9244,6 +9244,7 @@ pub mod cdp {
             Font,
             Script,
             TextTrack,
+            #[serde(rename = "XHR")]
             Xhr,
             Fetch,
             EventSource,
@@ -9251,6 +9252,7 @@ pub mod cdp {
             Manifest,
             SignedExchange,
             Ping,
+            #[serde(rename = "CSPViolationReport")]
             CspViolationReport,
             Preflight,
             Other,
