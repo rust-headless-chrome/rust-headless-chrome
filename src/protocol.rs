@@ -9244,16 +9244,14 @@ pub mod cdp {
             Font,
             Script,
             TextTrack,
-            #[serde(rename = "XHR")]
-            Xhr,
+            XHR,
             Fetch,
             EventSource,
             WebSocket,
             Manifest,
             SignedExchange,
             Ping,
-            #[serde(rename = "CSPViolationReport")]
-            CspViolationReport,
+            CSPViolationReport,
             Preflight,
             Other,
         }
