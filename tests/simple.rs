@@ -180,6 +180,21 @@ fn form_interaction() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn send_character() -> Result<()> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("form.html"));
+    tab.find_element("input#target")?.click()?;
+    tab.send_character("mothership")?;
+    tab.find_element("button")?.click()?;
+    let d = tab.wait_for_element("div#protocol")?.get_description()?;
+    assert!(d
+        .find(|n| n.node_value == "Missiles launched against mothership")
+        .is_some());
+    
+    Ok(())
+}
+
 fn decode_png(i: &[u8]) -> Result<Vec<u8>> {
     let decoder = png::Decoder::new(&i[..]);
     let (info, mut reader) = decoder.read_info()?;
