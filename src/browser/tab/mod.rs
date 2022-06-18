@@ -794,12 +794,22 @@ impl Tab {
                     })?;
                 }
                 Err(_) => {
-                    self.call_method(Input::InsertText {
-                        text: c.to_string(),
-                    })?;
+                    self.send_character(c)?;
                 }
             }
         }
+        Ok(self)
+    }
+
+    /// Does the same as `type_str` but it only dispatches a `keypress` and `input` event.
+    /// It does not send a `keydown` or `keyup` event.
+    ///
+    /// What this means is that it is much faster. 
+    /// It is especially useful when you have a lot of text as input.
+    pub fn send_character(&self, char_to_send: &str) -> Result<&Self> {
+        self.call_method(Input::InsertText {
+            text: char_to_send.to_string(),
+        })?;
         Ok(self)
     }
 
