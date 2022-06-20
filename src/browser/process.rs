@@ -62,7 +62,7 @@ impl Drop for TemporaryProcess {
 /// binary on the system, use an available port for debugging, and start in headless mode.
 #[derive(Builder)]
 pub struct LaunchOptions<'a> {
-    /// Determintes whether to run headless version of the browser. Defaults to true.
+    /// Determines whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
     pub headless: bool,
 
@@ -112,7 +112,7 @@ pub struct LaunchOptions<'a> {
 
     /// Disable default arguments
     #[builder(default)]
-    pub disable_default_args: bool,    
+    pub disable_default_args: bool,
 
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
@@ -386,7 +386,7 @@ impl Process {
         });
 
         if let Ok(output_result) = chrome_output_result {
-            
+
             Ok(Url::parse(&output_result?)?)
         } else {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
@@ -495,7 +495,7 @@ mod tests {
         // see https://github.com/atroche/rust-headless-chrome/issues/261
         setup();
         let lines = "[0703/145506.975691:ERROR:address_tracker_linux.cc(214)] Could not bind NETLINK socket: Permission denied (13)";
-        
+
         let reader = BufReader::new(lines.as_bytes());
         let ws_url_result = Process::ws_url_from_reader(reader);
         assert_eq!(true, ws_url_result.is_ok());
