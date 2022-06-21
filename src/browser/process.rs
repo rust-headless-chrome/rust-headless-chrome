@@ -25,6 +25,9 @@ use crate::util;
 use super::fetcher::{Fetcher, FetcherOptions};
 use std::collections::HashMap;
 
+#[cfg(test)]
+static mut USER_DATA_DIR_FOR_TESTING: String = String::new();
+
 pub struct Process {
     child_process: TemporaryProcess,
     pub debug_ws_url: Url,
@@ -49,12 +52,17 @@ pub(crate) fn get_chrome_path_from_registry() -> Option<std::path::PathBuf> {
         .ok()
 }
 
-struct TemporaryProcess(Child);
+struct TemporaryProcess(Child, Option<tempfile::TempDir>);
 
 impl Drop for TemporaryProcess {
     fn drop(&mut self) {
         info!("Killing Chrome. PID: {}", self.0.id());
         self.0.kill().and_then(|_| self.0.wait()).ok();
+        self.1.take().map(|dir| {
+            if let Err(e) = dir.close() {
+                warn!("Failed to close temporary directory: {}", e);
+            }
+        });
     }
 }
 
@@ -62,7 +70,7 @@ impl Drop for TemporaryProcess {
 /// binary on the system, use an available port for debugging, and start in headless mode.
 #[derive(Builder)]
 pub struct LaunchOptions<'a> {
-    /// Determintes whether to run headless version of the browser. Defaults to true.
+    /// Determines whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
     pub headless: bool,
 
@@ -112,7 +120,7 @@ pub struct LaunchOptions<'a> {
 
     /// Disable default arguments
     #[builder(default)]
-    pub disable_default_args: bool,    
+    pub disable_default_args: bool,
 
     /// The options to use for fetching a version of chrome when `path` is None.
     ///
@@ -260,19 +268,28 @@ impl Process {
             String::from("")
         };
 
+        let mut temp_user_data_dir = None;
+
         // User data directory
         let user_data_dir = if let Some(dir) = &launch_options.user_data_dir {
             dir.to_owned()
         } else {
             // picking random data dir so that each a new browser instance is launched
             // (see man google-chrome)
-            ::tempfile::Builder::new()
+            let dir = ::tempfile::Builder::new()
                 .prefix("rust-headless-chrome-profile")
-                .tempdir()?
-                .path()
-                .to_path_buf()
+                .tempdir()?;
+
+            let path = dir.path().to_path_buf();
+            temp_user_data_dir = Some(dir);
+            path
         };
         let data_dir_option = format!("--user-data-dir={}", &user_data_dir.to_str().unwrap());
+
+        #[cfg(test)]
+        unsafe {
+            USER_DATA_DIR_FOR_TESTING = user_data_dir.to_str().unwrap().to_owned();
+        }
 
         trace!("Chrome will have profile: {}", data_dir_option);
 
@@ -336,7 +353,7 @@ impl Process {
             command.envs(process_envs);
         }
 
-        let process = TemporaryProcess(command.args(&args).stderr(Stdio::piped()).spawn()?);
+        let process = TemporaryProcess(command.args(&args).stderr(Stdio::piped()).spawn()?, temp_user_data_dir);
         Ok(process)
     }
 
@@ -386,7 +403,7 @@ impl Process {
         });
 
         if let Ok(output_result) = chrome_output_result {
-            
+
             Ok(Url::parse(&output_result?)?)
         } else {
             Err(ChromeLaunchError::PortOpenTimeout {}.into())
@@ -495,7 +512,7 @@ mod tests {
         // see https://github.com/atroche/rust-headless-chrome/issues/261
         setup();
         let lines = "[0703/145506.975691:ERROR:address_tracker_linux.cc(214)] Could not bind NETLINK socket: Permission denied (13)";
-        
+
         let reader = BufReader::new(lines.as_bytes());
         let ws_url_result = Process::ws_url_from_reader(reader);
         assert_eq!(true, ws_url_result.is_ok());
@@ -583,5 +600,42 @@ mod tests {
             .unwrap();
             handles.push(chrome);
         }
+    }
+
+    #[test]
+    fn test_temporary_user_data_dir_is_removed_automatically() {
+        setup();
+
+        let options = LaunchOptions::default_builder()
+            .build()
+            .unwrap();
+
+        // Ensure we did not pass an explicit user_data_dir
+        let temp_dir = options.user_data_dir.clone();
+        assert_eq!(None, temp_dir);
+
+        let user_data_dir = unsafe {
+            USER_DATA_DIR_FOR_TESTING.clone()
+        };
+        // Ensure our unsafe global is empty as a sanity check
+        assert_eq!("", user_data_dir);
+
+        {
+            let _chrome = &mut super::Process::new(
+                options,
+            )
+            .unwrap();
+        }
+
+        let user_data_dir = unsafe {
+            USER_DATA_DIR_FOR_TESTING.clone()
+        };
+
+        // Ensure a temporary user_data_dir was created
+        assert_ne!("", user_data_dir);
+
+        // Ensure the temporary user_data_dir was removed
+        let user_data_dir_exists = std::path::Path::new(&user_data_dir).is_dir();
+        assert_eq!(false, user_data_dir_exists);
     }
 }
