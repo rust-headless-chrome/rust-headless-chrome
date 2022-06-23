@@ -645,14 +645,25 @@ fn response_handler() -> Result<()> {
     let responses = Arc::new(Mutex::new(Vec::new()));
 
     let responses2 = responses.clone();
-    tab.enable_response_handling(Box::new(move |response, fetch_body| {
+    let responses3 = responses.clone();
+    assert_eq!(tab.register_response_handling("test1",Box::new(move |response, fetch_body| {
         // NOTE: you can only fetch the body after it's been downloaded, which might be some time
         // after the initial 'response' (with status code, headers, etc.) has come back. hence this
         // sleep:
         sleep(Duration::from_millis(500));
         let body = fetch_body().unwrap();
         responses2.lock().unwrap().push((response, body));
-    }))?;
+    }))?.is_none(), true);
+
+    assert_eq!(tab.register_response_handling("test2",Box::new(move |response, fetch_body| {
+        // NOTE: you can only fetch the body after it's been downloaded, which might be some time
+        // after the initial 'response' (with status code, headers, etc.) has come back. hence this
+        // sleep:
+        sleep(Duration::from_millis(500));
+        let body = fetch_body().unwrap();
+        responses3.lock().unwrap().push((response, body));
+    }))?.is_none(), true);
+
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -660,7 +671,7 @@ fn response_handler() -> Result<()> {
     tab.wait_until_navigated()?;
 
     let final_responses: Vec<_> = responses.lock().unwrap().clone();
-    assert_eq!(final_responses.len(), 3);
+    assert_eq!(final_responses.len(), 3 * 2);
     assert_eq!(final_responses[0].0.response.mime_type, "text/html");
     assert!(final_responses[0].1.body.contains("Click me"));
 
