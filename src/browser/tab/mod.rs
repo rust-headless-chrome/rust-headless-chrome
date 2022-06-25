@@ -140,7 +140,7 @@ pub struct Tab {
     navigating: Arc<AtomicBool>,
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<Arc<RequestIntercept>>>,
-    response_handler: Arc<Mutex<Option<ResponseHandler>>>,
+    response_handler: Arc<Mutex<HashMap<String, ResponseHandler>>>,
     auth_handler: Arc<Mutex<AuthChallengeResponse>>,
     default_timeout: Arc<RwLock<Duration>>,
     page_bindings: Arc<Mutex<FunctionBinding>>,
@@ -207,7 +207,7 @@ impl Tab {
             request_interceptor: Arc::new(Mutex::new(Arc::new(
                 |_transport, _session_id, _interception| RequestPausedDecision::Continue(None),
             ))),
-            response_handler: Arc::new(Mutex::new(None)),
+            response_handler: Arc::new(Mutex::new(HashMap::new())),
             auth_handler: Arc::new(Mutex::new(AuthChallengeResponse {
                 response: Fetch::AuthChallengeResponseResponse::Default,
                 username: None,
@@ -376,7 +376,8 @@ impl Tab {
                             .insert(request_id, ev.params);
                     }
                     Event::NetworkLoadingFinished(ev) => {
-                        if let Some(handler) = response_handler_mutex.lock().unwrap().as_ref() {
+                        response_handler_mutex.lock().unwrap().iter().for_each(
+                            |(_name, handler)| {
                             let request_id = ev.params.request_id.clone();
                             let retrieve_body = || {
                                 let method = GetResponseBody {
@@ -384,12 +385,11 @@ impl Tab {
                                 };
                                 transport.call_method_on_target(session_id.clone(), method)
                             };
-
                             match received_event_params.lock().unwrap().get(&request_id) {
                                 Some(params) => handler(params.to_owned(), &retrieve_body),
                                 _ => warn!("Request id does not exist"),
                             }
-                        }
+                        });
                     }
                     _ => {
                         let mut raw_event = format!("{:?}", event);
@@ -1209,7 +1209,7 @@ impl Tab {
         Ok(self)
     }
 
-    /// Lets you listen for responses, and gives you a way to get the response body too.
+    /// Lets you register a listener for responses, and gives you a way to get the response body too.
     ///
     /// Please note that the 'response' does not include the *body* of the response -- Chrome tells
     /// us about them seperately (because you might quickly get the status code and headers from a
@@ -1220,15 +1220,26 @@ impl Tab {
     /// argument to the response handler), although ideally it wouldn't be possible until Chrome has
     /// sent the `Network.loadingFinished` event.
     ///
-    /// Currently you can only have one handler registered, but ideally there would be no limit and
-    /// we'd give you a mechanism to deregister the handler too.
-    pub fn enable_response_handling(&self, handler: ResponseHandler) -> Result<()> {
+    /// Return a option for ResponseHander for existing handler with same name if existed.
+    pub fn register_response_handling<S: ToString>(&self, handler_name: S, handler: ResponseHandler) -> Result<Option<ResponseHandler>> {
         self.call_method(Network::Enable {
             max_total_buffer_size: None,
             max_resource_buffer_size: None,
             max_post_data_size: None,
         })?;
-        *(self.response_handler.lock().unwrap()) = Some(handler);
+        Ok(self.response_handler.lock().unwrap().insert(handler_name.to_string(), handler))
+    }
+
+    /// Deregister a reponse handler based on its name.
+    ///
+    /// Return a option for ResponseHandler for removed handler if existed.
+    pub fn deregister_response_handling(&self, handler_name: &str) -> Result<Option<ResponseHandler>> {
+        Ok(self.response_handler.lock().unwrap().remove(handler_name))
+    }
+
+    /// Deregister all registered handlers.
+    pub fn deregister_response_handling_all(&self) -> Result<()> {
+        self.response_handler.lock().unwrap().clear();
         Ok(())
     }
 
