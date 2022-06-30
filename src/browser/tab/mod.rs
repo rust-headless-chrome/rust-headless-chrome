@@ -718,6 +718,17 @@ impl Tab {
             .root)
     }
 
+    /// Get the full HTML contents of the page.
+    /// 
+    /// Equivalent to the following JS: ```document.documentElement.outerHTML```
+    pub fn get_content(&self) -> Result<String> {
+        let html = self
+            .evaluate("(function () { return document.documentElement.outerHTML })();", false)?
+                .value
+                .unwrap();
+        Ok(String::from(html.as_str().unwrap()))
+    }
+
     pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
         trace!("Looking up elements via selector: {}", selector);
 

@@ -195,6 +195,28 @@ fn send_character() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn tab_get_content() -> Result<()> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("simple.html"));
+    let html = tab.get_content()?;
+    // The html returned depends on how the browser formatted it. The HTML is always correct, but 
+    // some of the newlines or tabs might be missing.
+    assert!(html.replace("\n", "") == include_str!("simple.html").replace("\n", ""));
+    Ok(())
+}
+
+#[test]
+fn element_get_content() -> Result<()> {
+    logging::enable_logging();
+    let (_, browser, tab) = dumb_server(include_str!("simple.html"));
+    let elem = tab.find_element("div#within")?;
+    let html = elem.get_content()?;
+    assert!(html == r#"<div id="within"></div>"#);
+    Ok(())
+}
+
+
 fn decode_png(i: &[u8]) -> Result<Vec<u8>> {
     let decoder = png::Decoder::new(&i[..]);
     let (info, mut reader) = decoder.read_info()?;
