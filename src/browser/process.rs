@@ -7,6 +7,9 @@ use std::{
     time::Duration,
 };
 
+#[cfg(test)]
+use std::cell::RefCell;
+
 use anyhow::{anyhow,Result};
 use thiserror::Error;
 use log::*;
@@ -26,7 +29,13 @@ use super::fetcher::{Fetcher, FetcherOptions};
 use std::collections::HashMap;
 
 #[cfg(test)]
-static mut USER_DATA_DIR_FOR_TESTING: String = String::new();
+struct ForTesting;
+#[cfg(test)]
+impl ForTesting {
+    thread_local! {
+        static USER_DATA_DIR: RefCell<Option<String>> = RefCell::new(None);
+    }
+}
 
 pub struct Process {
     child_process: TemporaryProcess,
@@ -280,16 +289,19 @@ impl Process {
                 .prefix("rust-headless-chrome-profile")
                 .tempdir()?;
 
-            let path = dir.path().to_path_buf();
+            let buf = dir.path().to_path_buf();
             temp_user_data_dir = Some(dir);
-            path
+            buf
         };
         let data_dir_option = format!("--user-data-dir={}", &user_data_dir.to_str().unwrap());
 
         #[cfg(test)]
-        unsafe {
-            USER_DATA_DIR_FOR_TESTING = user_data_dir.to_str().unwrap().to_owned();
-        }
+        ForTesting::USER_DATA_DIR.with(|dir| {
+            *dir.borrow_mut() = match user_data_dir.to_str() {
+                Some(s) => Some(s.to_owned()),
+                None => None,
+            };
+        });
 
         trace!("Chrome will have profile: {}", data_dir_option);
 
@@ -614,28 +626,21 @@ mod tests {
         let temp_dir = options.user_data_dir.clone();
         assert_eq!(None, temp_dir);
 
-        let user_data_dir = unsafe {
-            USER_DATA_DIR_FOR_TESTING.clone()
-        };
-        // Ensure our unsafe global is empty as a sanity check
-        assert_eq!("", user_data_dir);
-
-        {
+        let user_data_dir = {
             let _chrome = &mut super::Process::new(
                 options,
             )
             .unwrap();
-        }
 
-        let user_data_dir = unsafe {
-            USER_DATA_DIR_FOR_TESTING.clone()
+            ForTesting::USER_DATA_DIR.with(|dir| dir.borrow_mut().take())
         };
 
-        // Ensure a temporary user_data_dir was created
-        assert_ne!("", user_data_dir);
-
-        // Ensure the temporary user_data_dir was removed
-        let user_data_dir_exists = std::path::Path::new(&user_data_dir).is_dir();
-        assert_eq!(false, user_data_dir_exists);
+        match user_data_dir {
+            Some(temp_path) => {
+                let user_data_dir_exists = std::path::Path::new(&temp_path).is_dir();
+                assert_eq!(user_data_dir_exists, false);
+            }
+            None => panic!("No user data dir was created"),
+        }
     }
 }
