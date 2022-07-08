@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use anyhow::{Result};
+use anyhow::Result;
 
 use thiserror::Error;
 
@@ -17,9 +17,9 @@ use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 use websocket::url::Url;
 
-use crate::protocol::cdp::{types::Event,types::Method, Target};
+use crate::protocol::cdp::{types::Event, types::Method, Target};
 
-use crate::types::{CallId, Message, parse_raw_message, parse_response};
+use crate::types::{parse_raw_message, parse_response, CallId, Message};
 
 use crate::util;
 
@@ -62,6 +62,7 @@ pub struct Transport {
     open: Arc<AtomicBool>,
     call_id_counter: Arc<AtomicU32>,
     loop_shutdown_tx: Mutex<mpsc::SyncSender<()>>,
+    idle_browser_timeout: Duration,
 }
 
 #[derive(Debug, Error)]
@@ -106,6 +107,7 @@ impl Transport {
             open,
             call_id_counter: Arc::new(AtomicU32::new(0)),
             loop_shutdown_tx: guarded_shutdown_tx,
+            idle_browser_timeout,
         })
     }
 
@@ -169,7 +171,7 @@ impl Transport {
             params_string
         );
 
-        let response_result = util::Wait::new(Duration::from_secs(15), Duration::from_millis(5))
+        let response_result = util::Wait::new(self.idle_browser_timeout, Duration::from_millis(5))
             .until(|| response_rx.try_recv().ok());
         trace!("received response for: {} {:?}", &call_id, params_string);
         parse_response::<C::ReturnObject>((response_result?)?)
