@@ -719,11 +719,18 @@ impl Tab {
     }
 
     /// Get the full HTML contents of the page.
-    /// 
-    /// Equivalent to the following JS: ```document.documentElement.outerHTML```
     pub fn get_content(&self) -> Result<String> {
+        let func = "
+            (function () { 
+                let retVal = '';
+                if (document.doctype)
+                    retVal = new XMLSerializer().serializeToString(document.doctype);
+                if (document.documentElement)
+                    retVal += document.documentElement.outerHTML;
+                return retVal;
+            })();";
         let html = self
-            .evaluate("(function () { return document.documentElement.outerHTML })();", false)?
+            .evaluate(func, false)?
                 .value
                 .unwrap();
         Ok(String::from(html.as_str().unwrap()))
