@@ -718,6 +718,24 @@ impl Tab {
             .root)
     }
 
+    /// Get the full HTML contents of the page.
+    pub fn get_content(&self) -> Result<String> {
+        let func = "
+            (function () { 
+                let retVal = '';
+                if (document.doctype)
+                    retVal = new XMLSerializer().serializeToString(document.doctype);
+                if (document.documentElement)
+                    retVal += document.documentElement.outerHTML;
+                return retVal;
+            })();";
+        let html = self
+            .evaluate(func, false)?
+                .value
+                .unwrap();
+        Ok(String::from(html.as_str().unwrap()))
+    }
+
     pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
         trace!("Looking up elements via selector: {}", selector);
 

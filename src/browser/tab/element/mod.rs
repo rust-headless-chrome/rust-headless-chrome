@@ -352,6 +352,18 @@ impl<'a> Element<'a> {
         Ok(text)
     }
 
+    /// Get the full HTML contents of the element.
+    /// 
+    /// Equivalent to the following JS: ```element.outerHTML```.
+    pub fn get_content(&self) -> Result<String> {
+        let html = self.
+                call_js_fn("function() { return this.outerHTML }", vec![], false)?
+                    .value
+                    .unwrap();
+
+        Ok(String::from(html.as_str().unwrap()))
+    }
+
     pub fn get_computed_styles(&self) -> Result<Vec<CSSComputedStyleProperty>> {
         let styles = self
             .parent
