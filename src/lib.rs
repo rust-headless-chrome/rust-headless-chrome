@@ -17,6 +17,7 @@
 //!
 //! ```no_run
 //! use headless_chrome::{Browser, protocol::page::ScreenshotFormat};
+//! use headless_chrome::protocol::cdp::Page;
 //!
 //! fn browse_wikipedia() -> Result<(), failure::Error> {
 //!     let browser = Browser::default()?;
@@ -39,7 +40,8 @@
 //!
 //!     /// Take a screenshot of the entire browser window
 //!     let _jpeg_data = tab.capture_screenshot(
-//!         ScreenshotFormat::JPEG(Some(75)),
+//!         Page::CaptureScreenshotFormatOption::Png,
+//!         Some(75),
 //!         None,
 //!         true)?;
 //!
