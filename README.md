@@ -82,7 +82,7 @@ fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
 
 # Auto fetching chrome binary
 
-```rust
+```toml
 [dependencies]
 headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"]}
 ```
