@@ -24,9 +24,12 @@ browser testing / web crawling use cases, and there are several 'advanced' featu
 ## Quick Start
 
 ```rust
-use headless_chrome::{Browser, protocol::page::ScreenshotFormat};
+use std::error::Error;
 
-fn browse_wikipedia() -> Result<(), failure::Error> {
+use headless_chrome::Browser;
+use headless_chrome::protocol::cdp::Page;
+
+fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
     let browser = Browser::default()?;
 
     let tab = browser.wait_for_initial_tab()?;
@@ -47,24 +50,27 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
 
     /// Take a screenshot of the entire browser window
     let _jpeg_data = tab.capture_screenshot(
-                        ScreenshotFormat::JPEG(Some(75)),
-                        None,
-                        true)?;
+        Page::CaptureScreenshotFormatOption::Jpeg,
+        None,
+        None,
+        true)?;
 
     /// Take a screenshot of just the WebKit-Infobox
     let _png_data = tab
         .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
-        .capture_screenshot(ScreenshotFormat::PNG)?;
+        .capture_screenshot(Page::CaptureScreenshotFormatOption::Png)?;
 
     // Run JavaScript in the page
-    match elem.call_js_fn(r#"
+    let remote_object = elem.call_js_fn(r#"
         function getIdTwice () {
             // `this` is always the element that you called `call_js_fn` on
             const id = this.id;
             return id + id;
         }
-    "#, false)? {
-        serde_json::value::Value::String(returned_string) {
+    "#, vec![], false)?;
+    match remote_object.value {
+        Some(returned_string) => {
+            dbg!(&returned_string);
             assert_eq!(returned_string, "firstHeadingfirstHeading".to_string());
         }
         _ => unreachable!()
@@ -72,13 +78,11 @@ fn browse_wikipedia() -> Result<(), failure::Error> {
 
     Ok(())
 }
-
-assert!(browse_wikipedia().is_ok());
 ```
 
 # Auto fetching chrome binary
 
-```rust
+```toml
 [dependencies]
 headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"]}
 ```
