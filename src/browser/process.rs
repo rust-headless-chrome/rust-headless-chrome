@@ -148,6 +148,10 @@ pub struct LaunchOptions<'a> {
     /// Passes value through to std::process::Command::envs.
     #[builder(default = "None")]
     pub process_envs: Option<HashMap<String, String>>,
+
+    /// Setup the proxy server for headless chrome instance
+    #[builder(default = "None")]
+    pub proxy_server: Option<&'a str>
 }
 
 impl<'a> Default for LaunchOptions<'a> {
@@ -167,6 +171,7 @@ impl<'a> Default for LaunchOptions<'a> {
             fetcher_options: Default::default(),
             args: Vec::new(),
             disable_default_args: false,
+            proxy_server: None,
         }
     }
 }
@@ -339,6 +344,17 @@ impl Process {
 
         if launch_options.ignore_certificate_errors {
             args.extend(&["--ignore-certificate-errors"])
+        }
+
+        let proxy_server_option = if let Some(ref proxy_server) = launch_options.proxy_server {
+            format!("--proxy-server={}", proxy_server)
+        } 
+        else {
+            String::from("")
+        };
+
+        if !proxy_server_option.is_empty() {
+            args.extend(&[proxy_server_option.as_str()]);
         }
 
         if !launch_options.sandbox {
