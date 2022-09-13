@@ -442,6 +442,7 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
         "chrome",
         "chrome-browser",
         "msedge",
+        "microsoft-edge"
     ] {
         if let Ok(path) = which(app) {
             return Ok(path);
