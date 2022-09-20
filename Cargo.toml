@@ -26,14 +26,14 @@ ureq = { version = "0.11", optional = true }
 directories = { version = "2.0", optional = true }
 zip = { version = "^0.5.3", optional = true }
 walkdir = { version = "2", optional = true }
+env_logger = "0.7"
+chrono = { version = "0.4", default_features = false }
+tiny_http = "0.6"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.6"
 
 [dev-dependencies]
-env_logger = "0.7"
-chrono = { version = "0.4", default_features = false }
-tiny_http = "0.6"
 png = { version = "0.15" }
 jpeg-decoder = { version = "0.1", default_features = false }
 filepath = "0.1.1"
