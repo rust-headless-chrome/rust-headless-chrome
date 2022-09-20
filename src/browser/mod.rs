@@ -67,9 +67,10 @@ pub mod transport;
 /// - see /examples/print_to_pdf.rs for a working example
 ///
 ///
-/// While the Chrome DevTools Protocl (CDTP) does define some methods in a
+/// While the Chrome DevTools Protocol (CDTP) does define some methods in a
 /// ["Browser" domain](https://chromedevtools.github.io/devtools-protocol/tot/Browser)
 /// (such as for resizing the window in non-headless mode), we currently don't implement those.
+#[derive(Clone)]
 pub struct Browser {
     inner: Arc<BrowserInner>,
 }
