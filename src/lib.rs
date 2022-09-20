@@ -83,7 +83,6 @@ pub use browser::FetcherOptions;
 
 pub mod browser;
 pub mod types;
-pub mod testing_utils;
 pub mod protocol;
 pub mod util;
 
