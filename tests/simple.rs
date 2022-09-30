@@ -701,6 +701,37 @@ fn response_handler() -> Result<()> {
 }
 
 #[test]
+fn loading_failed_handler() -> Result<()> {
+    logging::enable_logging();
+    let server = server::Server::with_dumb_html(include_str!(
+        "coverage_fixtures/basic_page_with_loading_failed_element.html"
+    ));
+    let browser = Browser::default()?;
+
+    let tab = browser.wait_for_initial_tab().unwrap();
+
+    let failed_event = Arc::new(Mutex::new(Vec::new()));
+
+    let failed_event_clone = failed_event.clone();
+    assert_eq!(tab.register_loading_failed_handling("test1",Box::new(move |response, loading_failed| {
+        failed_event_clone.lock().unwrap().push((response, loading_failed))
+    }))?.is_none(), true);
+
+    tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
+        .unwrap();
+
+    tab.wait_until_navigated()?;
+
+    let final_failed_event: Vec<_> = failed_event.lock().unwrap().clone();
+    assert_eq!(final_failed_event.len(), 1);
+    assert_eq!(final_failed_event[0].0.response.url, "http://httpbin.org/status/404");
+    assert_eq!(final_failed_event[0].0.response.status, 404);
+    assert_eq!(final_failed_event[0].1.error_text, "net::ERR_ABORTED");
+
+    Ok(())
+}
+
+#[test]
 fn incognito_contexts() -> Result<()> {
     logging::enable_logging();
     let (server, browser, tab) = dumb_server(include_str!("simple.html"));
