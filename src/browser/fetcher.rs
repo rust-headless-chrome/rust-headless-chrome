@@ -30,7 +30,7 @@ const PLATFORM: &str = "mac";
 #[cfg(windows)]
 const PLATFORM: &str = "win";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FetcherOptions {
     /// The desired chrome revision.
     ///
