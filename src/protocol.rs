@@ -1,3 +1,7 @@
+// Auto-generated from ChromeDevTools/devtools-protocol at commit 15f524c8f5ce5b317ddcdf5e6f875d6eb8bdac88
+#[allow(unused)]
+#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub mod cdp {
     pub mod types {
         use serde::{Deserialize, Serialize};
@@ -450,27 +454,41 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum ConsoleMessageSource {
+            #[serde(rename = "xml")]
             Xml,
+            #[serde(rename = "javascript")]
             Javascript,
+            #[serde(rename = "network")]
             Network,
+            #[serde(rename = "console-api")]
             ConsoleApi,
+            #[serde(rename = "storage")]
             Storage,
+            #[serde(rename = "appcache")]
             Appcache,
+            #[serde(rename = "rendering")]
             Rendering,
+            #[serde(rename = "security")]
             Security,
+            #[serde(rename = "other")]
             Other,
+            #[serde(rename = "deprecation")]
             Deprecation,
+            #[serde(rename = "worker")]
             Worker,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ConsoleMessageLevel {
+            #[serde(rename = "log")]
             Log,
+            #[serde(rename = "warning")]
             Warning,
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "debug")]
             Debug,
+            #[serde(rename = "info")]
             Info,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -542,73 +560,103 @@ pub mod cdp {
         pub type BreakpointId = String;
         pub type CallFrameId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum ScopeType {
+            #[serde(rename = "global")]
             Global,
+            #[serde(rename = "local")]
             Local,
+            #[serde(rename = "with")]
             With,
+            #[serde(rename = "closure")]
             Closure,
+            #[serde(rename = "catch")]
             Catch,
+            #[serde(rename = "block")]
             Block,
+            #[serde(rename = "script")]
             Script,
+            #[serde(rename = "eval")]
             Eval,
+            #[serde(rename = "module")]
             Module,
+            #[serde(rename = "wasm-expression-stack")]
             WasmExpressionStack,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum BreakLocationType {
+            #[serde(rename = "debuggerStatement")]
             DebuggerStatement,
+            #[serde(rename = "call")]
             Call,
+            #[serde(rename = "return")]
             Return,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum ScriptLanguage {
+            #[serde(rename = "JavaScript")]
             JavaScript,
+            #[serde(rename = "WebAssembly")]
             WebAssembly,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum DebugSymbolsType {
+            #[serde(rename = "None")]
             None,
+            #[serde(rename = "SourceMap")]
             SourceMap,
+            #[serde(rename = "EmbeddedDWARF")]
             EmbeddedDwarf,
+            #[serde(rename = "ExternalDWARF")]
             ExternalDwarf,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ContinueToLocationTarget_call_framesOption {
+            #[serde(rename = "any")]
             Any,
+            #[serde(rename = "current")]
             Current,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetInstrumentationBreakpointInstrumentationOption {
+            #[serde(rename = "beforeScriptExecution")]
             BeforeScriptExecution,
+            #[serde(rename = "beforeScriptWithSourceMapExecution")]
             BeforeScriptWithSourceMapExecution,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetPauseOnExceptionsStateOption {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "uncaught")]
             Uncaught,
+            #[serde(rename = "all")]
             All,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum PausedEventReasonOption {
+            #[serde(rename = "ambiguous")]
             Ambiguous,
+            #[serde(rename = "assert")]
             Assert,
+            #[serde(rename = "CSPViolation")]
             CspViolation,
+            #[serde(rename = "debugCommand")]
             DebugCommand,
+            #[serde(rename = "DOM")]
             Dom,
+            #[serde(rename = "EventListener")]
             EventListener,
+            #[serde(rename = "exception")]
             Exception,
+            #[serde(rename = "instrumentation")]
             Instrumentation,
+            #[serde(rename = "OOM")]
             Oom,
+            #[serde(rename = "other")]
             Other,
+            #[serde(rename = "promiseRejection")]
             PromiseRejection,
+            #[serde(rename = "XHR")]
             Xhr,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -1861,131 +1909,224 @@ pub mod cdp {
         pub type TimeDelta = JsFloat;
         pub type UniqueDebuggerId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum RemoteObjectType {
+            #[serde(rename = "object")]
             Object,
+            #[serde(rename = "function")]
             Function,
+            #[serde(rename = "undefined")]
             Undefined,
+            #[serde(rename = "string")]
             String,
+            #[serde(rename = "number")]
             Number,
+            #[serde(rename = "boolean")]
             Boolean,
+            #[serde(rename = "symbol")]
             Symbol,
+            #[serde(rename = "bigint")]
             Bigint,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum RemoteObjectSubtype {
+            #[serde(rename = "array")]
             Array,
+            #[serde(rename = "null")]
             Null,
+            #[serde(rename = "node")]
             Node,
+            #[serde(rename = "regexp")]
             Regexp,
+            #[serde(rename = "date")]
             Date,
+            #[serde(rename = "map")]
             Map,
+            #[serde(rename = "set")]
             Set,
+            #[serde(rename = "weakmap")]
             Weakmap,
+            #[serde(rename = "weakset")]
             Weakset,
+            #[serde(rename = "iterator")]
             Iterator,
+            #[serde(rename = "generator")]
             Generator,
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "proxy")]
             Proxy,
+            #[serde(rename = "promise")]
             Promise,
+            #[serde(rename = "typedarray")]
             Typedarray,
+            #[serde(rename = "arraybuffer")]
             Arraybuffer,
+            #[serde(rename = "dataview")]
             Dataview,
+            #[serde(rename = "webassemblymemory")]
             Webassemblymemory,
+            #[serde(rename = "wasmvalue")]
             Wasmvalue,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ObjectPreviewType {
+            #[serde(rename = "object")]
             Object,
+            #[serde(rename = "function")]
             Function,
+            #[serde(rename = "undefined")]
             Undefined,
+            #[serde(rename = "string")]
             String,
+            #[serde(rename = "number")]
             Number,
+            #[serde(rename = "boolean")]
             Boolean,
+            #[serde(rename = "symbol")]
             Symbol,
+            #[serde(rename = "bigint")]
             Bigint,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ObjectPreviewSubtype {
+            #[serde(rename = "array")]
             Array,
+            #[serde(rename = "null")]
             Null,
+            #[serde(rename = "node")]
             Node,
+            #[serde(rename = "regexp")]
             Regexp,
+            #[serde(rename = "date")]
             Date,
+            #[serde(rename = "map")]
             Map,
+            #[serde(rename = "set")]
             Set,
+            #[serde(rename = "weakmap")]
             Weakmap,
+            #[serde(rename = "weakset")]
             Weakset,
+            #[serde(rename = "iterator")]
             Iterator,
+            #[serde(rename = "generator")]
             Generator,
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "proxy")]
             Proxy,
+            #[serde(rename = "promise")]
             Promise,
+            #[serde(rename = "typedarray")]
             Typedarray,
+            #[serde(rename = "arraybuffer")]
             Arraybuffer,
+            #[serde(rename = "dataview")]
             Dataview,
+            #[serde(rename = "webassemblymemory")]
             Webassemblymemory,
+            #[serde(rename = "wasmvalue")]
             Wasmvalue,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PropertyPreviewType {
+            #[serde(rename = "object")]
             Object,
+            #[serde(rename = "function")]
             Function,
+            #[serde(rename = "undefined")]
             Undefined,
+            #[serde(rename = "string")]
             String,
+            #[serde(rename = "number")]
             Number,
+            #[serde(rename = "boolean")]
             Boolean,
+            #[serde(rename = "symbol")]
             Symbol,
+            #[serde(rename = "accessor")]
             Accessor,
+            #[serde(rename = "bigint")]
             Bigint,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PropertyPreviewSubtype {
+            #[serde(rename = "array")]
             Array,
+            #[serde(rename = "null")]
             Null,
+            #[serde(rename = "node")]
             Node,
+            #[serde(rename = "regexp")]
             Regexp,
+            #[serde(rename = "date")]
             Date,
+            #[serde(rename = "map")]
             Map,
+            #[serde(rename = "set")]
             Set,
+            #[serde(rename = "weakmap")]
             Weakmap,
+            #[serde(rename = "weakset")]
             Weakset,
+            #[serde(rename = "iterator")]
             Iterator,
+            #[serde(rename = "generator")]
             Generator,
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "proxy")]
             Proxy,
+            #[serde(rename = "promise")]
             Promise,
+            #[serde(rename = "typedarray")]
             Typedarray,
+            #[serde(rename = "arraybuffer")]
             Arraybuffer,
+            #[serde(rename = "dataview")]
             Dataview,
+            #[serde(rename = "webassemblymemory")]
             Webassemblymemory,
+            #[serde(rename = "wasmvalue")]
             Wasmvalue,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ConsoleAPICalledEventTypeOption {
+            #[serde(rename = "log")]
             Log,
+            #[serde(rename = "debug")]
             Debug,
+            #[serde(rename = "info")]
             Info,
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "warning")]
             Warning,
+            #[serde(rename = "dir")]
             Dir,
+            #[serde(rename = "dirxml")]
             Dirxml,
+            #[serde(rename = "table")]
             Table,
+            #[serde(rename = "trace")]
             Trace,
+            #[serde(rename = "clear")]
             Clear,
+            #[serde(rename = "startGroup")]
             StartGroup,
+            #[serde(rename = "startGroupCollapsed")]
             StartGroupCollapsed,
+            #[serde(rename = "endGroup")]
             EndGroup,
+            #[serde(rename = "assert")]
             Assert,
+            #[serde(rename = "profile")]
             Profile,
+            #[serde(rename = "profileEnd")]
             ProfileEnd,
+            #[serde(rename = "count")]
             Count,
+            #[serde(rename = "timeEnd")]
             TimeEnd,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -2728,91 +2869,159 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type AXNodeId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AXValueType {
+            #[serde(rename = "boolean")]
             Boolean,
+            #[serde(rename = "tristate")]
             Tristate,
+            #[serde(rename = "booleanOrUndefined")]
             BooleanOrUndefined,
+            #[serde(rename = "idref")]
             Idref,
+            #[serde(rename = "idrefList")]
             IdrefList,
+            #[serde(rename = "integer")]
             Integer,
+            #[serde(rename = "node")]
             Node,
+            #[serde(rename = "nodeList")]
             NodeList,
+            #[serde(rename = "number")]
             Number,
+            #[serde(rename = "string")]
             String,
+            #[serde(rename = "computedString")]
             ComputedString,
+            #[serde(rename = "token")]
             Token,
+            #[serde(rename = "tokenList")]
             TokenList,
+            #[serde(rename = "domRelation")]
             DomRelation,
+            #[serde(rename = "role")]
             Role,
+            #[serde(rename = "internalRole")]
             InternalRole,
+            #[serde(rename = "valueUndefined")]
             ValueUndefined,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AXValueSourceType {
+            #[serde(rename = "attribute")]
             Attribute,
+            #[serde(rename = "implicit")]
             Implicit,
+            #[serde(rename = "style")]
             Style,
+            #[serde(rename = "contents")]
             Contents,
+            #[serde(rename = "placeholder")]
             Placeholder,
+            #[serde(rename = "relatedElement")]
             RelatedElement,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AXValueNativeSourceType {
+            #[serde(rename = "description")]
             Description,
+            #[serde(rename = "figcaption")]
             Figcaption,
+            #[serde(rename = "label")]
             Label,
+            #[serde(rename = "labelfor")]
             Labelfor,
+            #[serde(rename = "labelwrapped")]
             Labelwrapped,
+            #[serde(rename = "legend")]
             Legend,
+            #[serde(rename = "rubyannotation")]
             Rubyannotation,
+            #[serde(rename = "tablecaption")]
             Tablecaption,
+            #[serde(rename = "title")]
             Title,
+            #[serde(rename = "other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AXPropertyName {
+            #[serde(rename = "busy")]
             Busy,
+            #[serde(rename = "disabled")]
             Disabled,
+            #[serde(rename = "editable")]
             Editable,
+            #[serde(rename = "focusable")]
             Focusable,
+            #[serde(rename = "focused")]
             Focused,
+            #[serde(rename = "hidden")]
             Hidden,
+            #[serde(rename = "hiddenRoot")]
             HiddenRoot,
+            #[serde(rename = "invalid")]
             Invalid,
+            #[serde(rename = "keyshortcuts")]
             Keyshortcuts,
+            #[serde(rename = "settable")]
             Settable,
+            #[serde(rename = "roledescription")]
             Roledescription,
+            #[serde(rename = "live")]
             Live,
+            #[serde(rename = "atomic")]
             Atomic,
+            #[serde(rename = "relevant")]
             Relevant,
+            #[serde(rename = "root")]
             Root,
+            #[serde(rename = "autocomplete")]
             Autocomplete,
+            #[serde(rename = "hasPopup")]
             HasPopup,
+            #[serde(rename = "level")]
             Level,
+            #[serde(rename = "multiselectable")]
             Multiselectable,
+            #[serde(rename = "orientation")]
             Orientation,
+            #[serde(rename = "multiline")]
             Multiline,
+            #[serde(rename = "readonly")]
             Readonly,
+            #[serde(rename = "required")]
             Required,
+            #[serde(rename = "valuemin")]
             Valuemin,
+            #[serde(rename = "valuemax")]
             Valuemax,
+            #[serde(rename = "valuetext")]
             Valuetext,
+            #[serde(rename = "checked")]
             Checked,
+            #[serde(rename = "expanded")]
             Expanded,
+            #[serde(rename = "modal")]
             Modal,
+            #[serde(rename = "pressed")]
             Pressed,
+            #[serde(rename = "selected")]
             Selected,
+            #[serde(rename = "activedescendant")]
             Activedescendant,
+            #[serde(rename = "controls")]
             Controls,
+            #[serde(rename = "describedby")]
             Describedby,
+            #[serde(rename = "details")]
             Details,
+            #[serde(rename = "errormessage")]
             Errormessage,
+            #[serde(rename = "flowto")]
             Flowto,
+            #[serde(rename = "labelledby")]
             Labelledby,
+            #[serde(rename = "owns")]
             Owns,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -3064,10 +3273,12 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AnimationType {
+            #[serde(rename = "CSSTransition")]
             CssTransition,
+            #[serde(rename = "CSSAnimation")]
             CssAnimation,
+            #[serde(rename = "WebAnimation")]
             WebAnimation,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -3315,155 +3526,232 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type IssueId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum SameSiteCookieExclusionReason {
+            #[serde(rename = "ExcludeSameSiteUnspecifiedTreatedAsLax")]
             ExcludeSameSiteUnspecifiedTreatedAsLax,
+            #[serde(rename = "ExcludeSameSiteNoneInsecure")]
             ExcludeSameSiteNoneInsecure,
+            #[serde(rename = "ExcludeSameSiteLax")]
             ExcludeSameSiteLax,
+            #[serde(rename = "ExcludeSameSiteStrict")]
             ExcludeSameSiteStrict,
+            #[serde(rename = "ExcludeInvalidSameParty")]
             ExcludeInvalidSameParty,
+            #[serde(rename = "ExcludeSamePartyCrossPartyContext")]
             ExcludeSamePartyCrossPartyContext,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum SameSiteCookieWarningReason {
+            #[serde(rename = "WarnSameSiteUnspecifiedCrossSiteContext")]
             WarnSameSiteUnspecifiedCrossSiteContext,
+            #[serde(rename = "WarnSameSiteNoneInsecure")]
             WarnSameSiteNoneInsecure,
+            #[serde(rename = "WarnSameSiteUnspecifiedLaxAllowUnsafe")]
             WarnSameSiteUnspecifiedLaxAllowUnsafe,
+            #[serde(rename = "WarnSameSiteStrictLaxDowngradeStrict")]
             WarnSameSiteStrictLaxDowngradeStrict,
+            #[serde(rename = "WarnSameSiteStrictCrossDowngradeStrict")]
             WarnSameSiteStrictCrossDowngradeStrict,
+            #[serde(rename = "WarnSameSiteStrictCrossDowngradeLax")]
             WarnSameSiteStrictCrossDowngradeLax,
+            #[serde(rename = "WarnSameSiteLaxCrossDowngradeStrict")]
             WarnSameSiteLaxCrossDowngradeStrict,
+            #[serde(rename = "WarnSameSiteLaxCrossDowngradeLax")]
             WarnSameSiteLaxCrossDowngradeLax,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum SameSiteCookieOperation {
+            #[serde(rename = "SetCookie")]
             SetCookie,
+            #[serde(rename = "ReadCookie")]
             ReadCookie,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum MixedContentResolutionStatus {
+            #[serde(rename = "MixedContentBlocked")]
             MixedContentBlocked,
+            #[serde(rename = "MixedContentAutomaticallyUpgraded")]
             MixedContentAutomaticallyUpgraded,
+            #[serde(rename = "MixedContentWarning")]
             MixedContentWarning,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum MixedContentResourceType {
+            #[serde(rename = "Audio")]
             Audio,
+            #[serde(rename = "Beacon")]
             Beacon,
+            #[serde(rename = "CSPReport")]
             CspReport,
+            #[serde(rename = "Download")]
             Download,
+            #[serde(rename = "EventSource")]
             EventSource,
+            #[serde(rename = "Favicon")]
             Favicon,
+            #[serde(rename = "Font")]
             Font,
+            #[serde(rename = "Form")]
             Form,
+            #[serde(rename = "Frame")]
             Frame,
+            #[serde(rename = "Image")]
             Image,
+            #[serde(rename = "Import")]
             Import,
+            #[serde(rename = "Manifest")]
             Manifest,
+            #[serde(rename = "Ping")]
             Ping,
+            #[serde(rename = "PluginData")]
             PluginData,
+            #[serde(rename = "PluginResource")]
             PluginResource,
+            #[serde(rename = "Prefetch")]
             Prefetch,
+            #[serde(rename = "Resource")]
             Resource,
+            #[serde(rename = "Script")]
             Script,
+            #[serde(rename = "ServiceWorker")]
             ServiceWorker,
+            #[serde(rename = "SharedWorker")]
             SharedWorker,
+            #[serde(rename = "Stylesheet")]
             Stylesheet,
+            #[serde(rename = "Track")]
             Track,
+            #[serde(rename = "Video")]
             Video,
+            #[serde(rename = "Worker")]
             Worker,
+            #[serde(rename = "XMLHttpRequest")]
             XmlHttpRequest,
+            #[serde(rename = "XSLT")]
             Xslt,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum BlockedByResponseReason {
+            #[serde(rename = "CoepFrameResourceNeedsCoepHeader")]
             CoepFrameResourceNeedsCoepHeader,
+            #[serde(rename = "CoopSandboxedIFrameCannotNavigateToCoopPage")]
             CoopSandboxedIFrameCannotNavigateToCoopPage,
+            #[serde(rename = "CorpNotSameOrigin")]
             CorpNotSameOrigin,
+            #[serde(rename = "CorpNotSameOriginAfterDefaultedToSameOriginByCoep")]
             CorpNotSameOriginAfterDefaultedToSameOriginByCoep,
+            #[serde(rename = "CorpNotSameSite")]
             CorpNotSameSite,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum HeavyAdResolutionStatus {
+            #[serde(rename = "HeavyAdBlocked")]
             HeavyAdBlocked,
+            #[serde(rename = "HeavyAdWarning")]
             HeavyAdWarning,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum HeavyAdReason {
+            #[serde(rename = "NetworkTotalLimit")]
             NetworkTotalLimit,
+            #[serde(rename = "CpuTotalLimit")]
             CpuTotalLimit,
+            #[serde(rename = "CpuPeakLimit")]
             CpuPeakLimit,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ContentSecurityPolicyViolationType {
+            #[serde(rename = "kInlineViolation")]
             KInlineViolation,
+            #[serde(rename = "kEvalViolation")]
             KEvalViolation,
+            #[serde(rename = "kURLViolation")]
             KUrlViolation,
+            #[serde(rename = "kTrustedTypesSinkViolation")]
             KTrustedTypesSinkViolation,
+            #[serde(rename = "kTrustedTypesPolicyViolation")]
             KTrustedTypesPolicyViolation,
+            #[serde(rename = "kWasmEvalViolation")]
             KWasmEvalViolation,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum SharedArrayBufferIssueType {
+            #[serde(rename = "TransferIssue")]
             TransferIssue,
+            #[serde(rename = "CreationIssue")]
             CreationIssue,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum TwaQualityEnforcementViolationType {
+            #[serde(rename = "kHttpError")]
             KHttpError,
+            #[serde(rename = "kUnavailableOffline")]
             KUnavailableOffline,
+            #[serde(rename = "kDigitalAssetLinks")]
             KDigitalAssetLinks,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AttributionReportingIssueType {
+            #[serde(rename = "PermissionPolicyDisabled")]
             PermissionPolicyDisabled,
+            #[serde(rename = "InvalidAttributionSourceEventId")]
             InvalidAttributionSourceEventId,
+            #[serde(rename = "InvalidAttributionData")]
             InvalidAttributionData,
+            #[serde(rename = "AttributionSourceUntrustworthyOrigin")]
             AttributionSourceUntrustworthyOrigin,
+            #[serde(rename = "AttributionUntrustworthyOrigin")]
             AttributionUntrustworthyOrigin,
+            #[serde(rename = "AttributionTriggerDataTooLarge")]
             AttributionTriggerDataTooLarge,
+            #[serde(rename = "AttributionEventSourceTriggerDataTooLarge")]
             AttributionEventSourceTriggerDataTooLarge,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum GenericIssueErrorType {
+            #[serde(rename = "CrossOriginPortalPostMessageError")]
             CrossOriginPortalPostMessageError,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum InspectorIssueCode {
+            #[serde(rename = "SameSiteCookieIssue")]
             SameSiteCookieIssue,
+            #[serde(rename = "MixedContentIssue")]
             MixedContentIssue,
+            #[serde(rename = "BlockedByResponseIssue")]
             BlockedByResponseIssue,
+            #[serde(rename = "HeavyAdIssue")]
             HeavyAdIssue,
+            #[serde(rename = "ContentSecurityPolicyIssue")]
             ContentSecurityPolicyIssue,
+            #[serde(rename = "SharedArrayBufferIssue")]
             SharedArrayBufferIssue,
+            #[serde(rename = "TrustedWebActivityIssue")]
             TrustedWebActivityIssue,
+            #[serde(rename = "LowTextContrastIssue")]
             LowTextContrastIssue,
+            #[serde(rename = "CorsIssue")]
             CorsIssue,
+            #[serde(rename = "AttributionReportingIssue")]
             AttributionReportingIssue,
+            #[serde(rename = "QuirksModeIssue")]
             QuirksModeIssue,
+            #[serde(rename = "NavigatorUserAgentIssue")]
             NavigatorUserAgentIssue,
+            #[serde(rename = "WasmCrossOriginModuleSharingIssue")]
             WasmCrossOriginModuleSharingIssue,
+            #[serde(rename = "GenericIssue")]
             GenericIssue,
+            #[serde(rename = "DeprecationIssue")]
             DeprecationIssue,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum GetEncodedResponseEncodingOption {
+            #[serde(rename = "webp")]
             Webp,
+            #[serde(rename = "jpeg")]
             Jpeg,
+            #[serde(rename = "png")]
             Png,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -3816,13 +4104,18 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ServiceName {
+            #[serde(rename = "backgroundFetch")]
             BackgroundFetch,
+            #[serde(rename = "backgroundSync")]
             BackgroundSync,
+            #[serde(rename = "pushMessaging")]
             PushMessaging,
+            #[serde(rename = "notifications")]
             Notifications,
+            #[serde(rename = "paymentHandler")]
             PaymentHandler,
+            #[serde(rename = "periodicBackgroundSync")]
             PeriodicBackgroundSync,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -3930,66 +4223,99 @@ pub mod cdp {
         pub type BrowserContextID = String;
         pub type WindowID = JsUInt;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum WindowState {
+            #[serde(rename = "normal")]
             Normal,
+            #[serde(rename = "minimized")]
             Minimized,
+            #[serde(rename = "maximized")]
             Maximized,
+            #[serde(rename = "fullscreen")]
             Fullscreen,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PermissionType {
+            #[serde(rename = "accessibilityEvents")]
             AccessibilityEvents,
+            #[serde(rename = "audioCapture")]
             AudioCapture,
+            #[serde(rename = "backgroundSync")]
             BackgroundSync,
+            #[serde(rename = "backgroundFetch")]
             BackgroundFetch,
+            #[serde(rename = "clipboardReadWrite")]
             ClipboardReadWrite,
+            #[serde(rename = "clipboardSanitizedWrite")]
             ClipboardSanitizedWrite,
+            #[serde(rename = "displayCapture")]
             DisplayCapture,
+            #[serde(rename = "durableStorage")]
             DurableStorage,
+            #[serde(rename = "flash")]
             Flash,
+            #[serde(rename = "geolocation")]
             Geolocation,
+            #[serde(rename = "midi")]
             Midi,
+            #[serde(rename = "midiSysex")]
             MidiSysex,
+            #[serde(rename = "nfc")]
             Nfc,
+            #[serde(rename = "notifications")]
             Notifications,
+            #[serde(rename = "paymentHandler")]
             PaymentHandler,
+            #[serde(rename = "periodicBackgroundSync")]
             PeriodicBackgroundSync,
+            #[serde(rename = "protectedMediaIdentifier")]
             ProtectedMediaIdentifier,
+            #[serde(rename = "sensors")]
             Sensors,
+            #[serde(rename = "videoCapture")]
             VideoCapture,
+            #[serde(rename = "videoCapturePanTiltZoom")]
             VideoCapturePanTiltZoom,
+            #[serde(rename = "idleDetection")]
             IdleDetection,
+            #[serde(rename = "wakeLockScreen")]
             WakeLockScreen,
+            #[serde(rename = "wakeLockSystem")]
             WakeLockSystem,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PermissionSetting {
+            #[serde(rename = "granted")]
             Granted,
+            #[serde(rename = "denied")]
             Denied,
+            #[serde(rename = "prompt")]
             Prompt,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum BrowserCommandId {
+            #[serde(rename = "openTabSearch")]
             OpenTabSearch,
+            #[serde(rename = "closeTabSearch")]
             CloseTabSearch,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetDownloadBehaviorBehaviorOption {
+            #[serde(rename = "deny")]
             Deny,
+            #[serde(rename = "allow")]
             Allow,
+            #[serde(rename = "allowAndName")]
             AllowAndName,
+            #[serde(rename = "default")]
             Default,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DownloadProgressEventStateOption {
+            #[serde(rename = "inProgress")]
             InProgress,
+            #[serde(rename = "completed")]
             Completed,
+            #[serde(rename = "canceled")]
             Canceled,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -4347,19 +4673,25 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type StyleSheetId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum StyleSheetOrigin {
+            #[serde(rename = "injected")]
             Injected,
+            #[serde(rename = "user-agent")]
             UserAgent,
+            #[serde(rename = "inspector")]
             Inspector,
+            #[serde(rename = "regular")]
             Regular,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum CssMediaSource {
+            #[serde(rename = "mediaRule")]
             MediaRule,
+            #[serde(rename = "importRule")]
             ImportRule,
+            #[serde(rename = "linkedSheet")]
             LinkedSheet,
+            #[serde(rename = "inlineSheet")]
             InlineSheet,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -5084,13 +5416,18 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type CacheId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum CachedResponseType {
+            #[serde(rename = "basic")]
             Basic,
+            #[serde(rename = "cors")]
             Cors,
+            #[serde(rename = "default")]
             Default,
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "opaqueResponse")]
             OpaqueResponse,
+            #[serde(rename = "opaqueRedirect")]
             OpaqueRedirect,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -5334,41 +5671,64 @@ pub mod cdp {
         pub type BackendNodeId = JsUInt;
         pub type Quad = Vec<JsFloat>;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum PseudoType {
+            #[serde(rename = "first-line")]
             FirstLine,
+            #[serde(rename = "first-letter")]
             FirstLetter,
+            #[serde(rename = "before")]
             Before,
+            #[serde(rename = "after")]
             After,
+            #[serde(rename = "marker")]
             Marker,
+            #[serde(rename = "backdrop")]
             Backdrop,
+            #[serde(rename = "selection")]
             Selection,
+            #[serde(rename = "target-text")]
             TargetText,
+            #[serde(rename = "spelling-error")]
             SpellingError,
+            #[serde(rename = "grammar-error")]
             GrammarError,
+            #[serde(rename = "highlight")]
             Highlight,
+            #[serde(rename = "first-line-inherited")]
             FirstLineInherited,
+            #[serde(rename = "scrollbar")]
             Scrollbar,
+            #[serde(rename = "scrollbar-thumb")]
             ScrollbarThumb,
+            #[serde(rename = "scrollbar-button")]
             ScrollbarButton,
+            #[serde(rename = "scrollbar-track")]
             ScrollbarTrack,
+            #[serde(rename = "scrollbar-track-piece")]
             ScrollbarTrackPiece,
+            #[serde(rename = "scrollbar-corner")]
             ScrollbarCorner,
+            #[serde(rename = "resizer")]
             Resizer,
+            #[serde(rename = "input-list-button")]
             InputListButton,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum ShadowRootType {
+            #[serde(rename = "user-agent")]
             UserAgent,
+            #[serde(rename = "open")]
             Open,
+            #[serde(rename = "closed")]
             Closed,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CompatibilityMode {
+            #[serde(rename = "QuirksMode")]
             QuirksMode,
+            #[serde(rename = "LimitedQuirksMode")]
             LimitedQuirksMode,
+            #[serde(rename = "NoQuirksMode")]
             NoQuirksMode,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -6409,16 +6769,19 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum DOMBreakpointType {
+            #[serde(rename = "subtree-modified")]
             SubtreeModified,
+            #[serde(rename = "attribute-modified")]
             AttributeModified,
+            #[serde(rename = "node-removed")]
             NodeRemoved,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum CSPViolationType {
+            #[serde(rename = "trustedtype-sink-violation")]
             TrustedtypeSinkViolation,
+            #[serde(rename = "trustedtype-policy-violation")]
             TrustedtypePolicyViolation,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -7238,47 +7601,61 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ScreenOrientationType {
+            #[serde(rename = "portraitPrimary")]
             PortraitPrimary,
+            #[serde(rename = "portraitSecondary")]
             PortraitSecondary,
+            #[serde(rename = "landscapePrimary")]
             LandscapePrimary,
+            #[serde(rename = "landscapeSecondary")]
             LandscapeSecondary,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DisplayFeatureOrientation {
+            #[serde(rename = "vertical")]
             Vertical,
+            #[serde(rename = "horizontal")]
             Horizontal,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum VirtualTimePolicy {
+            #[serde(rename = "advance")]
             Advance,
+            #[serde(rename = "pause")]
             Pause,
+            #[serde(rename = "pauseIfNetworkFetchesPending")]
             PauseIfNetworkFetchesPending,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DisabledImageType {
+            #[serde(rename = "avif")]
             Avif,
+            #[serde(rename = "jxl")]
             Jxl,
+            #[serde(rename = "webp")]
             Webp,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetEmitTouchEventsForMouseConfigurationOption {
+            #[serde(rename = "mobile")]
             Mobile,
+            #[serde(rename = "desktop")]
             Desktop,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetEmulatedVisionDeficiencyTypeOption {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "achromatopsia")]
             Achromatopsia,
+            #[serde(rename = "blurredVision")]
             BlurredVision,
+            #[serde(rename = "deuteranopia")]
             Deuteranopia,
+            #[serde(rename = "protanopia")]
             Protanopia,
+            #[serde(rename = "tritanopia")]
             Tritanopia,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -7758,9 +8135,10 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ScreenshotParamsFormat {
+            #[serde(rename = "jpeg")]
             Jpeg,
+            #[serde(rename = "png")]
             Png,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -7905,18 +8283,23 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum KeyType {
+            #[serde(rename = "number")]
             Number,
+            #[serde(rename = "string")]
             String,
+            #[serde(rename = "date")]
             Date,
+            #[serde(rename = "array")]
             Array,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum KeyPathType {
+            #[serde(rename = "null")]
             Null,
+            #[serde(rename = "string")]
             String,
+            #[serde(rename = "array")]
             Array,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -8159,66 +8542,89 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type TimeSinceEpoch = JsFloat;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum GestureSourceType {
+            #[serde(rename = "default")]
             Default,
+            #[serde(rename = "touch")]
             Touch,
+            #[serde(rename = "mouse")]
             Mouse,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum MouseButton {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "left")]
             Left,
+            #[serde(rename = "middle")]
             Middle,
+            #[serde(rename = "right")]
             Right,
+            #[serde(rename = "back")]
             Back,
+            #[serde(rename = "forward")]
             Forward,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DispatchDragEventTypeOption {
+            #[serde(rename = "dragEnter")]
             DragEnter,
+            #[serde(rename = "dragOver")]
             DragOver,
+            #[serde(rename = "drop")]
             Drop,
+            #[serde(rename = "dragCancel")]
             DragCancel,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DispatchKeyEventTypeOption {
+            #[serde(rename = "keyDown")]
             KeyDown,
+            #[serde(rename = "keyUp")]
             KeyUp,
+            #[serde(rename = "rawKeyDown")]
             RawKeyDown,
+            #[serde(rename = "char")]
             Char,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DispatchMouseEventTypeOption {
+            #[serde(rename = "mousePressed")]
             MousePressed,
+            #[serde(rename = "mouseReleased")]
             MouseReleased,
+            #[serde(rename = "mouseMoved")]
             MouseMoved,
+            #[serde(rename = "mouseWheel")]
             MouseWheel,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DispatchMouseEventPointer_TypeOption {
+            #[serde(rename = "mouse")]
             Mouse,
+            #[serde(rename = "pen")]
             Pen,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DispatchTouchEventTypeOption {
+            #[serde(rename = "touchStart")]
             TouchStart,
+            #[serde(rename = "touchEnd")]
             TouchEnd,
+            #[serde(rename = "touchMove")]
             TouchMove,
+            #[serde(rename = "touchCancel")]
             TouchCancel,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum EmulateTouchFromMouseEventTypeOption {
+            #[serde(rename = "mousePressed")]
             MousePressed,
+            #[serde(rename = "mouseReleased")]
             MouseReleased,
+            #[serde(rename = "mouseMoved")]
             MouseMoved,
+            #[serde(rename = "mouseWheel")]
             MouseWheel,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -8673,10 +9079,12 @@ pub mod cdp {
         pub type SnapshotId = String;
         pub type PaintProfile = Vec<JsFloat>;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum ScrollRectType {
+            #[serde(rename = "RepaintsOnScroll")]
             RepaintsOnScroll,
+            #[serde(rename = "TouchEventHandler")]
             TouchEventHandler,
+            #[serde(rename = "WheelEventHandler")]
             WheelEventHandler,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -8910,44 +9318,65 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum LogEntrySource {
+            #[serde(rename = "xml")]
             Xml,
+            #[serde(rename = "javascript")]
             Javascript,
+            #[serde(rename = "network")]
             Network,
+            #[serde(rename = "storage")]
             Storage,
+            #[serde(rename = "appcache")]
             Appcache,
+            #[serde(rename = "rendering")]
             Rendering,
+            #[serde(rename = "security")]
             Security,
+            #[serde(rename = "deprecation")]
             Deprecation,
+            #[serde(rename = "worker")]
             Worker,
+            #[serde(rename = "violation")]
             Violation,
+            #[serde(rename = "intervention")]
             Intervention,
+            #[serde(rename = "recommendation")]
             Recommendation,
+            #[serde(rename = "other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum LogEntryLevel {
+            #[serde(rename = "verbose")]
             Verbose,
+            #[serde(rename = "info")]
             Info,
+            #[serde(rename = "warning")]
             Warning,
+            #[serde(rename = "error")]
             Error,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum LogEntryCategory {
+            #[serde(rename = "cors")]
             Cors,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ViolationSettingName {
+            #[serde(rename = "longTask")]
             LongTask,
+            #[serde(rename = "longLayout")]
             LongLayout,
+            #[serde(rename = "blockedEvent")]
             BlockedEvent,
+            #[serde(rename = "blockedParser")]
             BlockedParser,
+            #[serde(rename = "discouragedAPIUse")]
             DiscouragedApiUse,
+            #[serde(rename = "handler")]
             Handler,
+            #[serde(rename = "recurringHandler")]
             RecurringHandler,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -9054,9 +9483,10 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PressureLevel {
+            #[serde(rename = "moderate")]
             Moderate,
+            #[serde(rename = "critical")]
             Critical,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -9235,313 +9665,483 @@ pub mod cdp {
         pub type MonotonicTime = JsFloat;
         pub type ReportId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum ResourceType {
+            #[serde(rename = "Document")]
             Document,
+            #[serde(rename = "Stylesheet")]
             Stylesheet,
+            #[serde(rename = "Image")]
             Image,
+            #[serde(rename = "Media")]
             Media,
+            #[serde(rename = "Font")]
             Font,
+            #[serde(rename = "Script")]
             Script,
+            #[serde(rename = "TextTrack")]
             TextTrack,
+            #[serde(rename = "XHR")]
             Xhr,
+            #[serde(rename = "Fetch")]
             Fetch,
+            #[serde(rename = "EventSource")]
             EventSource,
+            #[serde(rename = "WebSocket")]
             WebSocket,
+            #[serde(rename = "Manifest")]
             Manifest,
+            #[serde(rename = "SignedExchange")]
             SignedExchange,
+            #[serde(rename = "Ping")]
             Ping,
+            #[serde(rename = "CSPViolationReport")]
             CspViolationReport,
+            #[serde(rename = "Preflight")]
             Preflight,
+            #[serde(rename = "Other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum ErrorReason {
+            #[serde(rename = "Failed")]
             Failed,
+            #[serde(rename = "Aborted")]
             Aborted,
+            #[serde(rename = "TimedOut")]
             TimedOut,
+            #[serde(rename = "AccessDenied")]
             AccessDenied,
+            #[serde(rename = "ConnectionClosed")]
             ConnectionClosed,
+            #[serde(rename = "ConnectionReset")]
             ConnectionReset,
+            #[serde(rename = "ConnectionRefused")]
             ConnectionRefused,
+            #[serde(rename = "ConnectionAborted")]
             ConnectionAborted,
+            #[serde(rename = "ConnectionFailed")]
             ConnectionFailed,
+            #[serde(rename = "NameNotResolved")]
             NameNotResolved,
+            #[serde(rename = "InternetDisconnected")]
             InternetDisconnected,
+            #[serde(rename = "AddressUnreachable")]
             AddressUnreachable,
+            #[serde(rename = "BlockedByClient")]
             BlockedByClient,
+            #[serde(rename = "BlockedByResponse")]
             BlockedByResponse,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ConnectionType {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "cellular2g")]
             Cellular2G,
+            #[serde(rename = "cellular3g")]
             Cellular3G,
+            #[serde(rename = "cellular4g")]
             Cellular4G,
+            #[serde(rename = "bluetooth")]
             Bluetooth,
+            #[serde(rename = "ethernet")]
             Ethernet,
+            #[serde(rename = "wifi")]
             Wifi,
+            #[serde(rename = "wimax")]
             Wimax,
+            #[serde(rename = "other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CookieSameSite {
+            #[serde(rename = "Strict")]
             Strict,
+            #[serde(rename = "Lax")]
             Lax,
+            #[serde(rename = "None")]
             None,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CookiePriority {
+            #[serde(rename = "Low")]
             Low,
+            #[serde(rename = "Medium")]
             Medium,
+            #[serde(rename = "High")]
             High,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CookieSourceScheme {
+            #[serde(rename = "Unset")]
             Unset,
+            #[serde(rename = "NonSecure")]
             NonSecure,
+            #[serde(rename = "Secure")]
             Secure,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum ResourcePriority {
+            #[serde(rename = "VeryLow")]
             VeryLow,
+            #[serde(rename = "Low")]
             Low,
+            #[serde(rename = "Medium")]
             Medium,
+            #[serde(rename = "High")]
             High,
+            #[serde(rename = "VeryHigh")]
             VeryHigh,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum RequestReferrerPolicy {
+            #[serde(rename = "unsafe-url")]
             UnsafeUrl,
+            #[serde(rename = "no-referrer-when-downgrade")]
             NoReferrerWhenDowngrade,
+            #[serde(rename = "no-referrer")]
             NoReferrer,
+            #[serde(rename = "origin")]
             Origin,
+            #[serde(rename = "origin-when-cross-origin")]
             OriginWhenCrossOrigin,
+            #[serde(rename = "same-origin")]
             SameOrigin,
+            #[serde(rename = "strict-origin")]
             StrictOrigin,
+            #[serde(rename = "strict-origin-when-cross-origin")]
             StrictOriginWhenCrossOrigin,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum CertificateTransparencyCompliance {
+            #[serde(rename = "unknown")]
             Unknown,
+            #[serde(rename = "not-compliant")]
             NotCompliant,
+            #[serde(rename = "compliant")]
             Compliant,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum BlockedReason {
+            #[serde(rename = "other")]
             Other,
+            #[serde(rename = "csp")]
             Csp,
+            #[serde(rename = "mixed-content")]
             MixedContent,
+            #[serde(rename = "origin")]
             Origin,
+            #[serde(rename = "inspector")]
             Inspector,
+            #[serde(rename = "subresource-filter")]
             SubresourceFilter,
+            #[serde(rename = "content-type")]
             ContentType,
+            #[serde(rename = "coep-frame-resource-needs-coep-header")]
             CoepFrameResourceNeedsCoepHeader,
+            #[serde(rename = "coop-sandboxed-iframe-cannot-navigate-to-coop-page")]
             CoopSandboxedIframeCannotNavigateToCoopPage,
+            #[serde(rename = "corp-not-same-origin")]
             CorpNotSameOrigin,
+            #[serde(rename = "corp-not-same-origin-after-defaulted-to-same-origin-by-coep")]
             CorpNotSameOriginAfterDefaultedToSameOriginByCoep,
+            #[serde(rename = "corp-not-same-site")]
             CorpNotSameSite,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CorsError {
+            #[serde(rename = "DisallowedByMode")]
             DisallowedByMode,
+            #[serde(rename = "InvalidResponse")]
             InvalidResponse,
+            #[serde(rename = "WildcardOriginNotAllowed")]
             WildcardOriginNotAllowed,
+            #[serde(rename = "MissingAllowOriginHeader")]
             MissingAllowOriginHeader,
+            #[serde(rename = "MultipleAllowOriginValues")]
             MultipleAllowOriginValues,
+            #[serde(rename = "InvalidAllowOriginValue")]
             InvalidAllowOriginValue,
+            #[serde(rename = "AllowOriginMismatch")]
             AllowOriginMismatch,
+            #[serde(rename = "InvalidAllowCredentials")]
             InvalidAllowCredentials,
+            #[serde(rename = "CorsDisabledScheme")]
             CorsDisabledScheme,
+            #[serde(rename = "PreflightInvalidStatus")]
             PreflightInvalidStatus,
+            #[serde(rename = "PreflightDisallowedRedirect")]
             PreflightDisallowedRedirect,
+            #[serde(rename = "PreflightWildcardOriginNotAllowed")]
             PreflightWildcardOriginNotAllowed,
+            #[serde(rename = "PreflightMissingAllowOriginHeader")]
             PreflightMissingAllowOriginHeader,
+            #[serde(rename = "PreflightMultipleAllowOriginValues")]
             PreflightMultipleAllowOriginValues,
+            #[serde(rename = "PreflightInvalidAllowOriginValue")]
             PreflightInvalidAllowOriginValue,
+            #[serde(rename = "PreflightAllowOriginMismatch")]
             PreflightAllowOriginMismatch,
+            #[serde(rename = "PreflightInvalidAllowCredentials")]
             PreflightInvalidAllowCredentials,
+            #[serde(rename = "PreflightMissingAllowExternal")]
             PreflightMissingAllowExternal,
+            #[serde(rename = "PreflightInvalidAllowExternal")]
             PreflightInvalidAllowExternal,
+            #[serde(rename = "InvalidAllowMethodsPreflightResponse")]
             InvalidAllowMethodsPreflightResponse,
+            #[serde(rename = "InvalidAllowHeadersPreflightResponse")]
             InvalidAllowHeadersPreflightResponse,
+            #[serde(rename = "MethodDisallowedByPreflightResponse")]
             MethodDisallowedByPreflightResponse,
+            #[serde(rename = "HeaderDisallowedByPreflightResponse")]
             HeaderDisallowedByPreflightResponse,
+            #[serde(rename = "RedirectContainsCredentials")]
             RedirectContainsCredentials,
+            #[serde(rename = "InsecurePrivateNetwork")]
             InsecurePrivateNetwork,
+            #[serde(rename = "InvalidPrivateNetworkAccess")]
             InvalidPrivateNetworkAccess,
+            #[serde(rename = "UnexpectedPrivateNetworkAccess")]
             UnexpectedPrivateNetworkAccess,
+            #[serde(rename = "NoCorsRedirectModeNotFollow")]
             NoCorsRedirectModeNotFollow,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum ServiceWorkerResponseSource {
+            #[serde(rename = "cache-storage")]
             CacheStorage,
+            #[serde(rename = "http-cache")]
             HttpCache,
+            #[serde(rename = "fallback-code")]
             FallbackCode,
+            #[serde(rename = "network")]
             Network,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum TrustTokenParamsRefreshPolicy {
+            #[serde(rename = "UseCached")]
             UseCached,
+            #[serde(rename = "Refresh")]
             Refresh,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum TrustTokenOperationType {
+            #[serde(rename = "Issuance")]
             Issuance,
+            #[serde(rename = "Redemption")]
             Redemption,
+            #[serde(rename = "Signing")]
             Signing,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum InitiatorType {
+            #[serde(rename = "parser")]
             Parser,
+            #[serde(rename = "script")]
             Script,
+            #[serde(rename = "preload")]
             Preload,
+            #[serde(rename = "SignedExchange")]
             SignedExchange,
+            #[serde(rename = "preflight")]
             Preflight,
+            #[serde(rename = "other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum SetCookieBlockedReason {
+            #[serde(rename = "SecureOnly")]
             SecureOnly,
+            #[serde(rename = "SameSiteStrict")]
             SameSiteStrict,
+            #[serde(rename = "SameSiteLax")]
             SameSiteLax,
+            #[serde(rename = "SameSiteUnspecifiedTreatedAsLax")]
             SameSiteUnspecifiedTreatedAsLax,
+            #[serde(rename = "SameSiteNoneInsecure")]
             SameSiteNoneInsecure,
+            #[serde(rename = "UserPreferences")]
             UserPreferences,
+            #[serde(rename = "SyntaxError")]
             SyntaxError,
+            #[serde(rename = "SchemeNotSupported")]
             SchemeNotSupported,
+            #[serde(rename = "OverwriteSecure")]
             OverwriteSecure,
+            #[serde(rename = "InvalidDomain")]
             InvalidDomain,
+            #[serde(rename = "InvalidPrefix")]
             InvalidPrefix,
+            #[serde(rename = "UnknownError")]
             UnknownError,
+            #[serde(rename = "SchemefulSameSiteStrict")]
             SchemefulSameSiteStrict,
+            #[serde(rename = "SchemefulSameSiteLax")]
             SchemefulSameSiteLax,
+            #[serde(rename = "SchemefulSameSiteUnspecifiedTreatedAsLax")]
             SchemefulSameSiteUnspecifiedTreatedAsLax,
+            #[serde(rename = "SamePartyFromCrossPartyContext")]
             SamePartyFromCrossPartyContext,
+            #[serde(rename = "SamePartyConflictsWithOtherAttributes")]
             SamePartyConflictsWithOtherAttributes,
+            #[serde(rename = "NameValuePairExceedsMaxSize")]
             NameValuePairExceedsMaxSize,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CookieBlockedReason {
+            #[serde(rename = "SecureOnly")]
             SecureOnly,
+            #[serde(rename = "NotOnPath")]
             NotOnPath,
+            #[serde(rename = "DomainMismatch")]
             DomainMismatch,
+            #[serde(rename = "SameSiteStrict")]
             SameSiteStrict,
+            #[serde(rename = "SameSiteLax")]
             SameSiteLax,
+            #[serde(rename = "SameSiteUnspecifiedTreatedAsLax")]
             SameSiteUnspecifiedTreatedAsLax,
+            #[serde(rename = "SameSiteNoneInsecure")]
             SameSiteNoneInsecure,
+            #[serde(rename = "UserPreferences")]
             UserPreferences,
+            #[serde(rename = "UnknownError")]
             UnknownError,
+            #[serde(rename = "SchemefulSameSiteStrict")]
             SchemefulSameSiteStrict,
+            #[serde(rename = "SchemefulSameSiteLax")]
             SchemefulSameSiteLax,
+            #[serde(rename = "SchemefulSameSiteUnspecifiedTreatedAsLax")]
             SchemefulSameSiteUnspecifiedTreatedAsLax,
+            #[serde(rename = "SamePartyFromCrossPartyContext")]
             SamePartyFromCrossPartyContext,
+            #[serde(rename = "NameValuePairExceedsMaxSize")]
             NameValuePairExceedsMaxSize,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AuthChallengeSource {
+            #[serde(rename = "Server")]
             Server,
+            #[serde(rename = "Proxy")]
             Proxy,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AuthChallengeResponseResponse {
+            #[serde(rename = "Default")]
             Default,
+            #[serde(rename = "CancelAuth")]
             CancelAuth,
+            #[serde(rename = "ProvideCredentials")]
             ProvideCredentials,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum InterceptionStage {
+            #[serde(rename = "Request")]
             Request,
+            #[serde(rename = "HeadersReceived")]
             HeadersReceived,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SignedExchangeErrorField {
+            #[serde(rename = "signatureSig")]
             SignatureSig,
+            #[serde(rename = "signatureIntegrity")]
             SignatureIntegrity,
+            #[serde(rename = "signatureCertUrl")]
             SignatureCertUrl,
+            #[serde(rename = "signatureCertSha256")]
             SignatureCertSha256,
+            #[serde(rename = "signatureValidityUrl")]
             SignatureValidityUrl,
+            #[serde(rename = "signatureTimestamps")]
             SignatureTimestamps,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ContentEncoding {
+            #[serde(rename = "deflate")]
             Deflate,
+            #[serde(rename = "gzip")]
             Gzip,
+            #[serde(rename = "br")]
             Br,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum PrivateNetworkRequestPolicy {
+            #[serde(rename = "Allow")]
             Allow,
+            #[serde(rename = "BlockFromInsecureToMorePrivate")]
             BlockFromInsecureToMorePrivate,
+            #[serde(rename = "WarnFromInsecureToMorePrivate")]
             WarnFromInsecureToMorePrivate,
+            #[serde(rename = "PreflightBlock")]
             PreflightBlock,
+            #[serde(rename = "PreflightWarn")]
             PreflightWarn,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum IPAddressSpace {
+            #[serde(rename = "Local")]
             Local,
+            #[serde(rename = "Private")]
             Private,
+            #[serde(rename = "Public")]
             Public,
+            #[serde(rename = "Unknown")]
             Unknown,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CrossOriginOpenerPolicyValue {
+            #[serde(rename = "SameOrigin")]
             SameOrigin,
+            #[serde(rename = "SameOriginAllowPopups")]
             SameOriginAllowPopups,
+            #[serde(rename = "UnsafeNone")]
             UnsafeNone,
+            #[serde(rename = "SameOriginPlusCoep")]
             SameOriginPlusCoep,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CrossOriginEmbedderPolicyValue {
+            #[serde(rename = "None")]
             None,
+            #[serde(rename = "Credentialless")]
             Credentialless,
+            #[serde(rename = "RequireCorp")]
             RequireCorp,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum ReportStatus {
+            #[serde(rename = "Queued")]
             Queued,
+            #[serde(rename = "Pending")]
             Pending,
+            #[serde(rename = "MarkedForRemoval")]
             MarkedForRemoval,
+            #[serde(rename = "Success")]
             Success,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum TrustTokenOperationDoneEventStatusOption {
+            #[serde(rename = "Ok")]
             Ok,
+            #[serde(rename = "InvalidArgument")]
             InvalidArgument,
+            #[serde(rename = "FailedPrecondition")]
             FailedPrecondition,
+            #[serde(rename = "ResourceExhausted")]
             ResourceExhausted,
+            #[serde(rename = "AlreadyExists")]
             AlreadyExists,
+            #[serde(rename = "Unavailable")]
             Unavailable,
+            #[serde(rename = "BadResponse")]
             BadResponse,
+            #[serde(rename = "InternalError")]
             InternalError,
+            #[serde(rename = "UnknownError")]
             UnknownError,
+            #[serde(rename = "FulfilledLocally")]
             FulfilledLocally,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -11045,32 +11645,41 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum LineStylePattern {
+            #[serde(rename = "dashed")]
             Dashed,
+            #[serde(rename = "dotted")]
             Dotted,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ContrastAlgorithm {
+            #[serde(rename = "aa")]
             Aa,
+            #[serde(rename = "aaa")]
             Aaa,
+            #[serde(rename = "apca")]
             Apca,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ColorFormat {
+            #[serde(rename = "rgb")]
             Rgb,
+            #[serde(rename = "hsl")]
             Hsl,
+            #[serde(rename = "hex")]
             Hex,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum InspectMode {
+            #[serde(rename = "searchForNode")]
             SearchForNode,
+            #[serde(rename = "searchForUAShadowDOM")]
             SearchForUaShadowDom,
+            #[serde(rename = "captureAreaScreenshot")]
             CaptureAreaScreenshot,
+            #[serde(rename = "showDistances")]
             ShowDistances,
+            #[serde(rename = "none")]
             None,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -11733,408 +12342,668 @@ pub mod cdp {
         pub type FrameId = String;
         pub type ScriptIdentifier = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AdFrameType {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "child")]
             Child,
+            #[serde(rename = "root")]
             Root,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AdFrameExplanation {
+            #[serde(rename = "ParentIsAd")]
             ParentIsAd,
+            #[serde(rename = "CreatedByAdScript")]
             CreatedByAdScript,
+            #[serde(rename = "MatchedBlockingRule")]
             MatchedBlockingRule,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum SecureContextType {
+            #[serde(rename = "Secure")]
             Secure,
+            #[serde(rename = "SecureLocalhost")]
             SecureLocalhost,
+            #[serde(rename = "InsecureScheme")]
             InsecureScheme,
+            #[serde(rename = "InsecureAncestor")]
             InsecureAncestor,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum CrossOriginIsolatedContextType {
+            #[serde(rename = "Isolated")]
             Isolated,
+            #[serde(rename = "NotIsolated")]
             NotIsolated,
+            #[serde(rename = "NotIsolatedFeatureDisabled")]
             NotIsolatedFeatureDisabled,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum GatedAPIFeatures {
+            #[serde(rename = "SharedArrayBuffers")]
             SharedArrayBuffers,
+            #[serde(rename = "SharedArrayBuffersTransferAllowed")]
             SharedArrayBuffersTransferAllowed,
+            #[serde(rename = "PerformanceMeasureMemory")]
             PerformanceMeasureMemory,
+            #[serde(rename = "PerformanceProfile")]
             PerformanceProfile,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum PermissionsPolicyFeature {
+            #[serde(rename = "accelerometer")]
             Accelerometer,
+            #[serde(rename = "ambient-light-sensor")]
             AmbientLightSensor,
+            #[serde(rename = "attribution-reporting")]
             AttributionReporting,
+            #[serde(rename = "autoplay")]
             Autoplay,
+            #[serde(rename = "camera")]
             Camera,
+            #[serde(rename = "ch-dpr")]
             ChDpr,
+            #[serde(rename = "ch-device-memory")]
             ChDeviceMemory,
+            #[serde(rename = "ch-downlink")]
             ChDownlink,
+            #[serde(rename = "ch-ect")]
             ChEct,
+            #[serde(rename = "ch-prefers-color-scheme")]
             ChPrefersColorScheme,
+            #[serde(rename = "ch-rtt")]
             ChRtt,
+            #[serde(rename = "ch-ua")]
             ChUa,
+            #[serde(rename = "ch-ua-arch")]
             ChUaArch,
+            #[serde(rename = "ch-ua-bitness")]
             ChUaBitness,
+            #[serde(rename = "ch-ua-platform")]
             ChUaPlatform,
+            #[serde(rename = "ch-ua-model")]
             ChUaModel,
+            #[serde(rename = "ch-ua-mobile")]
             ChUaMobile,
+            #[serde(rename = "ch-ua-full-version")]
             ChUaFullVersion,
+            #[serde(rename = "ch-ua-full-version-list")]
             ChUaFullVersionList,
+            #[serde(rename = "ch-ua-platform-version")]
             ChUaPlatformVersion,
+            #[serde(rename = "ch-ua-reduced")]
             ChUaReduced,
+            #[serde(rename = "ch-viewport-height")]
             ChViewportHeight,
+            #[serde(rename = "ch-viewport-width")]
             ChViewportWidth,
+            #[serde(rename = "ch-width")]
             ChWidth,
+            #[serde(rename = "clipboard-read")]
             ClipboardRead,
+            #[serde(rename = "clipboard-write")]
             ClipboardWrite,
+            #[serde(rename = "cross-origin-isolated")]
             CrossOriginIsolated,
+            #[serde(rename = "direct-sockets")]
             DirectSockets,
+            #[serde(rename = "display-capture")]
             DisplayCapture,
+            #[serde(rename = "document-domain")]
             DocumentDomain,
+            #[serde(rename = "encrypted-media")]
             EncryptedMedia,
+            #[serde(rename = "execution-while-out-of-viewport")]
             ExecutionWhileOutOfViewport,
+            #[serde(rename = "execution-while-not-rendered")]
             ExecutionWhileNotRendered,
+            #[serde(rename = "focus-without-user-activation")]
             FocusWithoutUserActivation,
+            #[serde(rename = "fullscreen")]
             Fullscreen,
+            #[serde(rename = "frobulate")]
             Frobulate,
+            #[serde(rename = "gamepad")]
             Gamepad,
+            #[serde(rename = "geolocation")]
             Geolocation,
+            #[serde(rename = "gyroscope")]
             Gyroscope,
+            #[serde(rename = "hid")]
             Hid,
+            #[serde(rename = "idle-detection")]
             IdleDetection,
+            #[serde(rename = "interest-cohort")]
             InterestCohort,
+            #[serde(rename = "join-ad-interest-group")]
             JoinAdInterestGroup,
+            #[serde(rename = "keyboard-map")]
             KeyboardMap,
+            #[serde(rename = "magnetometer")]
             Magnetometer,
+            #[serde(rename = "microphone")]
             Microphone,
+            #[serde(rename = "midi")]
             Midi,
+            #[serde(rename = "otp-credentials")]
             OtpCredentials,
+            #[serde(rename = "payment")]
             Payment,
+            #[serde(rename = "picture-in-picture")]
             PictureInPicture,
+            #[serde(rename = "publickey-credentials-get")]
             PublickeyCredentialsGet,
+            #[serde(rename = "run-ad-auction")]
             RunAdAuction,
+            #[serde(rename = "screen-wake-lock")]
             ScreenWakeLock,
+            #[serde(rename = "serial")]
             Serial,
+            #[serde(rename = "shared-autofill")]
             SharedAutofill,
+            #[serde(rename = "storage-access-api")]
             StorageAccessApi,
+            #[serde(rename = "sync-xhr")]
             SyncXhr,
+            #[serde(rename = "trust-token-redemption")]
             TrustTokenRedemption,
+            #[serde(rename = "usb")]
             Usb,
+            #[serde(rename = "vertical-scroll")]
             VerticalScroll,
+            #[serde(rename = "web-share")]
             WebShare,
+            #[serde(rename = "window-placement")]
             WindowPlacement,
+            #[serde(rename = "xr-spatial-tracking")]
             XrSpatialTracking,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum PermissionsPolicyBlockReason {
+            #[serde(rename = "Header")]
             Header,
+            #[serde(rename = "IframeAttribute")]
             IframeAttribute,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum OriginTrialTokenStatus {
+            #[serde(rename = "Success")]
             Success,
+            #[serde(rename = "NotSupported")]
             NotSupported,
+            #[serde(rename = "Insecure")]
             Insecure,
+            #[serde(rename = "Expired")]
             Expired,
+            #[serde(rename = "WrongOrigin")]
             WrongOrigin,
+            #[serde(rename = "InvalidSignature")]
             InvalidSignature,
+            #[serde(rename = "Malformed")]
             Malformed,
+            #[serde(rename = "WrongVersion")]
             WrongVersion,
+            #[serde(rename = "FeatureDisabled")]
             FeatureDisabled,
+            #[serde(rename = "TokenDisabled")]
             TokenDisabled,
+            #[serde(rename = "FeatureDisabledForUser")]
             FeatureDisabledForUser,
+            #[serde(rename = "UnknownTrial")]
             UnknownTrial,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum OriginTrialStatus {
+            #[serde(rename = "Enabled")]
             Enabled,
+            #[serde(rename = "ValidTokenNotProvided")]
             ValidTokenNotProvided,
+            #[serde(rename = "OSNotSupported")]
             OsNotSupported,
+            #[serde(rename = "TrialNotAllowed")]
             TrialNotAllowed,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum OriginTrialUsageRestriction {
+            #[serde(rename = "None")]
             None,
+            #[serde(rename = "Subset")]
             Subset,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum TransitionType {
+            #[serde(rename = "link")]
             Link,
+            #[serde(rename = "typed")]
             Typed,
+            #[serde(rename = "address_bar")]
             AddressBar,
+            #[serde(rename = "auto_bookmark")]
             AutoBookmark,
+            #[serde(rename = "auto_subframe")]
             AutoSubframe,
+            #[serde(rename = "manual_subframe")]
             ManualSubframe,
+            #[serde(rename = "generated")]
             Generated,
+            #[serde(rename = "auto_toplevel")]
             AutoToplevel,
+            #[serde(rename = "form_submit")]
             FormSubmit,
+            #[serde(rename = "reload")]
             Reload,
+            #[serde(rename = "keyword")]
             Keyword,
+            #[serde(rename = "keyword_generated")]
             KeywordGenerated,
+            #[serde(rename = "other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DialogType {
+            #[serde(rename = "alert")]
             Alert,
+            #[serde(rename = "confirm")]
             Confirm,
+            #[serde(rename = "prompt")]
             Prompt,
+            #[serde(rename = "beforeunload")]
             Beforeunload,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ClientNavigationReason {
+            #[serde(rename = "formSubmissionGet")]
             FormSubmissionGet,
+            #[serde(rename = "formSubmissionPost")]
             FormSubmissionPost,
+            #[serde(rename = "httpHeaderRefresh")]
             HttpHeaderRefresh,
+            #[serde(rename = "scriptInitiated")]
             ScriptInitiated,
+            #[serde(rename = "metaTagRefresh")]
             MetaTagRefresh,
+            #[serde(rename = "pageBlockInterstitial")]
             PageBlockInterstitial,
+            #[serde(rename = "reload")]
             Reload,
+            #[serde(rename = "anchorClick")]
             AnchorClick,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ClientNavigationDisposition {
+            #[serde(rename = "currentTab")]
             CurrentTab,
+            #[serde(rename = "newTab")]
             NewTab,
+            #[serde(rename = "newWindow")]
             NewWindow,
+            #[serde(rename = "download")]
             Download,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ReferrerPolicy {
+            #[serde(rename = "noReferrer")]
             NoReferrer,
+            #[serde(rename = "noReferrerWhenDowngrade")]
             NoReferrerWhenDowngrade,
+            #[serde(rename = "origin")]
             Origin,
+            #[serde(rename = "originWhenCrossOrigin")]
             OriginWhenCrossOrigin,
+            #[serde(rename = "sameOrigin")]
             SameOrigin,
+            #[serde(rename = "strictOrigin")]
             StrictOrigin,
+            #[serde(rename = "strictOriginWhenCrossOrigin")]
             StrictOriginWhenCrossOrigin,
+            #[serde(rename = "unsafeUrl")]
             UnsafeUrl,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum NavigationType {
+            #[serde(rename = "Navigation")]
             Navigation,
+            #[serde(rename = "BackForwardCacheRestore")]
             BackForwardCacheRestore,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum BackForwardCacheNotRestoredReason {
+            #[serde(rename = "NotMainFrame")]
             NotMainFrame,
+            #[serde(rename = "BackForwardCacheDisabled")]
             BackForwardCacheDisabled,
+            #[serde(rename = "RelatedActiveContentsExist")]
             RelatedActiveContentsExist,
+            #[serde(rename = "HTTPStatusNotOK")]
             HttpStatusNotOk,
+            #[serde(rename = "SchemeNotHTTPOrHTTPS")]
             SchemeNotHttpOrHttps,
+            #[serde(rename = "Loading")]
             Loading,
+            #[serde(rename = "WasGrantedMediaAccess")]
             WasGrantedMediaAccess,
+            #[serde(rename = "DisableForRenderFrameHostCalled")]
             DisableForRenderFrameHostCalled,
+            #[serde(rename = "DomainNotAllowed")]
             DomainNotAllowed,
+            #[serde(rename = "HTTPMethodNotGET")]
             HttpMethodNotGet,
+            #[serde(rename = "SubframeIsNavigating")]
             SubframeIsNavigating,
+            #[serde(rename = "Timeout")]
             Timeout,
+            #[serde(rename = "CacheLimit")]
             CacheLimit,
+            #[serde(rename = "JavaScriptExecution")]
             JavaScriptExecution,
+            #[serde(rename = "RendererProcessKilled")]
             RendererProcessKilled,
+            #[serde(rename = "RendererProcessCrashed")]
             RendererProcessCrashed,
+            #[serde(rename = "GrantedMediaStreamAccess")]
             GrantedMediaStreamAccess,
+            #[serde(rename = "SchedulerTrackedFeatureUsed")]
             SchedulerTrackedFeatureUsed,
+            #[serde(rename = "ConflictingBrowsingInstance")]
             ConflictingBrowsingInstance,
+            #[serde(rename = "CacheFlushed")]
             CacheFlushed,
+            #[serde(rename = "ServiceWorkerVersionActivation")]
             ServiceWorkerVersionActivation,
+            #[serde(rename = "SessionRestored")]
             SessionRestored,
+            #[serde(rename = "ServiceWorkerPostMessage")]
             ServiceWorkerPostMessage,
+            #[serde(rename = "EnteredBackForwardCacheBeforeServiceWorkerHostAdded")]
             EnteredBackForwardCacheBeforeServiceWorkerHostAdded,
+            #[serde(rename = "RenderFrameHostReused_SameSite")]
             RenderFrameHostReusedSameSite,
+            #[serde(rename = "RenderFrameHostReused_CrossSite")]
             RenderFrameHostReusedCrossSite,
+            #[serde(rename = "ServiceWorkerClaim")]
             ServiceWorkerClaim,
+            #[serde(rename = "IgnoreEventAndEvict")]
             IgnoreEventAndEvict,
+            #[serde(rename = "HaveInnerContents")]
             HaveInnerContents,
+            #[serde(rename = "TimeoutPuttingInCache")]
             TimeoutPuttingInCache,
+            #[serde(rename = "BackForwardCacheDisabledByLowMemory")]
             BackForwardCacheDisabledByLowMemory,
+            #[serde(rename = "BackForwardCacheDisabledByCommandLine")]
             BackForwardCacheDisabledByCommandLine,
+            #[serde(rename = "NetworkRequestDatapipeDrainedAsBytesConsumer")]
             NetworkRequestDatapipeDrainedAsBytesConsumer,
+            #[serde(rename = "NetworkRequestRedirected")]
             NetworkRequestRedirected,
+            #[serde(rename = "NetworkRequestTimeout")]
             NetworkRequestTimeout,
+            #[serde(rename = "NetworkExceedsBufferLimit")]
             NetworkExceedsBufferLimit,
+            #[serde(rename = "NavigationCancelledWhileRestoring")]
             NavigationCancelledWhileRestoring,
+            #[serde(rename = "NotMostRecentNavigationEntry")]
             NotMostRecentNavigationEntry,
+            #[serde(rename = "BackForwardCacheDisabledForPrerender")]
             BackForwardCacheDisabledForPrerender,
+            #[serde(rename = "UserAgentOverrideDiffers")]
             UserAgentOverrideDiffers,
+            #[serde(rename = "ForegroundCacheLimit")]
             ForegroundCacheLimit,
+            #[serde(rename = "BrowsingInstanceNotSwapped")]
             BrowsingInstanceNotSwapped,
+            #[serde(rename = "BackForwardCacheDisabledForDelegate")]
             BackForwardCacheDisabledForDelegate,
+            #[serde(rename = "OptInUnloadHeaderNotPresent")]
             OptInUnloadHeaderNotPresent,
+            #[serde(rename = "UnloadHandlerExistsInMainFrame")]
             UnloadHandlerExistsInMainFrame,
+            #[serde(rename = "UnloadHandlerExistsInSubFrame")]
             UnloadHandlerExistsInSubFrame,
+            #[serde(rename = "ServiceWorkerUnregistration")]
             ServiceWorkerUnregistration,
+            #[serde(rename = "CacheControlNoStore")]
             CacheControlNoStore,
+            #[serde(rename = "CacheControlNoStoreCookieModified")]
             CacheControlNoStoreCookieModified,
+            #[serde(rename = "CacheControlNoStoreHTTPOnlyCookieModified")]
             CacheControlNoStoreHttpOnlyCookieModified,
+            #[serde(rename = "NoResponseHead")]
             NoResponseHead,
+            #[serde(rename = "Unknown")]
             Unknown,
+            #[serde(rename = "ActivationNavigationsDisallowedForBug1234857")]
             ActivationNavigationsDisallowedForBug1234857,
+            #[serde(rename = "WebSocket")]
             WebSocket,
+            #[serde(rename = "WebTransport")]
             WebTransport,
+            #[serde(rename = "WebRTC")]
             WebRtc,
+            #[serde(rename = "MainResourceHasCacheControlNoStore")]
             MainResourceHasCacheControlNoStore,
+            #[serde(rename = "MainResourceHasCacheControlNoCache")]
             MainResourceHasCacheControlNoCache,
+            #[serde(rename = "SubresourceHasCacheControlNoStore")]
             SubresourceHasCacheControlNoStore,
+            #[serde(rename = "SubresourceHasCacheControlNoCache")]
             SubresourceHasCacheControlNoCache,
+            #[serde(rename = "ContainsPlugins")]
             ContainsPlugins,
+            #[serde(rename = "DocumentLoaded")]
             DocumentLoaded,
+            #[serde(rename = "DedicatedWorkerOrWorklet")]
             DedicatedWorkerOrWorklet,
+            #[serde(rename = "OutstandingNetworkRequestOthers")]
             OutstandingNetworkRequestOthers,
+            #[serde(rename = "OutstandingIndexedDBTransaction")]
             OutstandingIndexedDbTransaction,
+            #[serde(rename = "RequestedNotificationsPermission")]
             RequestedNotificationsPermission,
+            #[serde(rename = "RequestedMIDIPermission")]
             RequestedMidiPermission,
+            #[serde(rename = "RequestedAudioCapturePermission")]
             RequestedAudioCapturePermission,
+            #[serde(rename = "RequestedVideoCapturePermission")]
             RequestedVideoCapturePermission,
+            #[serde(rename = "RequestedBackForwardCacheBlockedSensors")]
             RequestedBackForwardCacheBlockedSensors,
+            #[serde(rename = "RequestedBackgroundWorkPermission")]
             RequestedBackgroundWorkPermission,
+            #[serde(rename = "BroadcastChannel")]
             BroadcastChannel,
+            #[serde(rename = "IndexedDBConnection")]
             IndexedDbConnection,
+            #[serde(rename = "WebXR")]
             WebXr,
+            #[serde(rename = "SharedWorker")]
             SharedWorker,
+            #[serde(rename = "WebLocks")]
             WebLocks,
+            #[serde(rename = "WebHID")]
             WebHid,
+            #[serde(rename = "WebShare")]
             WebShare,
+            #[serde(rename = "RequestedStorageAccessGrant")]
             RequestedStorageAccessGrant,
+            #[serde(rename = "WebNfc")]
             WebNfc,
+            #[serde(rename = "OutstandingNetworkRequestFetch")]
             OutstandingNetworkRequestFetch,
+            #[serde(rename = "OutstandingNetworkRequestXHR")]
             OutstandingNetworkRequestXhr,
+            #[serde(rename = "AppBanner")]
             AppBanner,
+            #[serde(rename = "Printing")]
             Printing,
+            #[serde(rename = "WebDatabase")]
             WebDatabase,
+            #[serde(rename = "PictureInPicture")]
             PictureInPicture,
+            #[serde(rename = "Portal")]
             Portal,
+            #[serde(rename = "SpeechRecognizer")]
             SpeechRecognizer,
+            #[serde(rename = "IdleManager")]
             IdleManager,
+            #[serde(rename = "PaymentManager")]
             PaymentManager,
+            #[serde(rename = "SpeechSynthesis")]
             SpeechSynthesis,
+            #[serde(rename = "KeyboardLock")]
             KeyboardLock,
+            #[serde(rename = "WebOTPService")]
             WebOtpService,
+            #[serde(rename = "OutstandingNetworkRequestDirectSocket")]
             OutstandingNetworkRequestDirectSocket,
+            #[serde(rename = "InjectedJavascript")]
             InjectedJavascript,
+            #[serde(rename = "InjectedStyleSheet")]
             InjectedStyleSheet,
+            #[serde(rename = "Dummy")]
             Dummy,
+            #[serde(rename = "ContentSecurityHandler")]
             ContentSecurityHandler,
+            #[serde(rename = "ContentWebAuthenticationAPI")]
             ContentWebAuthenticationApi,
+            #[serde(rename = "ContentFileChooser")]
             ContentFileChooser,
+            #[serde(rename = "ContentSerial")]
             ContentSerial,
+            #[serde(rename = "ContentFileSystemAccess")]
             ContentFileSystemAccess,
+            #[serde(rename = "ContentMediaDevicesDispatcherHost")]
             ContentMediaDevicesDispatcherHost,
+            #[serde(rename = "ContentWebBluetooth")]
             ContentWebBluetooth,
+            #[serde(rename = "ContentWebUSB")]
             ContentWebUsb,
+            #[serde(rename = "ContentMediaSession")]
             ContentMediaSession,
+            #[serde(rename = "ContentMediaSessionService")]
             ContentMediaSessionService,
+            #[serde(rename = "EmbedderPopupBlockerTabHelper")]
             EmbedderPopupBlockerTabHelper,
+            #[serde(rename = "EmbedderSafeBrowsingTriggeredPopupBlocker")]
             EmbedderSafeBrowsingTriggeredPopupBlocker,
+            #[serde(rename = "EmbedderSafeBrowsingThreatDetails")]
             EmbedderSafeBrowsingThreatDetails,
+            #[serde(rename = "EmbedderAppBannerManager")]
             EmbedderAppBannerManager,
+            #[serde(rename = "EmbedderDomDistillerViewerSource")]
             EmbedderDomDistillerViewerSource,
+            #[serde(rename = "EmbedderDomDistillerSelfDeletingRequestDelegate")]
             EmbedderDomDistillerSelfDeletingRequestDelegate,
+            #[serde(rename = "EmbedderOomInterventionTabHelper")]
             EmbedderOomInterventionTabHelper,
+            #[serde(rename = "EmbedderOfflinePage")]
             EmbedderOfflinePage,
+            #[serde(rename = "EmbedderChromePasswordManagerClientBindCredentialManager")]
             EmbedderChromePasswordManagerClientBindCredentialManager,
+            #[serde(rename = "EmbedderPermissionRequestManager")]
             EmbedderPermissionRequestManager,
+            #[serde(rename = "EmbedderModalDialog")]
             EmbedderModalDialog,
+            #[serde(rename = "EmbedderExtensions")]
             EmbedderExtensions,
+            #[serde(rename = "EmbedderExtensionMessaging")]
             EmbedderExtensionMessaging,
+            #[serde(rename = "EmbedderExtensionMessagingForOpenPort")]
             EmbedderExtensionMessagingForOpenPort,
+            #[serde(rename = "EmbedderExtensionSentMessageToCachedFrame")]
             EmbedderExtensionSentMessageToCachedFrame,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum BackForwardCacheNotRestoredReasonType {
+            #[serde(rename = "SupportPending")]
             SupportPending,
+            #[serde(rename = "PageSupportNeeded")]
             PageSupportNeeded,
+            #[serde(rename = "Circumstantial")]
             Circumstantial,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum CaptureScreenshotFormatOption {
+            #[serde(rename = "jpeg")]
             Jpeg,
+            #[serde(rename = "png")]
             Png,
+            #[serde(rename = "webp")]
             Webp,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum CaptureSnapshotFormatOption {
+            #[serde(rename = "mhtml")]
             Mhtml,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum PrintToPDFTransfer_modeOption {
+            #[serde(rename = "ReturnAsBase64")]
             ReturnAsBase64,
+            #[serde(rename = "ReturnAsStream")]
             ReturnAsStream,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetDownloadBehaviorBehaviorOption {
+            #[serde(rename = "deny")]
             Deny,
+            #[serde(rename = "allow")]
             Allow,
+            #[serde(rename = "default")]
             Default,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetTouchEmulationEnabledConfigurationOption {
+            #[serde(rename = "mobile")]
             Mobile,
+            #[serde(rename = "desktop")]
             Desktop,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum StartScreencastFormatOption {
+            #[serde(rename = "jpeg")]
             Jpeg,
+            #[serde(rename = "png")]
             Png,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetWebLifecycleStateStateOption {
+            #[serde(rename = "frozen")]
             Frozen,
+            #[serde(rename = "active")]
             Active,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetSPCTransactionModeModeOption {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "autoaccept")]
             Autoaccept,
+            #[serde(rename = "autoreject")]
             Autoreject,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum FileChooserOpenedEventModeOption {
+            #[serde(rename = "selectSingle")]
             SelectSingle,
+            #[serde(rename = "selectMultiple")]
             SelectMultiple,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum FrameDetachedEventReasonOption {
+            #[serde(rename = "remove")]
             Remove,
+            #[serde(rename = "swap")]
             Swap,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum DownloadProgressEventStateOption {
+            #[serde(rename = "inProgress")]
             InProgress,
+            #[serde(rename = "completed")]
             Completed,
+            #[serde(rename = "canceled")]
             Canceled,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -13614,15 +14483,17 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum EnableTime_domainOption {
+            #[serde(rename = "timeTicks")]
             TimeTicks,
+            #[serde(rename = "threadTicks")]
             ThreadTicks,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SetTimeDomainTime_domainOption {
+            #[serde(rename = "timeTicks")]
             TimeTicks,
+            #[serde(rename = "threadTicks")]
             ThreadTicks,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -13788,32 +14659,41 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type CertificateId = JsUInt;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum MixedContentType {
+            #[serde(rename = "blockable")]
             Blockable,
+            #[serde(rename = "optionally-blockable")]
             OptionallyBlockable,
+            #[serde(rename = "none")]
             None,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum SecurityState {
+            #[serde(rename = "unknown")]
             Unknown,
+            #[serde(rename = "neutral")]
             Neutral,
+            #[serde(rename = "insecure")]
             Insecure,
+            #[serde(rename = "secure")]
             Secure,
+            #[serde(rename = "info")]
             Info,
+            #[serde(rename = "insecure-broken")]
             InsecureBroken,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SafetyTipStatus {
+            #[serde(rename = "badReputation")]
             BadReputation,
+            #[serde(rename = "lookalike")]
             Lookalike,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum CertificateErrorAction {
+            #[serde(rename = "continue")]
             Continue,
+            #[serde(rename = "cancel")]
             Cancel,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -14020,21 +14900,29 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type RegistrationID = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ServiceWorkerVersionRunningStatus {
+            #[serde(rename = "stopped")]
             Stopped,
+            #[serde(rename = "starting")]
             Starting,
+            #[serde(rename = "running")]
             Running,
+            #[serde(rename = "stopping")]
             Stopping,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ServiceWorkerVersionStatus {
+            #[serde(rename = "new")]
             New,
+            #[serde(rename = "installing")]
             Installing,
+            #[serde(rename = "installed")]
             Installed,
+            #[serde(rename = "activating")]
             Activating,
+            #[serde(rename = "activated")]
             Activated,
+            #[serde(rename = "redundant")]
             Redundant,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -14292,18 +15180,28 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum StorageType {
+            #[serde(rename = "appcache")]
             Appcache,
+            #[serde(rename = "cookies")]
             Cookies,
+            #[serde(rename = "file_systems")]
             FileSystems,
+            #[serde(rename = "indexeddb")]
             Indexeddb,
+            #[serde(rename = "local_storage")]
             LocalStorage,
+            #[serde(rename = "shader_cache")]
             ShaderCache,
+            #[serde(rename = "websql")]
             Websql,
+            #[serde(rename = "service_workers")]
             ServiceWorkers,
+            #[serde(rename = "cache_storage")]
             CacheStorage,
+            #[serde(rename = "all")]
             All,
+            #[serde(rename = "other")]
             Other,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -14551,17 +15449,21 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum SubsamplingFormat {
+            #[serde(rename = "yuv420")]
             Yuv420,
+            #[serde(rename = "yuv422")]
             Yuv422,
+            #[serde(rename = "yuv444")]
             Yuv444,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ImageType {
+            #[serde(rename = "jpeg")]
             Jpeg,
+            #[serde(rename = "webp")]
             Webp,
+            #[serde(rename = "unknown")]
             Unknown,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -15115,43 +16017,53 @@ pub mod cdp {
         use serde::{Deserialize, Serialize};
         use serde_json::Value as Json;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum TraceConfigRecordMode {
+            #[serde(rename = "recordUntilFull")]
             RecordUntilFull,
+            #[serde(rename = "recordContinuously")]
             RecordContinuously,
+            #[serde(rename = "recordAsMuchAsPossible")]
             RecordAsMuchAsPossible,
+            #[serde(rename = "echoToConsole")]
             EchoToConsole,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum StreamFormat {
+            #[serde(rename = "json")]
             Json,
+            #[serde(rename = "proto")]
             Proto,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum StreamCompression {
+            #[serde(rename = "none")]
             None,
+            #[serde(rename = "gzip")]
             Gzip,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum MemoryDumpLevelOfDetail {
+            #[serde(rename = "background")]
             Background,
+            #[serde(rename = "light")]
             Light,
+            #[serde(rename = "detailed")]
             Detailed,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum TracingBackend {
+            #[serde(rename = "auto")]
             Auto,
+            #[serde(rename = "chrome")]
             Chrome,
+            #[serde(rename = "system")]
             System,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum StartTransfer_modeOption {
+            #[serde(rename = "ReportEvents")]
             ReportEvents,
+            #[serde(rename = "ReturnAsStream")]
             ReturnAsStream,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -15326,22 +16238,26 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type RequestId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum RequestStage {
+            #[serde(rename = "Request")]
             Request,
+            #[serde(rename = "Response")]
             Response,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AuthChallengeSource {
+            #[serde(rename = "Server")]
             Server,
+            #[serde(rename = "Proxy")]
             Proxy,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "PascalCase")]
         pub enum AuthChallengeResponseResponse {
+            #[serde(rename = "Default")]
             Default,
+            #[serde(rename = "CancelAuth")]
             CancelAuth,
+            #[serde(rename = "ProvideCredentials")]
             ProvideCredentials,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -15593,35 +16509,42 @@ pub mod cdp {
         pub type NodeType = String;
         pub type ParamType = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ContextType {
+            #[serde(rename = "realtime")]
             Realtime,
+            #[serde(rename = "offline")]
             Offline,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ContextState {
+            #[serde(rename = "suspended")]
             Suspended,
+            #[serde(rename = "running")]
             Running,
+            #[serde(rename = "closed")]
             Closed,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum ChannelCountMode {
+            #[serde(rename = "clamped-max")]
             ClampedMax,
+            #[serde(rename = "explicit")]
             Explicit,
+            #[serde(rename = "max")]
             Max,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum ChannelInterpretation {
+            #[serde(rename = "discrete")]
             Discrete,
+            #[serde(rename = "speakers")]
             Speakers,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "kebab-case")]
         pub enum AutomationRate {
+            #[serde(rename = "a-rate")]
             ARate,
+            #[serde(rename = "k-rate")]
             KRate,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -15879,24 +16802,30 @@ pub mod cdp {
         use serde_json::Value as Json;
         pub type AuthenticatorId = String;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AuthenticatorProtocol {
+            #[serde(rename = "u2f")]
             U2F,
+            #[serde(rename = "ctap2")]
             Ctap2,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum Ctap2Version {
+            #[serde(rename = "ctap2_0")]
             Ctap20,
+            #[serde(rename = "ctap2_1")]
             Ctap21,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum AuthenticatorTransport {
+            #[serde(rename = "usb")]
             Usb,
+            #[serde(rename = "nfc")]
             Nfc,
+            #[serde(rename = "ble")]
             Ble,
+            #[serde(rename = "cable")]
             Cable,
+            #[serde(rename = "internal")]
             Internal,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -16101,17 +17030,21 @@ pub mod cdp {
         pub type PlayerId = String;
         pub type Timestamp = JsFloat;
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PlayerMessageLevel {
+            #[serde(rename = "error")]
             Error,
+            #[serde(rename = "warning")]
             Warning,
+            #[serde(rename = "info")]
             Info,
+            #[serde(rename = "debug")]
             Debug,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-        #[serde(rename_all = "camelCase")]
         pub enum PlayerErrorType {
+            #[serde(rename = "pipeline_error")]
             PipelineError,
+            #[serde(rename = "media_error")]
             MediaError,
         }
         #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
