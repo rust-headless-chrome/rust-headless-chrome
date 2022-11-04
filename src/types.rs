@@ -73,7 +73,7 @@ impl Into<Option<Page::PrintToPDFTransfer_modeOption>> for TransferMode {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PrintToPdfOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
