@@ -56,7 +56,7 @@ pub enum Message {
     ConnectionShutdown,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct TransferMode {
     mode: String,
 }
@@ -73,7 +73,7 @@ impl Into<Option<Page::PrintToPDFTransfer_modeOption>> for TransferMode {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PrintToPdfOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
