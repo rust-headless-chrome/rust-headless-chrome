@@ -40,13 +40,14 @@ jpeg-decoder = { version = "0.1", default_features = false }
 filepath = "0.1.1"
 
 [build-dependencies]
-auto_generate_cdp = "0.3.3"
+auto_generate_cdp = { version = "0.3.3", default-features = false }
 
 [lib]
 name = "headless_chrome"
 path = "src/lib.rs"
 
 [features]
-default = []
+default = [ "auto_generate_cdp/native-tls" ]
 fetch = [ "ureq", "directories", "zip", "walkdir" ]
+rustls = [ "auto_generate_cdp/rustls" ]
 nightly = []
