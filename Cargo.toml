@@ -40,7 +40,7 @@ jpeg-decoder = { version = "0.1", default_features = false }
 filepath = "0.1.1"
 
 [build-dependencies]
-auto_generate_cdp = { version = "0.3.3", default-features = false }
+auto_generate_cdp = { version = "0.3.4", default-features = false }
 
 [lib]
 name = "headless_chrome"
