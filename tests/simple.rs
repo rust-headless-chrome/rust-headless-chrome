@@ -150,7 +150,7 @@ fn actions_on_tab_wont_hang_after_browser_drops() -> Result<()> {
         let (_, browser, tab) = dumb_server(include_str!("simple.html"));
         std::thread::spawn(move || {
             let mut rng = rand::thread_rng();
-            let millis: u64 = rng.gen_range(0, 5000);
+            let millis: u64 = rng.gen_range(0..5000);
             std::thread::sleep(std::time::Duration::from_millis(millis));
             trace!("dropping browser");
             drop(browser);
@@ -460,9 +460,9 @@ fn find_element_on_tab_by_xpath() -> Result<()> {
     let inner_element_xpath =
         containing_element_xpath.wait_for_xpath(r#"//*[@id="strictly-above"]"#)?;
     dbg!(&inner_element_xpath);
-    let attrs = inner_element_xpath.get_attributes()?.unwrap();
-    let id: Vec<&String> = attrs.iter().filter(|v| v.as_str() == "id").collect();
-    assert_eq!(id[0].as_str(), "strictly-above");
+    let attrs = inner_element_xpath.get_attributes()?;
+    let id = attrs.get("id").unwrap();
+    assert_eq!(id.as_str(), "strictly-above");
 
     Ok(())
 }
