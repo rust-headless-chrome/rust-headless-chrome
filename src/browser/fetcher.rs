@@ -12,10 +12,10 @@ use ureq;
 use walkdir::WalkDir;
 use zip;
 
-pub const CUR_REV: &str = "634997";
+pub const CUR_REV: &str = "1000027"; // "634997";
 
 const APP_NAME: &str = "headless-chrome";
-const DEFAULT_HOST: &str = "https://storage.googleapis.com";
+const DEFAULT_HOST: &str = "https://commondatastorage.googleapis.com";
 
 #[cfg(target_os = "linux")]
 const PLATFORM: &str = "linux";
@@ -334,6 +334,16 @@ where
     {
         Ok(format!(
             "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
+            DEFAULT_HOST,
+            revision.as_ref(),
+            archive_name(revision.as_ref())?
+        ))
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "arm"))]
+    {
+        Ok(format!(
+            "{}/chromium-browser-snapshots/Mac_Arm/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
