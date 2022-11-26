@@ -10,17 +10,17 @@ repository = "https://github.com/atroche/rust-headless-chrome"
 readme = "README.md"
 
 [dependencies]
-websocket = { version = "0.23", default_features = false, features = ["sync"] }
+websocket = { version = "0.24", default_features = false, features = ["sync"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = '1'
 thiserror = '1'
 log = "0.4"
-rand = "0.7"
+rand = "0.8"
 tempfile = "3"
 base64 = "0.10"
-derive_builder = "0.8"
+derive_builder = "0.11"
 which = "3.0"
 ureq = { version = "0.11", optional = true }
 directories = { version = "2.0", optional = true }
