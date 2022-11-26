@@ -346,6 +346,7 @@ impl Transport {
             open.store(false, Ordering::SeqCst);
             waiting_call_registry.cancel_outstanding_method_calls();
             let mut listeners = listeners.lock().unwrap();
+            listeners.clear();
             *listeners = HashMap::new();
             info!("cleared listeners, I think");
         });

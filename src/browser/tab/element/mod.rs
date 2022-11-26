@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::time::Duration;
 
@@ -31,6 +32,7 @@ pub struct Element<'a> {
     pub backend_node_id: DOM::NodeId,
     pub node_id: DOM::NodeId,
     pub parent: &'a super::Tab,
+    pub attrs: HashMap<String, String>
 }
 
 impl<'a> Debug for Element<'a> {
@@ -49,11 +51,11 @@ impl<'a> Element<'a> {
             return Err(NoElementFound {}.into());
         }
 
-        let backend_node_id = parent
+        let node = parent
             .describe_node(node_id)
-            .map_err(NoElementFound::map)?
-            .backend_node_id;
+            .map_err(NoElementFound::map)?;
 
+        let backend_node_id = node.backend_node_id;
         let remote_object_id = {
             let object = parent
                 .call_method(DOM::ResolveNode {
@@ -63,14 +65,31 @@ impl<'a> Element<'a> {
                     execution_context_id: None,
                 })?
                 .object;
-            object.object_id.expect("couldn't find object ID")
+
+                object.object_id.expect("couldn't find object ID")
         };
+
+        let mut attrs: HashMap<String, String> = HashMap::default();
+        
+        
+        let attrs_vec = node.attributes.unwrap_or(vec![]);
+        let tag = node.local_name;
+
+        attrs.insert("tag".to_string(), tag);
+        attrs.insert("value".to_string(), node.value.unwrap_or("".to_string()));
+        for i in (0..attrs_vec.len() - 1).step_by(2) {
+
+            let k = attrs_vec[i].to_string();
+            let v = attrs_vec[i+1].to_string();
+            attrs.insert(k, v);
+        }
 
         Ok(Element {
             remote_object_id,
             backend_node_id,
             node_id,
             parent,
+            attrs
         })
     }
 
@@ -381,7 +400,7 @@ impl<'a> Element<'a> {
             .call_method(DOM::DescribeNode {
                 node_id: None,
                 backend_node_id: Some(self.backend_node_id),
-                depth: Some(100),
+                depth: None,
                 object_id: None,
                 pierce: None,
             })?
@@ -469,10 +488,38 @@ impl<'a> Element<'a> {
         Ok(self)
     }
 
-    pub fn get_attributes(&self) -> Result<Option<Vec<String>>> {
+
+    pub fn get_attributes(&self) -> Result<HashMap<String, String>> {
+        // https://chromedevtools.github.io/devtools-protocol/tot/DOM/#method-getAttributes
+
+        let mut attrs_map: HashMap<String, String> = HashMap::default();
+
+        /* let attrs = self.parent
+            .call_method(DOM::GetAttributes {
+                node_id: self.node_id
+            })?.attributes; */
+        let node = self.get_description().unwrap(); //.local_name;
+        
+        
+        let attrs = node.attributes.unwrap_or(vec![]);
+        let tag = node.local_name;
+
+        attrs_map.insert("tag".to_string(), tag);
+        attrs_map.insert("value".to_string(), node.value.unwrap_or("".to_string()));
+        for i in (0..attrs.len() - 1).step_by(2) {
+
+            let k = attrs[i].to_string();
+            let v = attrs[i+1].to_string();
+            attrs_map.insert(k, v);
+        }
+
+        Ok(attrs_map)
+    }
+
+    /* pub fn get_attributes(&self) -> Result<Option<Vec<String>>> {
         let description = self.get_description()?;
         Ok(description.attributes)
-    }
+    } */
 
     /// Get boxes for this element
     pub fn get_box_model(&self) -> Result<BoxModel> {
