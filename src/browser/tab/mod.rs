@@ -146,6 +146,8 @@ pub struct Tab {
     page_bindings: Arc<Mutex<FunctionBinding>>,
     event_listeners: Arc<Mutex<Vec<Arc<SyncSendEvent>>>>,
     slow_motion_multiplier: Arc<RwLock<f64>>, // there's no AtomicF64, otherwise would use that
+
+    document: Arc<Mutex<Option<Node>>>
 }
 
 #[derive(Debug, Error)]
@@ -216,6 +218,7 @@ impl Tab {
             default_timeout: Arc::new(RwLock::new(Duration::from_secs(20))),
             event_listeners: Arc::new(Mutex::new(Vec::new())),
             slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
+            document: Arc::new(Mutex::new(None))
         };
 
         tab.call_method(Page::Enable(None))?;
@@ -295,8 +298,9 @@ impl Tab {
                     Event::PageLifecycleEvent(lifecycle_event) => {
                         let event_name = lifecycle_event.params.name.as_ref();
                         trace!("Lifecycle event: {}", event_name);
+
                         match event_name {
-                            "networkAlmostIdle" => {
+                            "networkAlmostIdle" => { // This is networkidle2 in puppeteer. Go at the bottom of this page -> https://n0tan3rd.github.io/chrome-remote-interface-extra/file/lib/LifecycleWatcher.js.html
                                 navigating.store(false, Ordering::SeqCst);
                             }
                             "init" => {
@@ -504,7 +508,9 @@ impl Tab {
         navigating.store(true, Ordering::SeqCst);
 
         info!("Navigating a tab to {}", url);
-
+        self.wait_until_navigated().unwrap();
+        
+        self.load_document();
         Ok(self)
     }
 
@@ -564,7 +570,8 @@ impl Tab {
     }
 
     pub fn wait_for_element(&self, selector: &str) -> Result<Element<'_>> {
-        self.wait_for_element_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
+        let t = self.default_timeout.read().unwrap().clone();
+        self.wait_for_element_with_custom_timeout(selector, t)
     }
 
     pub fn wait_for_xpath(&self, selector: &str) -> Result<Element<'_>> {
@@ -578,7 +585,7 @@ impl Tab {
     ) -> Result<Element<'_>> {
         debug!("Waiting for element with selector: {:?}", selector);
         util::Wait::with_timeout(timeout).strict_until(
-            || self.find_element(selector),
+             || self.find_element(selector),
             Error::downcast::<NoElementFound>,
         )
     }
@@ -642,15 +649,25 @@ impl Tab {
     /// # Ok(())
     /// # }
     /// ```
+    /// 
+    
+    fn load_document(&self) {
+
+        let mut doc = self.document.lock().unwrap();
+        if doc.is_none() {
+            *doc = Some(self.get_document().unwrap());
+        }
+        
+    }
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>> {
-        let root_node_id = self.get_document()?.node_id;
+        let root_node_id = self.document.lock().unwrap().as_ref().unwrap().node_id;
         trace!("Looking up element via selector: {}", selector);
 
         self.run_query_selector_on_node(root_node_id, selector)
     }
 
     pub fn find_element_by_xpath(&self, query: &str) -> Result<Element<'_>> {
-        self.get_document()?;
+        //self.get_document()?;
 
         self.call_method(DOM::PerformSearch {
             query: query.to_string(),
@@ -739,7 +756,7 @@ impl Tab {
     pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
         trace!("Looking up elements via selector: {}", selector);
 
-        let root_node_id = self.get_document()?.node_id;
+        let root_node_id = self.document.lock().unwrap().as_ref().unwrap().node_id; // self.get_document()?.node_id;
         let node_ids = self
             .call_method(DOM::QuerySelectorAll {
                 node_id: root_node_id,
@@ -785,7 +802,7 @@ impl Tab {
             .call_method(DOM::DescribeNode {
                 node_id: Some(node_id),
                 backend_node_id: None,
-                depth: Some(100),
+                depth: Some(5),
                 object_id: None,
                 pierce: None,
             })?
@@ -875,6 +892,9 @@ impl Tab {
             location: None,
             commands: None,
         })?;
+
+        self.optional_slow_motion_sleep(8); // emulate physical delay between DOWN and UP. 
+
         self.call_method(Input::DispatchKeyEvent {
             Type: Input::DispatchKeyEventTypeOption::KeyUp,
             key,
@@ -933,7 +953,7 @@ impl Tab {
 
         self.move_mouse_to_point(point)?;
 
-        self.optional_slow_motion_sleep(250);
+        //self.optional_slow_motion_sleep(250);
         self.call_method(Input::DispatchMouseEvent {
             Type: Input::DispatchMouseEventTypeOption::MousePressed,
             x: point.x,
@@ -1063,7 +1083,7 @@ impl Tab {
         ignore_cache: bool,
         script_to_evaluate_on_load: Option<&str>,
     ) -> Result<&Self> {
-        self.optional_slow_motion_sleep(100);
+        //self.optional_slow_motion_sleep(100);
         self.call_method(Page::Reload {
             ignore_cache: Some(ignore_cache),
             script_to_evaluate_on_load: script_to_evaluate_on_load
