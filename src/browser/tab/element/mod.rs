@@ -279,6 +279,13 @@ impl<'a> Element<'a> {
         debug!("Clicking element {:?}", &self);
         let midpoint = self.get_midpoint()?;
         self.parent.click_point(midpoint)?;
+        if let Err(_) = self.parent.wait_until_navigated() {
+            info!("[CLICK] Page load timeout..");
+        }
+        
+        // MUST reload DOM in case page refreshed..
+        self.parent.load_document();
+        
         Ok(self)
     }
 

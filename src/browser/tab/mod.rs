@@ -224,6 +224,9 @@ impl Tab {
         tab.call_method(Page::Enable(None))?;
         tab.call_method(Page::SetLifecycleEventsEnabled { enabled: true })?;
 
+        tab.call_method(Page::SetBypassCSP{enabled: true})?;
+
+        tab.call_method(Network::Enable{max_post_data_size: None, max_resource_buffer_size: None, max_total_buffer_size: None})?;
         tab.start_event_handler_thread();
 
         Ok(tab)
@@ -236,6 +239,11 @@ impl Tab {
 
     pub fn get_target_id(&self) -> &TargetID {
         &self.target_id
+    }
+
+    pub fn set_is_navigating(&self, state: bool) {
+
+        self.navigating.store(state, Ordering::SeqCst);
     }
 
     /// Fetches the most recent info about this target
@@ -302,6 +310,7 @@ impl Tab {
                         match event_name {
                             "networkAlmostIdle" => { // This is networkidle2 in puppeteer. Go at the bottom of this page -> https://n0tan3rd.github.io/chrome-remote-interface-extra/file/lib/LifecycleWatcher.js.html
                                 navigating.store(false, Ordering::SeqCst);
+                                info!("[IDLE]");
                             }
                             "init" => {
                                 navigating.store(true, Ordering::SeqCst);
@@ -309,6 +318,55 @@ impl Tab {
                             _ => {}
                         }
                     }
+                    // TODO check if needed
+                    Event::PageLoadEventFired(e) => {
+                        navigating.store(true, Ordering::SeqCst);
+
+                        info!("[REQUESTED NAV] PageLoadEventFired");
+                    }
+
+                    Event::PageFrameRequestedNavigation(e) => {
+                        
+                        navigating.store(true, Ordering::SeqCst);
+
+                        info!("[REQUESTED NAV] PageFrameRequestedNavigation");
+                    }
+                    /* Event::PageFrameStoppedLoading(e) => {
+                        navigating.store(false, Ordering::SeqCst);
+
+                        info!("[REQUESTED NAV] PageFrameStoppedLoading");
+                    } */
+                    /* Event::PageNavigatedWithinDocument(e) => {
+                        navigating.store(false, Ordering::SeqCst);
+
+                        info!("[REQUESTED NAV] PageNavigatedWithinDocument");
+                    }
+                    Event::PageLoadEventFired(e) => {
+                        navigating.store(true, Ordering::SeqCst);
+
+                        info!("[REQUESTED NAV] PageLoadEventFired");
+                    } */
+                    /* Event::PageLoadEventFired(e) => {
+
+                        info!("[REQUESTED NAV] PageLoadEventFired");
+                    }
+                    Event::PageFrameRequestedNavigation(e) => {
+
+                        let r = e.params.reason;
+                        match r {
+                            Page::ClientNavigationReason::FormSubmissionGet => todo!(),
+                            Page::ClientNavigationReason::FormSubmissionPost => todo!(),
+                            Page::ClientNavigationReason::HttpHeaderRefresh => todo!(),
+                            Page::ClientNavigationReason::ScriptInitiated => todo!(),
+                            Page::ClientNavigationReason::MetaTagRefresh => todo!(),
+                            Page::ClientNavigationReason::PageBlockInterstitial => todo!(),
+                            Page::ClientNavigationReason::Reload => todo!(),
+                            Page::ClientNavigationReason::AnchorClick => todo!(),
+                        }
+                        navigating.store(true, Ordering::SeqCst);
+
+                        info!("[REQUESTED NAV] PageFrameRequestedNavigation");
+                    } */
                     Event::RuntimeBindingCalled(binding) => {
                         let bindings = bindings_mutex.lock().unwrap().clone();
 
@@ -651,14 +709,15 @@ impl Tab {
     /// ```
     /// 
     
-    fn load_document(&self) {
+    pub fn load_document(&self) {
 
         let mut doc = self.document.lock().unwrap();
-        if doc.is_none() {
-            *doc = Some(self.get_document().unwrap());
-        }
+        
+        *doc = Some(self.get_document().unwrap());
+        
         
     }
+
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>> {
         let root_node_id = self.document.lock().unwrap().as_ref().unwrap().node_id;
         trace!("Looking up element via selector: {}", selector);
@@ -746,6 +805,18 @@ impl Tab {
                     retVal += document.documentElement.outerHTML;
                 return retVal;
             })();";
+        let html = self
+            .evaluate(func, false)?
+                .value
+                .unwrap();
+        Ok(String::from(html.as_str().unwrap()))
+    }
+
+    pub fn get_page_origin(&self) -> Result<String> {
+        let func = "
+        (function () { 
+            return window.location.origin;
+        })();";
         let html = self
             .evaluate(func, false)?
                 .value
