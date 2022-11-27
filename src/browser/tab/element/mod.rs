@@ -277,15 +277,20 @@ impl<'a> Element<'a> {
     pub fn click(&self) -> Result<&Self> {
         self.scroll_into_view()?;
         debug!("Clicking element {:?}", &self);
-        let midpoint = self.get_midpoint()?;
-        self.parent.click_point(midpoint)?;
+
+        self.call_js_fn("function() { this.click(); return 1; }", vec![], false)?
+            .value.unwrap();
+
+
+        /* let midpoint = self.get_midpoint()?;
+        self.parent.click_point(midpoint)?; */
         if let Err(_) = self.parent.wait_until_navigated() {
             info!("[CLICK] Page load timeout..");
         }
         
         // MUST reload DOM in case page refreshed..
         self.parent.load_document();
-        
+
         Ok(self)
     }
 
