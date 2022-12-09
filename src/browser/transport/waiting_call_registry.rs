@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 
 use anyhow::Result;
-use log::*;
+use log::trace;
 
 use crate::types::{CallId, Response};
 

@@ -5,17 +5,17 @@ use anyhow::{Error, Result};
 
 use thiserror::Error;
 
-use log::*;
+use log::{debug, error};
 
-use crate::{browser::tab::point::Point, protocol::cdp::CSS::CSSComputedStyleProperty};
 use crate::browser::tab::NoElementFound;
+use crate::{browser::tab::point::Point, protocol::cdp::CSS::CSSComputedStyleProperty};
 
 mod box_model;
 
 use crate::util;
 pub use box_model::{BoxModel, ElementQuad};
 
-use crate::protocol::cdp::{Page,CSS, Runtime, DOM};
+use crate::protocol::cdp::{Page, Runtime, CSS, DOM};
 
 #[derive(Debug, Error)]
 #[error("Couldnt get element quad")]
@@ -279,7 +279,7 @@ impl<'a> Element<'a> {
         args: Vec<serde_json::Value>,
         await_promise: bool,
     ) -> Result<Runtime::RemoteObject> {
-        let mut args = args.clone();
+        let mut args = args;
         let result = self
             .parent
             .call_method(Runtime::CallFunctionOn {
@@ -353,13 +353,13 @@ impl<'a> Element<'a> {
     }
 
     /// Get the full HTML contents of the element.
-    /// 
+    ///
     /// Equivalent to the following JS: ```element.outerHTML```.
     pub fn get_content(&self) -> Result<String> {
-        let html = self.
-                call_js_fn("function() { return this.outerHTML }", vec![], false)?
-                    .value
-                    .unwrap();
+        let html = self
+            .call_js_fn("function() { return this.outerHTML }", vec![], false)?
+            .value
+            .unwrap();
 
         Ok(String::from(html.as_str().unwrap()))
     }
@@ -422,7 +422,11 @@ impl<'a> Element<'a> {
 
     pub fn set_input_files(&self, file_paths: &[&str]) -> Result<&Self> {
         self.parent.call_method(DOM::SetFileInputFiles {
-            files: file_paths.to_vec().iter().map(|v| v.to_string()).collect(),
+            files: file_paths
+                .to_vec()
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect(),
             backend_node_id: Some(self.backend_node_id),
             node_id: None,
             object_id: None,
@@ -495,27 +499,27 @@ impl<'a> Element<'a> {
     }
 
     pub fn get_midpoint(&self) -> Result<Point> {
-        match self
+        if let Ok(e) = self
             .parent
             .call_method(DOM::GetContentQuads {
                 node_id: None,
                 backend_node_id: Some(self.backend_node_id),
                 object_id: None,
             })
-            .and_then(|quad| {
+            .map(|quad| {
                 let raw_quad = quad.quads.first().unwrap();
-                let input_quad = ElementQuad::from_raw_points(&raw_quad);
+                let input_quad = ElementQuad::from_raw_points(raw_quad);
 
-                Ok((input_quad.bottom_right + input_quad.top_left) / 2.0)
-            }) {
-            Ok(e) => return Ok(e),
-            Err(_) => {
-                let mut p = Point { x: 0.0, y: 0.0 };
-
-                p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
-                    let r = self
-                        .call_js_fn(
-                            r#"
+                (input_quad.bottom_right + input_quad.top_left) / 2.0
+            })
+        {
+            return Ok(e);
+        }
+        // let mut p = Point { x: 0.0, y: 0.0 }; FIX FOR CLIPPY `value assigned to `p` is never read`
+        let p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
+            let r = self
+                .call_js_fn(
+                    r#"
                     function() {
                         let rect = this.getBoundingClientRect();
 
@@ -526,28 +530,26 @@ impl<'a> Element<'a> {
                         return this.getBoundingClientRect();
                     }
                     "#,
-                            vec![],
-                            false,
-                        )
-                        .unwrap();
+                    vec![],
+                    false,
+                )
+                .unwrap();
 
-                    let res = util::extract_midpoint(r);
+            let res = util::extract_midpoint(r);
 
-                    match res {
-                        Ok(v) => {
-                            if v.x != 0.0 {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }
-                        _ => None,
+            match res {
+                Ok(v) => {
+                    if v.x == 0.0 {
+                        None
+                    } else {
+                        Some(v)
                     }
-                })?;
-
-                return Ok(p);
+                }
+                _ => None,
             }
-        }
+        })?;
+
+        Ok(p)
     }
 
     pub fn get_js_midpoint(&self) -> Result<Point> {

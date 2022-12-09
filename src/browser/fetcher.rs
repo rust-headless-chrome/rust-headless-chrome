@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use directories::ProjectDirs;
 use log::*;
 use ureq;

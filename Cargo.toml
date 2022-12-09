@@ -2,7 +2,7 @@
 name = "headless_chrome"
 version = "0.9.0"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
-edition = "2018"
+edition = "2021"
 description = "Control Chrome programatically"
 license = "MIT"
 homepage = "https://github.com/atroche/rust-headless-chrome"
@@ -10,34 +10,34 @@ repository = "https://github.com/atroche/rust-headless-chrome"
 readme = "README.md"
 
 [dependencies]
-websocket = { version = "0.23", default_features = false, features = ["sync"] }
+anyhow = '1'
+base64 = "0.13"
+derive_builder = "0.12"
+directories = { version = "4.0", optional = true }
+log = "0.4"
+rand = "0.8"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-anyhow = '1'
-thiserror = '1'
-log = "0.4"
-rand = "0.7"
 tempfile = "3"
-base64 = "0.10"
-derive_builder = "0.8"
-which = "3.0"
-ureq = { version = "0.11", optional = true }
-directories = { version = "2.0", optional = true }
-zip = { version = "^0.5.3", optional = true }
+thiserror = '1'
+ureq = { version = "2.5", optional = true }
 walkdir = { version = "2", optional = true }
+websocket = { version = "0.26", default_features = false, features = ["sync"] }
+which = "4.0"
+zip = { version = "0.6.3", optional = true }
 
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.6"
+winreg = "0.10"
 
 [dev-dependencies]
-env_logger = "0.7"
-chrono = { version = "0.4", default_features = false }
-tiny_http = "0.6"
-png = { version = "0.15" }
-jpeg-decoder = { version = "0.1", default_features = false }
+chrono = { version = "0.4", default_features = false, features = ["clock"] }
+env_logger = "0.10"
 filepath = "0.1.1"
+jpeg-decoder = { version = "0.3", default_features = false }
+png = { version = "0.17" }
+tiny_http = "0.12"
 
 [build-dependencies]
 auto_generate_cdp = { version = "0.3.4", default-features = false }
@@ -47,7 +47,7 @@ name = "headless_chrome"
 path = "src/lib.rs"
 
 [features]
-default = [ "auto_generate_cdp/native-tls" ]
-fetch = [ "ureq", "directories", "zip", "walkdir" ]
-rustls = [ "auto_generate_cdp/rustls" ]
+default = ["auto_generate_cdp/native-tls"]
+fetch = ["ureq", "directories", "zip", "walkdir"]
+rustls = ["auto_generate_cdp/rustls"]
 nightly = []

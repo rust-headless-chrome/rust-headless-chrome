@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 use std::{collections::HashMap, thread::sleep};
 
-use anyhow::{Error,Result};
+use anyhow::{Error, Result};
 
 use thiserror::Error;
 
@@ -32,19 +32,17 @@ impl Default for Wait {
 pub fn extract_midpoint(remote_obj: RemoteObject) -> Result<Point> {
     let mut prop_map = HashMap::new();
 
-    match remote_obj.preview.and_then(|v| {
+    match remote_obj.preview.map(|v| {
         for prop in v.properties {
             prop_map.insert(prop.name, prop.value.unwrap().parse::<f64>().unwrap());
         }
-        let midpoint = Point {
+        Point {
             x: prop_map["x"] + (prop_map["width"] / 2.0),
             y: prop_map["y"] + (prop_map["height"] / 2.0),
-        };
-
-        Some(midpoint)
+        }
     }) {
-        Some(v) => return Ok(v),
-        None => return Ok(Point { x: 0.0, y: 0.0 }),
+        Some(v) => Ok(v),
+        None => Ok(Point { x: 0.0, y: 0.0 }),
     }
 }
 

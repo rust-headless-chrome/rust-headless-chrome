@@ -1,10 +1,10 @@
 use crate::protocol::cdp::{
     types::{Event, JsUInt},
     Browser,
+    Network::{CookieParam, DeleteCookies},
     Page,
+    Page::PrintToPDF,
     DOM::Node,
-    Network::{CookieParam,DeleteCookies},
-    Page::PrintToPDF
 };
 
 use serde::{Deserialize, Serialize};
@@ -61,11 +61,11 @@ pub struct TransferMode {
     mode: String,
 }
 
-impl Into<Option<Page::PrintToPDFTransfer_modeOption>> for TransferMode {
-    fn into(self) -> Option<Page::PrintToPDFTransfer_modeOption> {
-        if self.mode == "base64" {
+impl From<TransferMode> for Option<Page::PrintToPDFTransfer_modeOption> {
+    fn from(val: TransferMode) -> Self {
+        if val.mode == "base64" {
             Some(Page::PrintToPDFTransfer_modeOption::ReturnAsBase64)
-        } else if self.mode == "stream" {
+        } else if val.mode == "stream" {
             Some(Page::PrintToPDFTransfer_modeOption::ReturnAsStream)
         } else {
             None
@@ -107,7 +107,7 @@ pub struct PrintToPdfOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_css_page_size: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transfer_mode: Option<TransferMode>
+    pub transfer_mode: Option<TransferMode>,
 }
 
 pub fn parse_raw_message(raw_message: &str) -> Result<Message> {
@@ -154,31 +154,31 @@ impl From<CookieParam> for DeleteCookies {
     }
 }
 
-impl Into<Browser::Bounds> for Bounds {
-    fn into(self) -> Browser::Bounds {
-        match self {
-            Self::Minimized => Browser::Bounds {
+impl From<Bounds> for Browser::Bounds {
+    fn from(val: Bounds) -> Self {
+        match val {
+            Bounds::Minimized => Browser::Bounds {
                 left: None,
                 top: None,
                 width: None,
                 height: None,
                 window_state: Some(Browser::WindowState::Minimized),
             },
-            Self::Maximized => Browser::Bounds {
+            Bounds::Maximized => Browser::Bounds {
                 left: None,
                 top: None,
                 width: None,
                 height: None,
                 window_state: Some(Browser::WindowState::Maximized),
             },
-            Self::Fullscreen => Browser::Bounds {
+            Bounds::Fullscreen => Browser::Bounds {
                 left: None,
                 top: None,
                 width: None,
                 height: None,
                 window_state: Some(Browser::WindowState::Fullscreen),
             },
-            Self::Normal {
+            Bounds::Normal {
                 left,
                 top,
                 width,
@@ -186,8 +186,8 @@ impl Into<Browser::Bounds> for Bounds {
             } => Browser::Bounds {
                 left,
                 top,
-                width: width.and_then(|f| Some(f as u32)),
-                height: height.and_then(|f| Some(f as u32)),
+                width: width.map(|f| f as u32),
+                height: height.map(|f| f as u32),
                 window_state: Some(Browser::WindowState::Normal),
             },
         }
@@ -208,8 +208,8 @@ impl From<Browser::Bounds> for CurrentBounds {
         Self {
             left: bounds.left.unwrap(),
             top: bounds.top.unwrap(),
-            width: bounds.width.unwrap() as f64,
-            height: bounds.height.unwrap() as f64,
+            width: f64::from(bounds.width.unwrap()),
+            height: f64::from(bounds.height.unwrap()),
             state: bounds.window_state.unwrap(),
         }
     }
@@ -233,7 +233,7 @@ impl Default for PrintToPDF {
             prefer_css_page_size: None,
             print_background: None,
             scale: None,
-            transfer_mode: None
+            transfer_mode: None,
         }
     }
 }
@@ -256,7 +256,7 @@ impl<'a, F: FnMut(&Node) -> bool> SearchVisitor<'a, F> {
             self.item = Some(n);
         } else if self.item.is_none() {
             if let Some(c) = &n.children {
-                c.iter().for_each(|n| self.visit(n))
+                c.iter().for_each(|n| self.visit(n));
             }
         }
     }
@@ -275,7 +275,7 @@ impl Node {
 
 #[cfg(test)]
 mod tests {
-    use log::*;
+    use log::trace;
     use serde_json::json;
 
     use super::*;
