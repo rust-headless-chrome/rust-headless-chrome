@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome_fork"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2018"
 description = "Control Chrome programatically"
