@@ -2,14 +2,14 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 
 use anyhow::Result;
-use log::*;
+use log::{debug, info, trace, warn};
 use websocket::client::sync::Client;
 use websocket::stream::sync::TcpStream;
-use websocket::WebSocketError;
 use websocket::url::Url;
+use websocket::WebSocketError;
 use websocket::{ClientBuilder, OwnedMessage};
 
-use crate::types::{parse_raw_message,Message};
+use crate::types::{parse_raw_message, Message};
 
 pub struct WebSocketConnection {
     sender: Mutex<websocket::sender::Writer<TcpStream>>,
@@ -29,7 +29,7 @@ impl WebSocketConnection {
         process_id: Option<u32>,
         messages_tx: mpsc::Sender<Message>,
     ) -> Result<Self> {
-        let connection = Self::websocket_connection(&ws_url)?;
+        let connection = Self::websocket_connection(ws_url)?;
         let (websocket_receiver, sender) = connection.split()?;
 
         std::thread::spawn(move || {
@@ -91,18 +91,15 @@ impl WebSocketConnection {
                             );
                         }
                     } else {
-                        panic!("Got a weird message: {:?}", message)
+                        panic!("Got a weird message: {:?}", message);
                     }
                 }
             }
         }
 
         info!("Sending shutdown message to message handling loop");
-        if messages_tx
-            .send(Message::ConnectionShutdown)
-            .is_err()
-        {
-            warn!("Couldn't send message to transport loop telling it to shut down")
+        if messages_tx.send(Message::ConnectionShutdown).is_err() {
+            warn!("Couldn't send message to transport loop telling it to shut down");
         }
     }
 

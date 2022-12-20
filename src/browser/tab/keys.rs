@@ -11,18 +11,18 @@ pub struct KeyDefinition {
     pub text: Option<&'static str>,
 }
 
-impl Into<DispatchKeyEvent> for &KeyDefinition {
-    fn into(self) -> DispatchKeyEvent {
-        let text = self
+impl From<&KeyDefinition> for DispatchKeyEvent {
+    fn from(val: &KeyDefinition) -> Self {
+        let text = val
             .text
-            .or_else(|| {
-                if self.key.len() == 1 {
-                    Some(self.key)
+            .or({
+                if val.key.len() == 1 {
+                    Some(val.key)
                 } else {
                     None
                 }
             })
-            .and_then(|s| Some(s.to_string()));
+            .map(std::string::ToString::to_string);
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L52
         let key_down_event_type = if text.is_some() {
@@ -31,16 +31,16 @@ impl Into<DispatchKeyEvent> for &KeyDefinition {
             DispatchKeyEventTypeOption::RawKeyDown
         };
 
-        let key = Some(self.key.to_string());
-        let code = Some(self.code.to_string());
+        let key = Some(val.key.to_string());
+        let code = Some(val.code.to_string());
 
         DispatchKeyEvent {
             Type: key_down_event_type,
             key,
             text,
             code,
-            windows_virtual_key_code: Some(self.key_code),
-            native_virtual_key_code: Some(self.key_code),
+            windows_virtual_key_code: Some(val.key_code),
+            native_virtual_key_code: Some(val.key_code),
             modifiers: None,
             timestamp: None,
             unmodified_text: None,

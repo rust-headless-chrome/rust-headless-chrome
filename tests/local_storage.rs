@@ -40,11 +40,11 @@ fn read_write_local_storage() -> Result<()> {
 
     tab.remove_storage("translationHash")?;
 
-    assert_eq!(true, tab.get_storage::<String>("translationHash").is_err());
+    assert!(tab.get_storage::<String>("translationHash").is_err());
 
     let item: Item = tab.get_storage("testItem")?;
 
-    assert_eq!(300,item.value);
+    assert_eq!(300, item.value);
 
     Ok(())
 }

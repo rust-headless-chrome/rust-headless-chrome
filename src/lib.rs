@@ -58,7 +58,6 @@
 #![deny(clippy::pedantic)]
 #![warn(renamed_and_removed_lints)]
 #![allow(
-clippy::unknown_clippy_lints,
 clippy::module_name_repetitions,
 clippy::doc_markdown, // a number of false positives here
 clippy::default_trait_access, // fails on output of derive_builder
@@ -66,7 +65,18 @@ clippy::needless_pass_by_value, // would stop us creating and passing in LaunchO
 clippy::unreadable_literal, // not really applicable for timestamps
 clippy::too_many_lines,
 clippy::type_repetition_in_bounds,
-clippy::used_underscore_binding
+clippy::used_underscore_binding,
+clippy::must_use_candidate,
+clippy::derive_partial_eq_without_eq, // f64 doesn't impl Eq, for autogen protocol.rs
+clippy::missing_errors_doc,
+clippy::missing_panics_doc,
+clippy::struct_excessive_bools,  // for autogen protocol.rs
+clippy::wildcard_imports, // for autogen protocol.rs
+clippy::cast_possible_truncation, // for types.rs:189 & 190
+clippy::cast_sign_loss, // for tab/element/mod.rs:492 & 493
+clippy::cast_lossless, // for tab/element/mod.rs:492 & 493
+clippy::vtable_address_comparisons, // for tab/mod.rs:1415
+clippy::derivable_impls, // for types.rs Default for PrintToPDF because autogen
 )]
 
 #[macro_use]
@@ -82,8 +92,8 @@ pub use browser::{
 pub use browser::FetcherOptions;
 
 pub mod browser;
-pub mod types;
 pub mod protocol;
+pub mod types;
 pub mod util;
 
 #[cfg(feature = "nightly")]

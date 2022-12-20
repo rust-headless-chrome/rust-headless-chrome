@@ -11,7 +11,7 @@ use anyhow::Result;
 
 use thiserror::Error;
 
-use log::*;
+use log::{error, info, trace, warn};
 
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
@@ -35,7 +35,7 @@ pub enum MethodDestination {
 }
 
 impl SessionId {
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 }
@@ -142,9 +142,9 @@ impl Transport {
                 let target_method = Target::SendMessageToTarget {
                     target_id: None,
                     session_id: Some(session_id.0),
-                    message: message,
+                    message,
                 };
-                let mut raw = message_text.clone();
+                let mut raw = message_text;
                 raw.truncate(300);
                 trace!("Msg to tab: {}", &raw);
                 if let Err(e) = self.call_method_on_browser(target_method) {

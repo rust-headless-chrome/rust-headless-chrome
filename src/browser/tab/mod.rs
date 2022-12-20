@@ -10,7 +10,7 @@ use anyhow::{Error, Result};
 
 use thiserror::Error;
 
-use log::*;
+use log::{debug, error, info, trace, warn};
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -111,7 +111,7 @@ pub trait EventListener<T> {
 
 impl<T, F: Fn(&T) + Send + Sync> EventListener<T> for F {
     fn on_event(&self, event: &T) {
-        self(&event);
+        self(event);
     }
 }
 
@@ -198,7 +198,7 @@ impl Tab {
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
         let tab = Self {
-            target_id: target_id,
+            target_id,
             transport,
             session_id,
             navigating: Arc::new(AtomicBool::new(false)),
@@ -262,8 +262,8 @@ impl Tab {
     ) -> Result<()> {
         self.call_method(SetUserAgentOverride {
             user_agent: user_agent.to_string(),
-            accept_language: accept_language.and_then(|v| Some(v.to_string())),
-            platform: platform.and_then(|v| Some(v.to_string())),
+            accept_language: accept_language.map(std::string::ToString::to_string),
+            platform: platform.map(std::string::ToString::to_string),
             user_agent_metadata: None,
         })
         .map(|_| ())
@@ -360,7 +360,7 @@ impl Tab {
 
                         let request_id = event.params.request_id;
                         let method = ContinueWithAuth {
-                            request_id: request_id,
+                            request_id,
                             auth_challenge_response,
                         };
                         let result = transport.call_method_on_target(session_id.clone(), method);
@@ -378,18 +378,22 @@ impl Tab {
                     Event::NetworkLoadingFinished(ev) => {
                         response_handler_mutex.lock().unwrap().iter().for_each(
                             |(_name, handler)| {
-                            let request_id = ev.params.request_id.clone();
-                            let retrieve_body = || {
-                                let method = GetResponseBody {
-                                    request_id: request_id.clone(),
+                                let request_id = ev.params.request_id.clone();
+                                let retrieve_body = || {
+                                    let method = GetResponseBody {
+                                        request_id: request_id.clone(),
+                                    };
+                                    transport.call_method_on_target(session_id.clone(), method)
                                 };
-                                transport.call_method_on_target(session_id.clone(), method)
-                            };
-                            match received_event_params.lock().unwrap().get(&request_id) {
-                                Some(params) => handler(params.to_owned(), &retrieve_body),
-                                _ => warn!("Request id does not exist"),
-                            }
-                        });
+                                if let Some(params) =
+                                    received_event_params.lock().unwrap().get(&request_id)
+                                {
+                                    handler(params.clone(), &retrieve_body);
+                                } else {
+                                    warn!("Request id does not exist");
+                                }
+                            },
+                        );
                     }
                     _ => {
                         let mut raw_event = format!("{:?}", event);
@@ -485,7 +489,7 @@ impl Tab {
 
     // Pulls focus to this tab
     pub fn bring_to_front(&self) -> Result<Page::BringToFrontReturnObject> {
-        Ok(self.call_method(Page::BringToFront(None))?)
+        self.call_method(Page::BringToFront(None))
     }
 
     pub fn navigate_to(&self, url: &str) -> Result<&Self> {
@@ -527,7 +531,7 @@ impl Tab {
     pub fn set_default_timeout(&self, timeout: Duration) -> &Self {
         let mut current_timeout = self.default_timeout.write().unwrap();
         *current_timeout = timeout;
-        &self
+        self
     }
 
     /// Analogous to Puppeteer's ['slowMo' option](https://github.com/GoogleChrome/puppeteer/blob/v1.20.0/docs/api.md#puppeteerconnectoptions),
@@ -553,7 +557,7 @@ impl Tab {
     pub fn set_slow_motion_multiplier(&self, multiplier: f64) -> &Self {
         let mut slow_motion_multiplier = self.slow_motion_multiplier.write().unwrap();
         *slow_motion_multiplier = multiplier;
-        &self
+        self
     }
 
     fn optional_slow_motion_sleep(&self, millis: u64) {
@@ -669,7 +673,7 @@ impl Tab {
             if id == 0 {
                 Err(NoElementFound {}.into())
             } else {
-                Ok(Element::new(&self, id)?)
+                Ok(Element::new(self, id)?)
             }
         })
     }
@@ -687,7 +691,7 @@ impl Tab {
             .map_err(NoElementFound::map)?
             .node_id;
 
-        Element::new(&self, node_id)
+        Element::new(self, node_id)
     }
 
     pub fn run_query_selector_all_on_node(
@@ -705,7 +709,7 @@ impl Tab {
 
         node_ids
             .iter()
-            .map(|node_id| Element::new(&self, *node_id))
+            .map(|node_id| Element::new(self, *node_id))
             .collect()
     }
 
@@ -729,10 +733,7 @@ impl Tab {
                     retVal += document.documentElement.outerHTML;
                 return retVal;
             })();";
-        let html = self
-            .evaluate(func, false)?
-                .value
-                .unwrap();
+        let html = self.evaluate(func, false)?.value.unwrap();
         Ok(String::from(html.as_str().unwrap()))
     }
 
@@ -754,7 +755,7 @@ impl Tab {
 
         node_ids
             .into_iter()
-            .map(|node_id| Element::new(&self, node_id))
+            .map(|node_id| Element::new(self, node_id))
             .collect()
     }
 
@@ -796,7 +797,7 @@ impl Tab {
     pub fn type_str(&self, string_to_type: &str) -> Result<&Self> {
         for c in string_to_type.split("") {
             // split call above will have empty string at start and end which we won't type
-            if c == "" {
+            if c.is_empty() {
                 continue;
             }
             let definition = keys::get_key_definition(c);
@@ -822,7 +823,7 @@ impl Tab {
     /// Does the same as `type_str` but it only dispatches a `keypress` and `input` event.
     /// It does not send a `keydown` or `keyup` event.
     ///
-    /// What this means is that it is much faster. 
+    /// What this means is that it is much faster.
     /// It is especially useful when you have a lot of text as input.
     pub fn send_character(&self, char_to_send: &str) -> Result<&Self> {
         self.call_method(Input::InsertText {
@@ -837,14 +838,14 @@ impl Tab {
 
         let text = definiton
             .text
-            .or_else(|| {
+            .or({
                 if definiton.key.len() == 1 {
                     Some(definiton.key)
                 } else {
                     None
                 }
             })
-            .and_then(|v| Some(v.to_string()));
+            .map(std::string::ToString::to_string);
 
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L52
         let key_down_event_type = if text.is_some() {
@@ -898,7 +899,7 @@ impl Tab {
     /// Moves the mouse to this point (dispatches a mouseMoved event)
     pub fn move_mouse_to_point(&self, point: Point) -> Result<&Self> {
         if point.x == 0.0 && point.y == 0.0 {
-            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
+            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.");
         }
 
         self.optional_slow_motion_sleep(100);
@@ -928,7 +929,7 @@ impl Tab {
     pub fn click_point(&self, point: Point) -> Result<&Self> {
         trace!("Clicking point: {:?}", point);
         if point.x == 0.0 && point.y == 0.0 {
-            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.")
+            warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.");
         }
 
         self.move_mouse_to_point(point)?;
@@ -1020,7 +1021,7 @@ impl Tab {
     pub fn print_to_pdf(&self, options: Option<PrintToPdfOptions>) -> Result<Vec<u8>> {
         if let Some(options) = options {
             let transfer_mode: Option<Page::PrintToPDFTransfer_modeOption> =
-                options.transfer_mode.and_then(|f| f.into());
+                options.transfer_mode.and_then(std::convert::Into::into);
             let data = self
                 .call_method(Page::PrintToPDF {
                     landscape: options.landscape,
@@ -1067,7 +1068,7 @@ impl Tab {
         self.call_method(Page::Reload {
             ignore_cache: Some(ignore_cache),
             script_to_evaluate_on_load: script_to_evaluate_on_load
-                .and_then(|s| Some(s.to_string())),
+                .map(std::string::ToString::to_string),
         })?;
         Ok(self)
     }
@@ -1188,7 +1189,7 @@ impl Tab {
         handle_auth_requests: Option<bool>,
     ) -> Result<&Self> {
         self.call_method(Fetch::Enable {
-            patterns: patterns.and_then(|v| Some(v.to_vec())),
+            patterns: patterns.map(Vec::from),
             handle_auth_requests,
         })?;
         Ok(self)
@@ -1239,19 +1240,30 @@ impl Tab {
     /// sent the `Network.loadingFinished` event.
     ///
     /// Return a option for ResponseHander for existing handler with same name if existed.
-    pub fn register_response_handling<S: ToString>(&self, handler_name: S, handler: ResponseHandler) -> Result<Option<ResponseHandler>> {
+    pub fn register_response_handling<S: ToString>(
+        &self,
+        handler_name: S,
+        handler: ResponseHandler,
+    ) -> Result<Option<ResponseHandler>> {
         self.call_method(Network::Enable {
             max_total_buffer_size: None,
             max_resource_buffer_size: None,
             max_post_data_size: None,
         })?;
-        Ok(self.response_handler.lock().unwrap().insert(handler_name.to_string(), handler))
+        Ok(self
+            .response_handler
+            .lock()
+            .unwrap()
+            .insert(handler_name.to_string(), handler))
     }
 
     /// Deregister a reponse handler based on its name.
     ///
     /// Return a option for ResponseHandler for removed handler if existed.
-    pub fn deregister_response_handling(&self, handler_name: &str) -> Result<Option<ResponseHandler>> {
+    pub fn deregister_response_handling(
+        &self,
+        handler_name: &str,
+    ) -> Result<Option<ResponseHandler>> {
         Ok(self.response_handler.lock().unwrap().remove(handler_name))
     }
 
@@ -1514,7 +1526,13 @@ impl Tab {
                 }
             })
             .collect();
-        self.delete_cookies(cookies.clone().into_iter().map(|c| c.into()).collect())?;
+        self.delete_cookies(
+            cookies
+                .clone()
+                .into_iter()
+                .map(std::convert::Into::into)
+                .collect(),
+        )?;
         self.call_method(SetCookies { cookies })?;
         Ok(())
     }
@@ -1627,12 +1645,12 @@ impl Tab {
 
         let json: Option<T> = object.value.and_then(|v| match v {
             serde_json::Value::String(ref s) => {
-                let result = serde_json::from_str(&s);
+                let result = serde_json::from_str(s);
 
-                if result.is_err() {
-                    Some(serde_json::from_value(v).unwrap())
+                if let Ok(r) = result {
+                    Some(r)
                 } else {
-                    Some(result.unwrap())
+                    Some(serde_json::from_value(v).unwrap())
                 }
             }
             _ => None,

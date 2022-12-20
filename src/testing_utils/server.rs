@@ -58,7 +58,7 @@ impl Server {
     }
 
     pub fn port(&self) -> u16 {
-        self.server.server_addr().port()
+        self.server.server_addr().to_ip().unwrap().port()
     }
 
     pub fn exit(&mut self) -> Result<(), io::Error> {

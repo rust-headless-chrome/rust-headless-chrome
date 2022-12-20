@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
-use log::*;
+use log::{debug, error, info, trace};
 
 use process::Process;
 pub use process::{LaunchOptions, LaunchOptionsBuilder, DEFAULT_ARGS};
@@ -172,11 +172,7 @@ impl Browser {
     }
 
     pub fn get_process_id(&self) -> Option<u32> {
-        if let Some(process) = &self.inner.process {
-            Some(process.get_id())
-        } else {
-            None
-        }
+        self.inner.process.as_ref().map(process::Process::get_id)
     }
 
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads
@@ -192,7 +188,7 @@ impl Browser {
     /// Wait timeout: 10 secs
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>> {
         util::Wait::with_timeout(Duration::from_secs(10))
-            .until(|| self.inner.tabs.lock().unwrap().first().map(|tab| Arc::clone(tab)))
+            .until(|| self.inner.tabs.lock().unwrap().first().map(Arc::clone))
             .map_err(Into::into)
     }
 
@@ -443,7 +439,7 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
         "chrome",
         "chrome-browser",
         "msedge",
-        "microsoft-edge"
+        "microsoft-edge",
     ] {
         if let Ok(path) = which(app) {
             return Ok(path);
@@ -490,12 +486,15 @@ pub fn default_executable() -> Result<std::path::PathBuf, String> {
     Err("Could not auto detect a chrome executable".to_string())
 }
 
-
 #[cfg(test)]
 mod test {
     use super::Browser;
 
-    fn is_sync<T>() where T: Sync {}
+    fn is_sync<T>()
+    where
+        T: Sync,
+    {
+    }
 
     #[test]
     fn test_if_browser_is_sync() {

@@ -6,15 +6,15 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use headless_chrome::protocol::cdp::Browser::WindowState;
-use headless_chrome::protocol::cdp::DOM::RGBA;
 use headless_chrome::protocol::cdp::Fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::cdp::Fetch::{
     FulfillRequest, HeaderEntry, RequestPattern, RequestStage,
 };
-use headless_chrome::protocol::cdp::Network::{Cookie, CookieParam, InterceptionStage};
+use headless_chrome::protocol::cdp::Network::{Cookie, CookieParam};
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
 use headless_chrome::protocol::cdp::Runtime::{RemoteObjectSubtype, RemoteObjectType};
-use headless_chrome::types::{RemoteError, Bounds};
+use headless_chrome::protocol::cdp::DOM::RGBA;
+use headless_chrome::types::{Bounds, RemoteError};
 use headless_chrome::LaunchOptionsBuilder;
 use log::*;
 use rand::prelude::*;
@@ -150,7 +150,7 @@ fn actions_on_tab_wont_hang_after_browser_drops() -> Result<()> {
         let (_, browser, tab) = dumb_server(include_str!("simple.html"));
         std::thread::spawn(move || {
             let mut rng = rand::thread_rng();
-            let millis: u64 = rng.gen_range(0, 5000);
+            let millis: u64 = rng.gen_range(0..5000);
             std::thread::sleep(std::time::Duration::from_millis(millis));
             trace!("dropping browser");
             drop(browser);
@@ -191,7 +191,7 @@ fn send_character() -> Result<()> {
     assert!(d
         .find(|n| n.node_value == "Missiles launched against mothership")
         .is_some());
-    
+
     Ok(())
 }
 
@@ -200,9 +200,9 @@ fn tab_get_content() -> Result<()> {
     logging::enable_logging();
     let (_, browser, tab) = dumb_server(include_str!("simple.html"));
     let html = tab.get_content()?;
-    // The html returned depends on how the browser formatted it. The HTML is always correct, but 
+    // The html returned depends on how the browser formatted it. The HTML is always correct, but
     // some of the newlines or tabs might be missing.
-    assert!(html.replace("\n", "") == include_str!("simple.html").replace("\n", ""));
+    assert!(html.replace('\n', "") == include_str!("simple.html").replace('\n', ""));
     Ok(())
 }
 
@@ -216,10 +216,11 @@ fn element_get_content() -> Result<()> {
     Ok(())
 }
 
-
 fn decode_png(i: &[u8]) -> Result<Vec<u8>> {
-    let decoder = png::Decoder::new(&i[..]);
-    let (info, mut reader) = decoder.read_info()?;
+    let decoder = png::Decoder::new(i);
+    let mut reader = decoder.read_info()?;
+    let mut buf = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut buf).unwrap();
     let mut buf = vec![0; info.buffer_size()];
     reader.next_frame(&mut buf)?;
     Ok(buf)
@@ -248,7 +249,7 @@ fn set_background_color() -> Result<()> {
         b: 0,
         a: Some(1.),
     })?;
-    let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None,true)?;
+    let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
     let buf = decode_png(&png_data[..])?;
     assert!(sum_of_errors(&buf[0..4], &[0xff, 0x00, 0x00, 0xff]) < 5);
     Ok(())
@@ -261,12 +262,11 @@ fn set_transparent_background_color() -> Result<()> {
     tab.wait_for_element("body")?;
     // Check that the top-left pixel on the page has the background color set in transparent.html
     tab.set_transparent_background_color()?;
-    let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None,None, true)?;
+    let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
     let buf = decode_png(&png_data[..])?;
     assert!(sum_of_errors(&buf[0..4], &[0x00, 0x00, 0x00, 0x00]) < 5);
     Ok(())
 }
-
 
 #[test]
 fn capture_screenshot_png() -> Result<()> {
@@ -274,8 +274,7 @@ fn capture_screenshot_png() -> Result<()> {
     let (_, browser, tab) = dumb_server(include_str!("simple.html"));
     tab.wait_for_element("div#foobar")?;
     // Check that the top-left pixel on the page has the background color set in simple.html
-    let png_data =
-        tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
+    let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
     let buf = decode_png(&png_data[..])?;
     assert!(sum_of_errors(&buf[0..4], &[0x11, 0x22, 0x33, 0xff]) < 5);
     Ok(())
@@ -331,7 +330,7 @@ fn test_print_file_to_pdf() -> Result<()> {
     logging::enable_logging();
     let (_, browser, tab) = dumb_server(include_str!("./pdfassets/index.html"));
     let local_pdf = tab.wait_until_navigated()?.print_to_pdf(None)?;
-    assert_eq!(true, local_pdf.len() > 1000); // an arbitrary size
+    assert!(local_pdf.len() > 1000); // an arbitrary size
     assert!(local_pdf.starts_with(b"%PDF"));
     Ok(())
 }
@@ -668,24 +667,33 @@ fn response_handler() -> Result<()> {
 
     let responses2 = responses.clone();
     let responses3 = responses.clone();
-    assert_eq!(tab.register_response_handling("test1",Box::new(move |response, fetch_body| {
-        // NOTE: you can only fetch the body after it's been downloaded, which might be some time
-        // after the initial 'response' (with status code, headers, etc.) has come back. hence this
-        // sleep:
-        sleep(Duration::from_millis(500));
-        let body = fetch_body().unwrap();
-        responses2.lock().unwrap().push((response, body));
-    }))?.is_none(), true);
+    assert!(tab
+        .register_response_handling(
+            "test1",
+            Box::new(move |response, fetch_body| {
+                // NOTE: you can only fetch the body after it's been downloaded, which might be some time
+                // after the initial 'response' (with status code, headers, etc.) has come back. hence this
+                // sleep:
+                sleep(Duration::from_millis(500));
+                let body = fetch_body().unwrap();
+                responses2.lock().unwrap().push((response, body));
+            })
+        )?
+        .is_none());
 
-    assert_eq!(tab.register_response_handling("test2",Box::new(move |response, fetch_body| {
-        // NOTE: you can only fetch the body after it's been downloaded, which might be some time
-        // after the initial 'response' (with status code, headers, etc.) has come back. hence this
-        // sleep:
-        sleep(Duration::from_millis(500));
-        let body = fetch_body().unwrap();
-        responses3.lock().unwrap().push((response, body));
-    }))?.is_none(), true);
-
+    assert!(tab
+        .register_response_handling(
+            "test2",
+            Box::new(move |response, fetch_body| {
+                // NOTE: you can only fetch the body after it's been downloaded, which might be some time
+                // after the initial 'response' (with status code, headers, etc.) has come back. hence this
+                // sleep:
+                sleep(Duration::from_millis(500));
+                let body = fetch_body().unwrap();
+                responses3.lock().unwrap().push((response, body));
+            })
+        )?
+        .is_none());
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -864,7 +872,7 @@ fn close_tabs() -> Result<()> {
 
     let closed = new_tab1.close(true)?;
 
-    assert_eq!(closed, true);
+    assert!(closed);
 
     wait.until(|| wait_tabs(2))?;
     check_tabs(2);
@@ -930,7 +938,7 @@ fn get_css_styles() -> Result<()> {
         })
         .collect::<Vec<&str>>();
 
-    assert!(v.len() > 0);
+    assert!(!v.is_empty());
 
     assert_eq!(["rgb(255, 255, 0)", "absolute", "5px"], v.as_slice());
 

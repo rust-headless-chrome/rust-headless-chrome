@@ -16,7 +16,7 @@ fn main() -> Result<()> {
     let jpeg_data = tab
         .navigate_to("https://www.wikipedia.org")?
         .wait_until_navigated()?
-        .capture_screenshot(CaptureScreenshotFormatOption::Jpeg,Some(75), None, true)?;
+        .capture_screenshot(CaptureScreenshotFormatOption::Jpeg, Some(75), None, true)?;
     fs::write("screenshot.jpg", &jpeg_data)?;
 
     // Browse to the WebKit-Page and take a screenshot of the infobox.

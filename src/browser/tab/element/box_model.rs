@@ -137,7 +137,7 @@ impl ElementQuad {
 
     /// If `self` is within the boundaries defined by `other`.
     pub fn within_bounds_of(&self, other: &Self) -> bool {
-        self.within_horizontal_bounds_of(&other) && self.within_vertical_bounds_of(&other)
+        self.within_horizontal_bounds_of(other) && self.within_vertical_bounds_of(other)
     }
 }
 

@@ -19,13 +19,12 @@ fn start() -> Result<()> {
 
     let new_tab = tab.clone();
 
-    let sync_event = Arc::new(move |event: &Event| match event {
-        Event::PageLifecycleEvent(lifecycle) => {
+    let sync_event = Arc::new(move |event: &Event| {
+        if let Event::PageLifecycleEvent(lifecycle) = event {
             if lifecycle.params.name == "DOMContentLoaded" {
                 println!("{}", new_tab.get_url());
             }
         }
-        _ => {}
     });
 
     tab.add_event_listener(sync_event).unwrap();

@@ -24,7 +24,7 @@ fn main() -> Result<()> {
             .expect("Must provide path/to/file/index.html")
     );
 
-    let browser = Browser::connect(debug_ws_url.to_string())?;
+    let browser = Browser::connect(debug_ws_url)?;
     let tab = browser.wait_for_initial_tab()?;
 
     let wikidata = tab

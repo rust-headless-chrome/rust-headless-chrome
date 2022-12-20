@@ -12,7 +12,7 @@ fn query(input: &str) -> Result<()> {
     tab.navigate_to("https://en.wikipedia.org")?
         .wait_for_element("input#searchInput")?
         .click()?;
-    tab.type_str(&input)?.press_key("Enter")?;
+    tab.type_str(input)?.press_key("Enter")?;
     match tab.wait_for_element("div.shortdescription") {
         Err(e) => eprintln!("Query failed: {:?}", e),
         Ok(e) => match e.get_description()?.find(|n| n.node_name == "#text") {
