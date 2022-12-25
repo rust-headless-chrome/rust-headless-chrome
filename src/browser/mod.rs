@@ -12,7 +12,7 @@ pub use process::{LaunchOptions, LaunchOptionsBuilder, DEFAULT_ARGS};
 pub use tab::Tab;
 pub use transport::ConnectionClosed;
 use transport::Transport;
-use websocket::url::Url;
+use url::Url;
 use which::which;
 
 use crate::protocol::cdp::{types::Event, types::Method, Browser as B, Target, CSS, DOM};

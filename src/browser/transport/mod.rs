@@ -15,7 +15,7 @@ use log::{error, info, trace, warn};
 
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
-use websocket::url::Url;
+use url::Url;
 
 use crate::protocol::cdp::{types::Event, types::Method, Target};
 
