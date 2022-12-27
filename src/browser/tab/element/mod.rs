@@ -322,7 +322,7 @@ impl<'a> Element<'a> {
     /// Returns the inner text of an HTML Element. Returns an empty string on elements with no text.
     ///
     /// Note: .innerText and .textContent are not the same thing. See:
-    /// https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/innerText
+    /// <https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/innerText>
     ///
     /// Note: if you somehow call this on a node that's not an HTML Element (e.g. `document`), this
     /// will fail.

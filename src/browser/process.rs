@@ -96,7 +96,7 @@ pub struct LaunchOptions<'a> {
     pub port: Option<u16>,
     /// Determines whether SSL certificates should be verified.
     /// This is unsafe and can lead to MiTM attacks. Make sure you understand the risks
-    /// See https://www.owasp.org/index.php/Man-in-the-middle_attack
+    /// See <https://www.owasp.org/index.php/Man-in-the-middle_attack>
     #[builder(default = "true")]
     pub ignore_certificate_errors: bool,
 
@@ -118,12 +118,12 @@ pub struct LaunchOptions<'a> {
     /// CRX files cannot be used directly and must be first extracted.
     ///
     /// Note that Chrome does not support loading extensions in headless-mode.
-    /// See https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c5
+    /// See <https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c5>
     #[builder(default)]
     pub extensions: Vec<&'a OsStr>,
 
     /// Additional arguments to pass to the browser instance. The list of Chromium
-    /// flags can be found: http://peter.sh/experiments/chromium-command-line-switches/.
+    /// flags can be found: <http://peter.sh/experiments/chromium-command-line-switches/>.
     #[builder(default)]
     pub args: Vec<&'a OsStr>,
 
@@ -183,7 +183,7 @@ impl<'a> LaunchOptions<'a> {
 }
 
 /// These are passed to the Chrome binary by default.
-/// Via https://github.com/GoogleChrome/puppeteer/blob/master/lib/Launcher.js#L38
+/// Via <https://github.com/GoogleChrome/puppeteer/blob/master/lib/Launcher.js#L38>
 pub static DEFAULT_ARGS: [&str; 23] = [
     "--disable-background-networking",
     "--enable-features=NetworkService,NetworkServiceInProcess",
