@@ -101,7 +101,7 @@ impl Browser {
         Self::create_browser(Some(process), transport, idle_browser_timeout)
     }
 
-    /// Calls [`new`] with options to launch a headless browser using whatever Chrome / Chromium
+    /// Calls [`Browser::new`] with options to launch a headless browser using whatever Chrome / Chromium
     /// binary can be found on the system.
     pub fn default() -> Result<Self> {
         let launch_options = LaunchOptions::default_builder()
@@ -111,13 +111,13 @@ impl Browser {
         Ok(Self::new(launch_options).unwrap())
     }
 
-    /// Allows you to drive an externally-launched Chrome process instead of launch one via [`new`].
+    /// Allows you to drive an externally-launched Chrome process instead of launch one via [`Browser::new`].
     /// If the browser is idle for 30 seconds, the connection will be dropped.
     pub fn connect(debug_ws_url: String) -> Result<Self> {
         Self::connect_with_timeout(debug_ws_url, Duration::from_secs(30))
     }
 
-    /// Allows you to drive an externally-launched Chrome process instead of launch one via [`new`].
+    /// Allows you to drive an externally-launched Chrome process instead of launch one via [`Browser::new`].
     /// If the browser is idle for `idle_browser_timeout`, the connection will be dropped.
     pub fn connect_with_timeout(
         debug_ws_url: String,

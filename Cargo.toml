@@ -40,14 +40,12 @@ png = { version = "0.17" }
 tiny_http = "0.12"
 
 [build-dependencies]
-auto_generate_cdp = { version = "0.3.4", default-features = false }
+auto_generate_cdp = "0.4.0"
 
 [lib]
 name = "headless_chrome"
 path = "src/lib.rs"
 
 [features]
-default = ["auto_generate_cdp/native-tls"]
 fetch = ["ureq", "directories", "zip", "walkdir"]
-rustls = ["auto_generate_cdp/rustls"]
 nightly = []

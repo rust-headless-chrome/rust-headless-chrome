@@ -1174,7 +1174,7 @@ impl Tab {
     /// FunctionRanges are reset after returning.
     ///
     /// The format of the data is a little unintuitive, see here for details:
-    /// https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage
+    /// <https://chromedevtools.github.io/devtools-protocol/tot/Profiler#type-ScriptCoverage>
     pub fn take_precise_js_coverage(&self) -> Result<Vec<Profiler::ScriptCoverage>> {
         let script_coverages = self
             .call_method(Profiler::TakePreciseCoverage(None))?
@@ -1314,7 +1314,7 @@ impl Tab {
     ///
     /// Sends the entries collected so far to the client by means of the entryAdded notification.
     ///
-    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-enable
+    /// See <https://chromedevtools.github.io/devtools-protocol/tot/Log#method-enable>
     pub fn enable_log(&self) -> Result<&Self> {
         self.call_method(Log::Enable(None))?;
 
@@ -1325,7 +1325,7 @@ impl Tab {
     ///
     /// Prevents further log entries from being reported to the client
     ///
-    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-disable
+    /// See <https://chromedevtools.github.io/devtools-protocol/tot/Log#method-disable>
     pub fn disable_log(&self) -> Result<&Self> {
         self.call_method(Log::Disable(None))?;
 
@@ -1334,7 +1334,7 @@ impl Tab {
 
     /// Starts violation reporting
     ///
-    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-startViolationsReport
+    /// See <https://chromedevtools.github.io/devtools-protocol/tot/Log#method-startViolationsReport>
     pub fn start_violations_report(&self, config: Vec<ViolationSetting>) -> Result<&Self> {
         self.call_method(Log::StartViolationsReport { config })?;
         Ok(self)
@@ -1342,7 +1342,7 @@ impl Tab {
 
     /// Stop violation reporting
     ///
-    /// See https://chromedevtools.github.io/devtools-protocol/tot/Log#method-stopViolationsReport
+    /// See <https://chromedevtools.github.io/devtools-protocol/tot/Log#method-stopViolationsReport>
     pub fn stop_violations_report(&self) -> Result<&Self> {
         self.call_method(Log::StopViolationsReport(None))?;
         Ok(self)
