@@ -16,7 +16,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
 use thiserror::Error;
-use websocket::url::Url;
+use url::Url;
 #[cfg(windows)]
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
 

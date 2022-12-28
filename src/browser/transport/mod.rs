@@ -13,9 +13,9 @@ use thiserror::Error;
 
 use log::{error, info, trace, warn};
 
+use url::Url;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
-use websocket::url::Url;
 
 use crate::protocol::cdp::{types::Event, types::Method, Target};
 
@@ -263,7 +263,6 @@ impl Transport {
                         break;
                     }
                     Ok(message) => {
-                        //                        trace!("{:?}", message);
                         match message {
                             Message::ConnectionShutdown => {
                                 info!("Received shutdown message");
