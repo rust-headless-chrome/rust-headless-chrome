@@ -241,7 +241,7 @@ impl Fetcher {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
             let mut out_path = PathBuf::from(extract_path);
-            out_path.push(file.sanitized_name().as_path());
+            out_path.push(file.mangled_name().as_path());
 
             let comment = file.comment();
             if !comment.is_empty() {
