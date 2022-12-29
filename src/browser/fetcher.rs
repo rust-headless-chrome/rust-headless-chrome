@@ -1,15 +1,21 @@
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{self, BufWriter},
+    fs::{self, OpenOptions},
+    io::{self},
     path::{Path, PathBuf},
     str::FromStr,
 };
+
+#[cfg(not(target_os = "macos"))]
+use std::fs::File;
+#[cfg(not(target_os = "macos"))]
+use std::io::BufWriter;
 
 use anyhow::{anyhow, Result};
 use directories::ProjectDirs;
 use log::*;
 use ureq;
 use walkdir::WalkDir;
+#[cfg(not(target_os = "macos"))]
 use zip;
 
 pub const CUR_REV: &str = "634997";
