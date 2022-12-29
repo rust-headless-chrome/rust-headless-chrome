@@ -1,5 +1,6 @@
 # Headless Chrome
 
+[![Build Status](https://github.com/atroche/rust-headless-chrome/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/atroche/rust-headless-chrome/actions/workflows/ci.yml)
 [![Crate](https://img.shields.io/crates/v/headless_chrome.svg)](https://crates.io/crates/headless_chrome)
 [![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
 [![Discord channel](https://img.shields.io/discord/557374784233799681.svg?logo=discord)](https://discord.gg/yyGEzcc)
