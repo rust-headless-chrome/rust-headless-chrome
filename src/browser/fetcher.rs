@@ -1,15 +1,21 @@
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{self, BufWriter},
+    fs::{self, OpenOptions},
+    io::{self},
     path::{Path, PathBuf},
     str::FromStr,
 };
+
+#[cfg(not(target_os = "macos"))]
+use std::fs::File;
+#[cfg(not(target_os = "macos"))]
+use std::io::BufWriter;
 
 use anyhow::{anyhow, Result};
 use directories::ProjectDirs;
 use log::*;
 use ureq;
 use walkdir::WalkDir;
+#[cfg(not(target_os = "macos"))]
 use zip;
 
 pub const CUR_REV: &str = "634997";
@@ -235,7 +241,7 @@ impl Fetcher {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
             let mut out_path = PathBuf::from(extract_path);
-            out_path.push(file.sanitized_name().as_path());
+            out_path.push(file.mangled_name().as_path());
 
             let comment = file.comment();
             if !comment.is_empty() {
