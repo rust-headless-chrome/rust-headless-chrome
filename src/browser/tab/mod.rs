@@ -44,8 +44,8 @@ use Fetch::{
 };
 
 use Network::{
-    events::ResponseReceivedEventParams, Cookie, GetResponseBody, GetResponseBodyReturnObject,
-    SetExtraHTTPHeaders, SetUserAgentOverride,
+    events::ResponseReceivedEventParams, events::LoadingFailedEventParams, Cookie, GetResponseBody, 
+    GetResponseBodyReturnObject, SetExtraHTTPHeaders, SetUserAgentOverride,
 };
 
 use crate::util;
@@ -78,6 +78,16 @@ pub type ResponseHandler = Box<
     ) + Send
     + Sync,
 >;
+
+#[rustfmt::skip]
+pub type LoadingFailedHandler = Box<
+    dyn Fn(
+        ResponseReceivedEventParams,
+        LoadingFailedEventParams
+    ) + Send
+    + Sync,
+>;
+
 
 type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 pub trait RequestInterceptor {
@@ -141,6 +151,7 @@ pub struct Tab {
     target_info: Arc<Mutex<TargetInfo>>,
     request_interceptor: Arc<Mutex<Arc<RequestIntercept>>>,
     response_handler: Arc<Mutex<HashMap<String, ResponseHandler>>>,
+    loading_failed_handler: Arc<Mutex<HashMap<String, LoadingFailedHandler>>>,
     auth_handler: Arc<Mutex<AuthChallengeResponse>>,
     default_timeout: Arc<RwLock<Duration>>,
     page_bindings: Arc<Mutex<FunctionBinding>>,
@@ -208,6 +219,7 @@ impl Tab {
                 |_transport, _session_id, _interception| RequestPausedDecision::Continue(None),
             ))),
             response_handler: Arc::new(Mutex::new(HashMap::new())),
+            loading_failed_handler: Arc::new(Mutex::new(HashMap::new())),
             auth_handler: Arc::new(Mutex::new(AuthChallengeResponse {
                 response: Fetch::AuthChallengeResponseResponse::Default,
                 username: None,
@@ -277,6 +289,7 @@ impl Tab {
         let navigating = Arc::clone(&self.navigating);
         let interceptor_mutex = Arc::clone(&self.request_interceptor);
         let response_handler_mutex = self.response_handler.clone();
+        let loading_failed_handler_mutex = self.loading_failed_handler.clone();
         let auth_handler_mutex = self.auth_handler.clone();
         let session_id = self.session_id.clone();
         let listeners_mutex = Arc::clone(&self.event_listeners);
@@ -394,6 +407,18 @@ impl Tab {
                                 }
                             },
                         );
+                    }
+                    Event::NetworkLoadingFailed(ev) => {
+                        loading_failed_handler_mutex.lock().unwrap().iter().for_each(
+                            |(_name, handler)| {
+                                let request_id = ev.params.request_id.clone();
+
+                                match received_event_params.lock().unwrap().get(&request_id) {
+                                    Some(params) => handler(params.to_owned(), ev.params.to_owned()),
+                                    _ => warn!("Request id does not exist"),
+                                }
+                            }
+                        )
                     }
                     _ => {
                         let mut raw_event = format!("{:?}", event);
@@ -1255,6 +1280,15 @@ impl Tab {
             .lock()
             .unwrap()
             .insert(handler_name.to_string(), handler))
+    }
+
+    pub fn register_loading_failed_handling<S: ToString>(&self, handler_name: S, handler: LoadingFailedHandler) -> Result<Option<LoadingFailedHandler>> {
+        self.call_method(Network::Enable {
+            max_total_buffer_size: None,
+            max_resource_buffer_size: None,
+            max_post_data_size: None,
+        })?;
+        Ok(self.loading_failed_handler.lock().unwrap().insert(handler_name.to_string(), handler))
     }
 
     /// Deregister a reponse handler based on its name.
