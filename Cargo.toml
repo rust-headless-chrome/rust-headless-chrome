@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2021"
 description = "Control Chrome programatically"
@@ -26,7 +26,6 @@ walkdir = { version = "2", optional = true }
 websocket = { version = "0.26", default_features = false, features = ["sync"] }
 which = "4.0"
 zip = { version = "0.6.3", optional = true }
-
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.10"
