@@ -421,9 +421,11 @@ impl Tab {
                         )
                     }
                     _ => {
-                        let mut raw_event = format!("{:?}", event);
-                        raw_event.truncate(50);
-                        trace!("Unhandled event: {}", raw_event);
+                        let raw_event = format!("{:?}", event);
+                        trace!(
+                            "Unhandled event: {}",
+                            raw_event.chars().take(50).collect::<String>()
+                        );
                     }
                 }
             }
@@ -490,9 +492,8 @@ impl Tab {
         let result = self
             .transport
             .call_method_on_target(self.session_id.clone(), method);
-        let mut result_string = format!("{:?}", result);
-        result_string.truncate(70);
-        trace!("Got result: {:?}", result_string);
+        let result_string = format!("{:?}", result);
+        trace!("Got result: {:?}", result_string.chars().take(70));
         result
     }
 

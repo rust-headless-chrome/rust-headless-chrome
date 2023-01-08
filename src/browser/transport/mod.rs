@@ -144,9 +144,10 @@ impl Transport {
                     session_id: Some(session_id.0),
                     message,
                 };
-                let mut raw = message_text;
-                raw.truncate(300);
-                trace!("Msg to tab: {}", &raw);
+                trace!(
+                    "Msg to tab: {}",
+                    message_text.chars().take(300).collect::<String>()
+                );
                 if let Err(e) = self.call_method_on_browser(target_method) {
                     warn!("Failed to call method on browser: {:?}", e);
                     self.waiting_call_registry.unregister_call(call.id);
@@ -163,12 +164,11 @@ impl Transport {
             }
         }
 
-        let mut params_string = format!("{:?}", call.get_params());
-        params_string.truncate(400);
+        let params_string = format!("{:?}", call.get_params());
         trace!(
             "waiting for response from call registry: {} {:?}",
             &call_id,
-            params_string
+            params_string.chars().take(400).collect::<String>()
         );
 
         let response_result = util::Wait::new(self.idle_browser_timeout, Duration::from_millis(5))
@@ -322,11 +322,11 @@ impl Transport {
                                         listeners.lock().unwrap().get(&ListenerId::Browser)
                                     {
                                         if let Err(err) = tx.send(browser_event.clone()) {
-                                            let mut event_string = format!("{:?}", browser_event);
-                                            event_string.truncate(400);
+                                            let event_string = format!("{:?}", browser_event);
                                             warn!(
                                                 "Couldn't send browser an event: {:?}\n{:?}",
-                                                event_string, err
+                                                event_string.chars().take(400).collect::<String>(),
+                                                err
                                             );
                                             break;
                                         }
