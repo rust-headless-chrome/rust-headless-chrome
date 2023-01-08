@@ -1708,4 +1708,88 @@ impl Tab {
     pub fn stop_loading(&self) -> Result<bool> {
         self.call_method(Page::StopLoading(None)).map(|_| true)
     }
+
+    fn bypass_user_agent(&self) -> Result<()> {
+        self.set_user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36", None, None)?;
+        Ok(())
+    }
+
+    fn bypass_wedriver(&self) -> Result<()> {
+        self.call_method(Page::AddScriptToEvaluateOnNewDocument {
+            source: "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});".to_string(),
+            world_name: None,
+            include_command_line_api: None
+        })?;
+        Ok(())
+    }
+
+    fn bypass_chrome(&self) -> Result<()> {
+        self.call_method(Page::AddScriptToEvaluateOnNewDocument {
+            source: "window.chrome = { runtime: {} };".to_string(),
+            world_name: None,
+            include_command_line_api: None
+        })?;
+        Ok(())
+    }
+
+    fn bypass_permissions(&self) -> Result<()> {
+        let r = "const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.__proto__.query = parameters =>
+        parameters.name === 'notifications'
+            ? Promise.resolve({state: Notification.permission})
+            : originalQuery(parameters);";
+
+        self.call_method(Page::AddScriptToEvaluateOnNewDocument {
+            source: r.to_string(),
+            world_name: None,
+            include_command_line_api: None
+        })?;
+        Ok(())
+    }
+
+    fn bypass_plugins(&self) -> Result<()> {
+        self.call_method(Page::AddScriptToEvaluateOnNewDocument {
+            source: "Object.defineProperty(navigator, 'plugins', { get: () => [
+            {filename:'internal-pdf-viewer'},
+            {filename:'adsfkjlkjhalkh'},
+            {filename:'internal-nacl-plugin'}
+          ], });".to_string(),
+            world_name: None,
+            include_command_line_api: None
+        })?;
+        Ok(())
+    }
+
+    fn bypass_webgl_vendor(&self) -> Result<()> {
+        let r = "const getParameter = WebGLRenderingContext.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+            // UNMASKED_VENDOR_WEBGL
+            if (parameter === 37445) {
+                return 'Google Inc. (NVIDIA)';
+            }
+            // UNMASKED_RENDERER_WEBGL
+            if (parameter === 37446) {
+                return 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1050 Direct3D11 vs_5_0 ps_5_0, D3D11-27.21.14.5671)';
+            }
+
+            return getParameter(parameter);
+        };";
+
+        self.call_method(Page::AddScriptToEvaluateOnNewDocument {
+            source: r.to_string(),
+            world_name: None,
+            include_command_line_api: None
+        })?;
+        Ok(())
+    }
+
+    pub fn enable_stealth_mode(&self) -> Result<()> {
+        self.bypass_user_agent()?;
+        self.bypass_wedriver()?;
+        self.bypass_chrome()?;
+        self.bypass_permissions()?;
+        self.bypass_plugins()?;
+        self.bypass_webgl_vendor()?;
+        Ok(())
+    }
 }
