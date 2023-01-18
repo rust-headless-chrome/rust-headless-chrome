@@ -220,8 +220,6 @@ fn decode_png(i: &[u8]) -> Result<Vec<u8>> {
     let decoder = png::Decoder::new(i);
     let mut reader = decoder.read_info()?;
     let mut buf = vec![0; reader.output_buffer_size()];
-    let info = reader.next_frame(&mut buf).unwrap();
-    let mut buf = vec![0; info.buffer_size()];
     reader.next_frame(&mut buf)?;
     Ok(buf)
 }
