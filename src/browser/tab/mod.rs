@@ -44,7 +44,7 @@ use Fetch::{
 };
 
 use Network::{
-    events::ResponseReceivedEventParams, events::LoadingFailedEventParams, Cookie, GetResponseBody, 
+    events::LoadingFailedEventParams, events::ResponseReceivedEventParams, Cookie, GetResponseBody,
     GetResponseBodyReturnObject, SetExtraHTTPHeaders, SetUserAgentOverride,
 };
 
@@ -87,7 +87,6 @@ pub type LoadingFailedHandler = Box<
     ) + Send
     + Sync,
 >;
-
 
 type SyncSendEvent = dyn EventListener<Event> + Send + Sync;
 pub trait RequestInterceptor {
@@ -408,22 +407,24 @@ impl Tab {
                             },
                         );
                     }
-                    Event::NetworkLoadingFailed(ev) => {
-                        loading_failed_handler_mutex.lock().unwrap().iter().for_each(
-                            |(_name, handler)| {
-                                let request_id = ev.params.request_id.clone();
+                    Event::NetworkLoadingFailed(ev) => loading_failed_handler_mutex
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .for_each(|(_name, handler)| {
+                            let request_id = ev.params.request_id.clone();
 
-                                match received_event_params.lock().unwrap().get(&request_id) {
-                                    Some(params) => handler(params.to_owned(), ev.params.to_owned()),
-                                    _ => warn!("Request id does not exist"),
-                                }
+                            match received_event_params.lock().unwrap().get(&request_id) {
+                                Some(params) => handler(params.to_owned(), ev.params.to_owned()),
+                                _ => warn!("Request id does not exist"),
                             }
-                        )
-                    }
+                        }),
                     _ => {
-                        let mut raw_event = format!("{:?}", event);
-                        raw_event.truncate(50);
-                        trace!("Unhandled event: {}", raw_event);
+                        let raw_event = format!("{:?}", event);
+                        trace!(
+                            "Unhandled event: {}",
+                            raw_event.chars().take(50).collect::<String>()
+                        );
                     }
                 }
             }
@@ -490,9 +491,8 @@ impl Tab {
         let result = self
             .transport
             .call_method_on_target(self.session_id.clone(), method);
-        let mut result_string = format!("{:?}", result);
-        result_string.truncate(70);
-        trace!("Got result: {:?}", result_string);
+        let result_string = format!("{:?}", result);
+        trace!("Got result: {:?}", result_string.chars().take(70));
         result
     }
 
@@ -1282,13 +1282,21 @@ impl Tab {
             .insert(handler_name.to_string(), handler))
     }
 
-    pub fn register_loading_failed_handling<S: ToString>(&self, handler_name: S, handler: LoadingFailedHandler) -> Result<Option<LoadingFailedHandler>> {
+    pub fn register_loading_failed_handling<S: ToString>(
+        &self,
+        handler_name: S,
+        handler: LoadingFailedHandler,
+    ) -> Result<Option<LoadingFailedHandler>> {
         self.call_method(Network::Enable {
             max_total_buffer_size: None,
             max_resource_buffer_size: None,
             max_post_data_size: None,
         })?;
-        Ok(self.loading_failed_handler.lock().unwrap().insert(handler_name.to_string(), handler))
+        Ok(self
+            .loading_failed_handler
+            .lock()
+            .unwrap()
+            .insert(handler_name.to_string(), handler))
     }
 
     /// Deregister a reponse handler based on its name.
@@ -1716,9 +1724,10 @@ impl Tab {
 
     fn bypass_wedriver(&self) -> Result<()> {
         self.call_method(Page::AddScriptToEvaluateOnNewDocument {
-            source: "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});".to_string(),
+            source: "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+                .to_string(),
             world_name: None,
-            include_command_line_api: None
+            include_command_line_api: None,
         })?;
         Ok(())
     }
@@ -1727,7 +1736,7 @@ impl Tab {
         self.call_method(Page::AddScriptToEvaluateOnNewDocument {
             source: "window.chrome = { runtime: {} };".to_string(),
             world_name: None,
-            include_command_line_api: None
+            include_command_line_api: None,
         })?;
         Ok(())
     }
@@ -1742,7 +1751,7 @@ impl Tab {
         self.call_method(Page::AddScriptToEvaluateOnNewDocument {
             source: r.to_string(),
             world_name: None,
-            include_command_line_api: None
+            include_command_line_api: None,
         })?;
         Ok(())
     }
@@ -1753,9 +1762,10 @@ impl Tab {
             {filename:'internal-pdf-viewer'},
             {filename:'adsfkjlkjhalkh'},
             {filename:'internal-nacl-plugin'}
-          ], });".to_string(),
+          ], });"
+                .to_string(),
             world_name: None,
-            include_command_line_api: None
+            include_command_line_api: None,
         })?;
         Ok(())
     }
@@ -1778,7 +1788,7 @@ impl Tab {
         self.call_method(Page::AddScriptToEvaluateOnNewDocument {
             source: r.to_string(),
             world_name: None,
-            include_command_line_api: None
+            include_command_line_api: None,
         })?;
         Ok(())
     }
