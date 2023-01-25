@@ -172,6 +172,10 @@ pub struct NavigationFailed {
 #[error("No LocalStorage item was found")]
 pub struct NoLocalStorageItemFound {}
 
+#[derive(Debug, Error)]
+#[error("No UserAgent evaluated")]
+pub struct NoUserAgentEvaluated {}
+
 impl NoElementFound {
     pub fn map(error: Error) -> Error {
         match error.downcast::<RemoteError>() {
@@ -1718,8 +1722,20 @@ impl Tab {
     }
 
     fn bypass_user_agent(&self) -> Result<()> {
-        self.set_user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36", None, None)?;
-        Ok(())
+        let object = self.evaluate("window.navigator.userAgent", true)?;
+
+        match object.value.map(|x| x.to_string()) {
+            Some(mut ua) => {
+                ua = ua.replace("HeadlessChrome/", "Chrome/");
+
+                let re = regex::Regex::new(r"\(([^)]+)\)").unwrap();
+                ua = re.replace(&ua, "(Windows NT 10.0; Win64; x64)").to_string();
+
+                self.set_user_agent(&ua, None, None)?;
+                Ok(())
+            }
+            None => Err(NoUserAgentEvaluated {}.into()),
+        }
     }
 
     fn bypass_wedriver(&self) -> Result<()> {
