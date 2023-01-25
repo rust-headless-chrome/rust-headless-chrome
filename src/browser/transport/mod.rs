@@ -262,78 +262,75 @@ impl Transport {
                         }
                         break;
                     }
-                    Ok(message) => {
-                        match message {
-                            Message::ConnectionShutdown => {
-                                info!("Received shutdown message");
+                    Ok(message) => match message {
+                        Message::ConnectionShutdown => {
+                            info!("Received shutdown message");
+                            break;
+                        }
+                        Message::Response(response_to_browser_method_call) => {
+                            if waiting_call_registry
+                                .resolve_call(response_to_browser_method_call)
+                                .is_err()
+                            {
+                                warn!("The browser registered a call but then closed its receiving channel");
                                 break;
                             }
-                            Message::Response(response_to_browser_method_call) => {
-                                if waiting_call_registry
-                                    .resolve_call(response_to_browser_method_call)
-                                    .is_err()
-                                {
-                                    warn!("The browser registered a call but then closed its receiving channel");
-                                    break;
+                        }
+
+                        Message::Event(browser_event) => match browser_event {
+                            Event::ReceivedMessageFromTarget(target_message_event) => {
+                                let session_id = target_message_event.params.session_id.into();
+                                let raw_message = target_message_event.params.message;
+
+                                let msg_res = parse_raw_message(&raw_message);
+                                match msg_res {
+                                    Ok(target_message) => match target_message {
+                                        Message::Event(target_event) => {
+                                            if let Some(tx) = listeners
+                                                .lock()
+                                                .unwrap()
+                                                .get(&ListenerId::SessionId(session_id))
+                                            {
+                                                tx.send(target_event)
+                                                    .expect("Couldn't send event to listener");
+                                            }
+                                        }
+
+                                        Message::Response(resp) => {
+                                            if waiting_call_registry.resolve_call(resp).is_err() {
+                                                warn!("The browser registered a call but then closed its receiving channel");
+                                                break;
+                                            }
+                                        }
+                                        Message::ConnectionShutdown => {}
+                                    },
+                                    Err(e) => {
+                                        trace!(
+                                            "Message from target isn't recognised: {:?} - {}",
+                                            &raw_message,
+                                            e,
+                                        );
+                                    }
                                 }
                             }
 
-                            Message::Event(browser_event) => match browser_event {
-                                Event::ReceivedMessageFromTarget(target_message_event) => {
-                                    let session_id = target_message_event.params.session_id.into();
-                                    let raw_message = target_message_event.params.message;
-
-                                    let msg_res = parse_raw_message(&raw_message);
-                                    match msg_res {
-                                        Ok(target_message) => match target_message {
-                                            Message::Event(target_event) => {
-                                                if let Some(tx) = listeners
-                                                    .lock()
-                                                    .unwrap()
-                                                    .get(&ListenerId::SessionId(session_id))
-                                                {
-                                                    tx.send(target_event)
-                                                        .expect("Couldn't send event to listener");
-                                                }
-                                            }
-
-                                            Message::Response(resp) => {
-                                                if waiting_call_registry.resolve_call(resp).is_err()
-                                                {
-                                                    warn!("The browser registered a call but then closed its receiving channel");
-                                                    break;
-                                                }
-                                            }
-                                            Message::ConnectionShutdown => {}
-                                        },
-                                        Err(e) => {
-                                            trace!(
-                                                "Message from target isn't recognised: {:?} - {}",
-                                                &raw_message,
-                                                e,
-                                            );
-                                        }
+                            _ => {
+                                if let Some(tx) =
+                                    listeners.lock().unwrap().get(&ListenerId::Browser)
+                                {
+                                    if let Err(err) = tx.send(browser_event.clone()) {
+                                        let event_string = format!("{:?}", browser_event);
+                                        warn!(
+                                            "Couldn't send browser an event: {:?}\n{:?}",
+                                            event_string.chars().take(400).collect::<String>(),
+                                            err
+                                        );
+                                        break;
                                     }
                                 }
-
-                                _ => {
-                                    if let Some(tx) =
-                                        listeners.lock().unwrap().get(&ListenerId::Browser)
-                                    {
-                                        if let Err(err) = tx.send(browser_event.clone()) {
-                                            let event_string = format!("{:?}", browser_event);
-                                            warn!(
-                                                "Couldn't send browser an event: {:?}\n{:?}",
-                                                event_string.chars().take(400).collect::<String>(),
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
+                            }
+                        },
+                    },
                 }
             }
 
