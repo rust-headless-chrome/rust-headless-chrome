@@ -23,7 +23,8 @@ tempfile = "3"
 thiserror = '1'
 ureq = { version = "2.5", optional = true }
 walkdir = { version = "2", optional = true }
-websocket = { version = "0.26", default_features = false, features = ["sync"] }
+tungstenite = "0.18"
+url = "2.3"
 which = "4.0"
 zip = { version = "0.6.3", optional = true }
 
@@ -48,3 +49,5 @@ path = "src/lib.rs"
 [features]
 fetch = ["ureq", "directories", "zip", "walkdir"]
 nightly = []
+rustls = ["tungstenite/rustls"]
+native-tls = ["tungstenite/native-tls"]
