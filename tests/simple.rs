@@ -399,7 +399,7 @@ fn reload() -> Result<()> {
         let response = tiny_http::Response::new(
             200.into(),
             vec![tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..]).unwrap()],
-            std::io::Cursor::new(format!(r#"<div id="counter">{}</div>"#, counter)),
+            std::io::Cursor::new(format!(r#"<div id="counter">{counter}</div>"#)),
             None,
             None,
         );

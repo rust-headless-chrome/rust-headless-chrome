@@ -14,7 +14,7 @@ fn query(input: &str) -> Result<()> {
         .click()?;
     tab.type_str(input)?.press_key("Enter")?;
     match tab.wait_for_element("div.shortdescription") {
-        Err(e) => eprintln!("Query failed: {:?}", e),
+        Err(e) => eprintln!("Query failed: {e:?}"),
         Ok(e) => match e.get_description()?.find(|n| n.node_name == "#text") {
             Some(n) => println!("Result for `{}`: {}", &input, n.node_value),
             None => eprintln!("No shortdescription-node found on page"),

@@ -319,7 +319,7 @@ impl Transport {
                                     listeners.lock().unwrap().get(&ListenerId::Browser)
                                 {
                                     if let Err(err) = tx.send(browser_event.clone()) {
-                                        let event_string = format!("{:?}", browser_event);
+                                        let event_string = format!("{browser_event:?}");
                                         warn!(
                                             "Couldn't send browser an event: {:?}\n{:?}",
                                             event_string.chars().take(400).collect::<String>(),

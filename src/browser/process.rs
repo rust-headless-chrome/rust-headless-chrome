@@ -274,10 +274,10 @@ impl Process {
         } else {
             get_available_port().ok_or(ChromeLaunchError::NoAvailablePorts {})?
         };
-        let port_option = format!("--remote-debugging-port={}", debug_port);
+        let port_option = format!("--remote-debugging-port={debug_port}");
 
         let window_size_option = if let Some((width, height)) = launch_options.window_size {
-            format!("--window-size={},{}", width, height)
+            format!("--window-size={width},{height}")
         } else {
             String::new()
         };
@@ -344,7 +344,7 @@ impl Process {
         }
 
         let proxy_server_option = if let Some(proxy_server) = launch_options.proxy_server {
-            format!("--proxy-server={}", proxy_server)
+            format!("--proxy-server={proxy_server}")
         } else {
             String::new()
         };
@@ -543,11 +543,8 @@ mod tests {
         use std::fs::File;
         use std::io::prelude::*;
         let current_pid = std::process::id();
-        let mut current_process_children_file = File::open(format!(
-            "/proc/{}/task/{}/children",
-            current_pid, current_pid
-        ))
-        .unwrap();
+        let mut current_process_children_file =
+            File::open(format!("/proc/{current_pid}/task/{current_pid}/children")).unwrap();
         let mut child_pids = String::new();
         current_process_children_file
             .read_to_string(&mut child_pids)

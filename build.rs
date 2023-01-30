@@ -1,3 +1,4 @@
+#[cfg(not(docsrs))]
 use auto_generate_cdp::init;
 
 fn main() {
