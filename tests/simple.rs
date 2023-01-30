@@ -719,7 +719,7 @@ fn loading_failed_handler() -> Result<()> {
     let failed_event = Arc::new(Mutex::new(Vec::new()));
 
     let failed_event_clone = failed_event.clone();
-    assert_eq!(
+    assert!(
         tab.register_loading_failed_handling(
             "test1",
             Box::new(move |response, loading_failed| {
@@ -729,8 +729,7 @@ fn loading_failed_handler() -> Result<()> {
                     .push((response, loading_failed))
             })
         )?
-        .is_none(),
-        true
+        .is_none()
     );
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
