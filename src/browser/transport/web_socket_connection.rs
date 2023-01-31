@@ -97,10 +97,7 @@ impl WebSocketConnection {
                         tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,
                     ) => break,
                     error => {
-                        panic!(
-                            "Unhandled WebSocket error for Chrome #{:?}: {:?}",
-                            process_id, error
-                        );
+                        panic!("Unhandled WebSocket error for Chrome #{process_id:?}: {error:?}");
                     }
                 },
                 Ok(message) => {
@@ -116,7 +113,7 @@ impl WebSocketConnection {
                             );
                         }
                     } else {
-                        panic!("Got a weird message: {:?}", message);
+                        panic!("Got a weird message: {message:?}");
                     }
                 }
             }

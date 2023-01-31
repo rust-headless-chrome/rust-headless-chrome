@@ -103,7 +103,7 @@ pub fn file_server(path: &'static str) -> Server {
             request.url()
         };
 
-        let file_path = format!("{}{}", path, url);
+        let file_path = format!("{path}{url}");
 
         if let Ok(file_contents) = fs::read_to_string(file_path) {
             let content_type = if url.ends_with(".js") {

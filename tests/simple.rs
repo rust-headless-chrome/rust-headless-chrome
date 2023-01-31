@@ -399,7 +399,7 @@ fn reload() -> Result<()> {
         let response = tiny_http::Response::new(
             200.into(),
             vec![tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..]).unwrap()],
-            std::io::Cursor::new(format!(r#"<div id="counter">{}</div>"#, counter)),
+            std::io::Cursor::new(format!(r#"<div id="counter">{counter}</div>"#)),
             None,
             None,
         );
@@ -719,8 +719,8 @@ fn loading_failed_handler() -> Result<()> {
     let failed_event = Arc::new(Mutex::new(Vec::new()));
 
     let failed_event_clone = failed_event.clone();
-    assert_eq!(
-        tab.register_loading_failed_handling(
+    assert!(tab
+        .register_loading_failed_handling(
             "test1",
             Box::new(move |response, loading_failed| {
                 failed_event_clone
@@ -729,9 +729,7 @@ fn loading_failed_handler() -> Result<()> {
                     .push((response, loading_failed))
             })
         )?
-        .is_none(),
-        true
-    );
+        .is_none());
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();

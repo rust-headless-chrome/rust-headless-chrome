@@ -418,13 +418,16 @@ impl Tab {
                         .for_each(|(_name, handler)| {
                             let request_id = ev.params.request_id.clone();
 
-                            match received_event_params.lock().unwrap().get(&request_id) {
-                                Some(params) => handler(params.to_owned(), ev.params.to_owned()),
-                                _ => warn!("Request id does not exist"),
+                            if let Some(params) =
+                                received_event_params.lock().unwrap().get(&request_id)
+                            {
+                                handler(params.clone(), ev.params.clone());
+                            } else {
+                                warn!("Request id does not exist");
                             }
                         }),
                     _ => {
-                        let raw_event = format!("{:?}", event);
+                        let raw_event = format!("{event:?}");
                         trace!(
                             "Unhandled event: {}",
                             raw_event.chars().take(50).collect::<String>()
@@ -495,7 +498,7 @@ impl Tab {
         let result = self
             .transport
             .call_method_on_target(self.session_id.clone(), method);
-        let result_string = format!("{:?}", result);
+        let result_string = format!("{result:?}");
         trace!("Got result: {:?}", result_string.chars().take(70));
         result
     }
@@ -1044,7 +1047,7 @@ impl Tab {
                 capture_beyond_viewport: None,
             })?
             .data;
-        base64::decode(&data).map_err(Into::into)
+        base64::decode(data).map_err(Into::into)
     }
 
     pub fn print_to_pdf(&self, options: Option<PrintToPdfOptions>) -> Result<Vec<u8>> {
@@ -1071,7 +1074,7 @@ impl Tab {
                     transfer_mode,
                 })?
                 .data;
-            base64::decode(&data).map_err(Into::into)
+            base64::decode(data).map_err(Into::into)
         } else {
             let data = self
                 .call_method(Page::PrintToPDF {
@@ -1079,7 +1082,7 @@ impl Tab {
                 })?
                 .data;
 
-            base64::decode(&data).map_err(Into::into)
+            base64::decode(data).map_err(Into::into)
         }
     }
 
@@ -1673,10 +1676,7 @@ impl Tab {
         let value = json!(item).to_string();
 
         self.evaluate(
-            &format!(
-                r#"localStorage.setItem("{}",JSON.stringify({}))"#,
-                item_name, value
-            ),
+            &format!(r#"localStorage.setItem("{item_name}",JSON.stringify({value}))"#),
             false,
         )?;
 
@@ -1687,7 +1687,7 @@ impl Tab {
     where
         T: DeserializeOwned,
     {
-        let object = self.evaluate(&format!(r#"localStorage.getItem("{}")"#, item_name), false)?;
+        let object = self.evaluate(&format!(r#"localStorage.getItem("{item_name}")"#), false)?;
 
         let json: Option<T> = object.value.and_then(|v| match v {
             serde_json::Value::String(ref s) => {
@@ -1709,10 +1709,7 @@ impl Tab {
     }
 
     pub fn remove_storage(&self, item_name: &str) -> Result<()> {
-        self.evaluate(
-            &format!(r#"localStorage.removeItem("{}")"#, item_name),
-            false,
-        )?;
+        self.evaluate(&format!(r#"localStorage.removeItem("{item_name}")"#), false)?;
 
         Ok(())
     }

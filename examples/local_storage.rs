@@ -18,7 +18,7 @@ fn main() -> Result<()> {
 
     let item: String = tab.get_storage("translationHash")?;
 
-    println!("{}", item);
+    println!("{item}");
 
     Ok(())
 }

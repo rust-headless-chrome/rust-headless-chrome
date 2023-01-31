@@ -17,14 +17,14 @@ fn main() -> Result<()> {
         .navigate_to("https://www.wikipedia.org")?
         .wait_until_navigated()?
         .capture_screenshot(CaptureScreenshotFormatOption::Jpeg, Some(75), None, true)?;
-    fs::write("screenshot.jpg", &jpeg_data)?;
+    fs::write("screenshot.jpg", jpeg_data)?;
 
     // Browse to the WebKit-Page and take a screenshot of the infobox.
     let png_data = tab
         .navigate_to("https://en.wikipedia.org/wiki/WebKit")?
         .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
         .capture_screenshot(CaptureScreenshotFormatOption::Png)?;
-    fs::write("screenshot.png", &png_data)?;
+    fs::write("screenshot.png", png_data)?;
 
     println!("Screenshots successfully created.");
     Ok(())

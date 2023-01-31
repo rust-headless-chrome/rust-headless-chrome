@@ -31,7 +31,7 @@ fn main() -> Result<()> {
         .navigate_to("https://www.wikipedia.org")?
         .wait_until_navigated()?
         .print_to_pdf(None)?;
-    fs::write("wiki.pdf", &wikidata)?;
+    fs::write("wiki.pdf", wikidata)?;
     println!("PDF successfully created from internet web page.");
 
     // Browse to the file url and render a pdf of the web page.
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         .navigate_to(&file_path)?
         .wait_until_navigated()?
         .print_to_pdf(pdf_options)?;
-    fs::write("rust.pdf", &local_pdf)?;
+    fs::write("rust.pdf", local_pdf)?;
     println!("PDF successfully created from local web page.");
 
     Ok(())

@@ -371,7 +371,7 @@ impl Browser {
                                 }
                             }
                             _ => {
-                                let raw_event = format!("{:?}", event);
+                                let raw_event = format!("{event:?}");
                                 trace!(
                                     "Unhandled event: {}",
                                     raw_event.chars().take(50).collect::<String>()
