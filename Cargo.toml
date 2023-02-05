@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2021"
 description = "Control Chrome programatically"
@@ -40,7 +40,7 @@ png = { version = "0.17" }
 tiny_http = "0.12"
 
 [build-dependencies]
-auto_generate_cdp = "0.4.0"
+auto_generate_cdp = "0.4.1"
 
 [lib]
 name = "headless_chrome"
