@@ -792,6 +792,8 @@ impl Tab {
     }
 
     pub fn find_elements_by_xpath(&self, query: &str) -> Result<Vec<Element<'_>>> {
+        self.get_document()?;
+
         self.call_method(DOM::PerformSearch {
             query: query.to_string(),
             include_user_agent_shadow_dom: None,
