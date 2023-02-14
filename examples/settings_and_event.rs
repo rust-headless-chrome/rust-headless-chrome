@@ -10,7 +10,7 @@ fn start() -> Result<()> {
         ..Default::default()
     })?;
 
-    let tab = browser.wait_for_initial_tab().unwrap();
+    let tab = browser.new_tab().unwrap();
 
     tab.navigate_to("https://www.google.com")
         .expect("failed to navigate");

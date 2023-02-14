@@ -24,7 +24,7 @@ fn file_chooser_works() -> Result<()> {
     //     .unwrap();
 
     // if version_number > 76 {
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
     let server = server::Server::with_dumb_html(include_str!("file_chooser_fixtures/chooser.html"));
 
     tab.navigate_to(&server.url())?;

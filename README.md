@@ -32,7 +32,7 @@ use headless_chrome::protocol::cdp::Page;
 fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
     let browser = Browser::default()?;
 
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
 
     /// Navigate to wikipedia
     tab.navigate_to("https://www.wikipedia.org")?;

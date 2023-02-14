@@ -56,7 +56,7 @@ pub mod transport;
 /// #
 /// use headless_chrome::Browser;
 /// let browser = Browser::default()?;
-/// let first_tab = browser.wait_for_initial_tab()?;
+/// let first_tab = browser.new_tab()?;
 /// assert_eq!("about:blank", first_tab.get_url());
 /// #
 /// # Ok(())
@@ -163,11 +163,10 @@ impl Browser {
         trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
 
-        let tab = browser.wait_for_initial_tab()?;
+        let tab = browser.new_tab()?;
 
         tab.call_method(DOM::Enable(None))?;
         tab.call_method(CSS::Enable(None))?;
-
         Ok(browser)
     }
 
@@ -181,15 +180,21 @@ impl Browser {
         &self.inner.tabs
     }
 
+    // THIS NO LONGER SEEMS TRUE |
+    //                           v
     /// Chrome always launches with at least one tab. The reason we have to 'wait' is because information
     /// about that tab isn't available *immediately* after starting the process. Tabs are behind `Arc`s
     /// because they each have their own thread which handles events and method responses directed to them.
     ///
     /// Wait timeout: 10 secs
+    #[deprecated(since = "1.0.4", note= "Use new_tab() instead.")]
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>> {
-        util::Wait::with_timeout(Duration::from_secs(10))
+        match util::Wait::with_timeout(Duration::from_secs(10))
             .until(|| self.inner.tabs.lock().unwrap().first().map(Arc::clone))
-            .map_err(Into::into)
+             {
+                Ok(tab) => Ok(tab),
+                Err(_) => self.new_tab(),
+            }
     }
 
     /// Create a new tab and return a handle to it.
@@ -202,7 +207,7 @@ impl Browser {
     /// #
     /// # use headless_chrome::Browser;
     /// # let browser = Browser::default()?;
-    /// let first_tab = browser.wait_for_initial_tab()?;
+    /// let first_tab = browser.new_tab()?;
     /// let new_tab = browser.new_tab()?;
     /// let num_tabs = browser.get_tabs().lock().unwrap().len();
     /// assert_eq!(2, num_tabs);

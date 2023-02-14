@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     );
 
     let browser = Browser::connect(debug_ws_url)?;
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
 
     let wikidata = tab
         .navigate_to("https://www.wikipedia.org")?

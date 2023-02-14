@@ -21,7 +21,7 @@ fn read_write_local_storage() -> Result<()> {
     )
     .unwrap();
 
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
 
     let item_value = "cb2a8cd9";
 

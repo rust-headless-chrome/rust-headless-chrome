@@ -16,7 +16,7 @@ fn listen_to_events() -> Result<()> {
     let counter_exception_thrown = Arc::new(Mutex::new(0));
 
     let browser = Browser::default()?;
-    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+    let tab: Arc<Tab> = browser.new_tab()?;
 
     tab.enable_log()?.enable_runtime()?;
 
@@ -51,7 +51,7 @@ fn remove_event_listener() -> Result<()> {
     let counter_exception_thrown = Arc::new(Mutex::new(0));
 
     let browser = Browser::default()?;
-    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+    let tab: Arc<Tab> = browser.new_tab()?;
 
     tab.enable_log()?.enable_runtime()?;
 
