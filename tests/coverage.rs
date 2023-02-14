@@ -50,7 +50,7 @@ fn returns_actual_coverage() -> Result<()> {
     logging::enable_logging();
     let server = server_with_html_and_js();
     let browser = Browser::default()?;
-    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+    let tab: Arc<Tab> = browser.new_tab()?;
 
     tab.enable_profiler()?;
     tab.start_js_coverage()?;

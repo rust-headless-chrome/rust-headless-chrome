@@ -51,7 +51,7 @@ fn browser() -> Browser {
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {
     let browser = browser();
-    let tab = browser.wait_for_initial_tab().unwrap();
+    let tab = browser.new_tab().unwrap();
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
     (browser, tab)
@@ -71,7 +71,7 @@ fn simple() -> Result<()> {
 fn bounds_changed() -> Result<(), anyhow::Error> {
     logging::enable_logging();
     let browser = browser();
-    let tab = browser.wait_for_initial_tab().unwrap();
+    let tab = browser.new_tab().unwrap();
 
     // New browser windows start in normal (windowed) state
     let bounds = tab.get_bounds()?;
@@ -110,7 +110,7 @@ fn bounds_changed() -> Result<(), anyhow::Error> {
 fn bounds_unchanged() -> Result<(), anyhow::Error> {
     logging::enable_logging();
     let browser = browser();
-    let tab = browser.wait_for_initial_tab().unwrap();
+    let tab = browser.new_tab().unwrap();
     let bounds = tab.get_bounds()?;
 
     // Minimizing a window does *not* change it's bounds
@@ -641,7 +641,7 @@ fn set_request_interception() -> Result<()> {
 fn authentication() -> Result<()> {
     logging::enable_logging();
     let browser = Browser::default()?;
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
     tab.authenticate(Some("login".to_string()), Some("password".to_string()))?;
     tab.enable_fetch(None, Some(true))?;
     tab.navigate_to("http://httpbin.org/basic-auth/login/password")?;
@@ -659,7 +659,7 @@ fn response_handler() -> Result<()> {
 
     let browser = Browser::default()?;
 
-    let tab = browser.wait_for_initial_tab().unwrap();
+    let tab = browser.new_tab().unwrap();
 
     let responses = Arc::new(Mutex::new(Vec::new()));
 
@@ -714,7 +714,7 @@ fn loading_failed_handler() -> Result<()> {
     ));
     let browser = Browser::default()?;
 
-    let tab = browser.wait_for_initial_tab().unwrap();
+    let tab = browser.new_tab().unwrap();
 
     let failed_event = Arc::new(Mutex::new(Vec::new()));
 
@@ -771,7 +771,7 @@ fn get_script_source() -> Result<()> {
     let server = server::file_server("tests/coverage_fixtures");
     let browser = Browser::default()?;
 
-    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+    let tab: Arc<Tab> = browser.new_tab()?;
 
     tab.enable_profiler()?;
     tab.start_js_coverage()?;

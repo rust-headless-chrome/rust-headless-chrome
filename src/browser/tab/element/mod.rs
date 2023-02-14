@@ -93,7 +93,7 @@ impl<'a> Element<'a> {
     /// use headless_chrome::Browser;
     ///
     /// let browser = Browser::default()?;
-    /// let initial_tab = browser.wait_for_initial_tab()?;
+    /// let initial_tab = browser.new_tab()?;
     ///
     /// let file_server = server::Server::with_dumb_html(include_str!("../../../../tests/simple.html"));
     /// let containing_element = initial_tab.navigate_to(&file_server.url())?
@@ -157,7 +157,7 @@ impl<'a> Element<'a> {
     /// use headless_chrome::Browser;
     ///
     /// let browser = Browser::default()?;
-    /// let initial_tab = browser.wait_for_initial_tab()?;
+    /// let initial_tab = browser.new_tab()?;
     ///
     /// let file_server = server::Server::with_dumb_html(include_str!("../../../../tests/simple.html"));
     /// let containing_element = initial_tab.navigate_to(&file_server.url())?
@@ -334,7 +334,7 @@ impl<'a> Element<'a> {
     /// use std::time::Duration;
     /// let browser = Browser::default()?;
     /// let url = "https://web.archive.org/web/20190403224553/https://en.wikipedia.org/wiki/JavaScript";
-    /// let inner_text_content = browser.wait_for_initial_tab()?
+    /// let inner_text_content = browser.new_tab()?
     ///     .navigate_to(url)?
     ///     .wait_for_element_with_custom_timeout("#Misplaced_trust_in_developers", Duration::from_secs(10))?
     ///     .get_inner_text()?;
@@ -399,7 +399,7 @@ impl<'a> Element<'a> {
     /// #
     /// use headless_chrome::{protocol::page::ScreenshotFormat, Browser};
     /// let browser = Browser::default()?;
-    /// let png_data = browser.wait_for_initial_tab()?
+    /// let png_data = browser.new_tab()?
     ///     .navigate_to("https://en.wikipedia.org/wiki/WebKit")?
     ///     .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
     ///     .capture_screenshot(ScreenshotFormat::PNG)?;

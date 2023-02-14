@@ -12,7 +12,7 @@ fn main() -> Result<()> {
         .build()
         .expect("Couldn't find appropriate Chrome binary.");
     let browser = Browser::new(options)?;
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
     let jpeg_data = tab
         .navigate_to("https://www.wikipedia.org")?
         .wait_until_navigated()?

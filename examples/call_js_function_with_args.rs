@@ -9,7 +9,7 @@ fn main() -> Result<()> {
             .expect("Could not find chrome-executable"),
     )?;
 
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
 
     tab.navigate_to("https://www.google.com")
         .expect("failed to navigate");

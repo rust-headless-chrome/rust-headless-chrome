@@ -14,7 +14,7 @@ fn expose_function() -> Result<()> {
     let function_called_entries = Arc::new(Mutex::new(0));
 
     let browser = Browser::default()?;
-    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+    let tab: Arc<Tab> = browser.new_tab()?;
 
     let function_called_entries_clone = Arc::clone(&function_called_entries);
 

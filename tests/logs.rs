@@ -15,7 +15,7 @@ fn enable_and_disable_logs() -> Result<()> {
         "logs_fixtures/basic_page_with_console_messages.html"
     ));
     let browser = Browser::default()?;
-    let tab: Arc<Tab> = browser.wait_for_initial_tab()?;
+    let tab: Arc<Tab> = browser.new_tab()?;
 
     tab.enable_log()?;
 

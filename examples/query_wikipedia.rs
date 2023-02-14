@@ -8,7 +8,7 @@ fn query(input: &str) -> Result<()> {
             .build()
             .expect("Could not find chrome-executable"),
     )?;
-    let tab = browser.wait_for_initial_tab()?;
+    let tab = browser.new_tab()?;
     tab.navigate_to("https://en.wikipedia.org")?
         .wait_for_element("input#searchInput")?
         .click()?;
