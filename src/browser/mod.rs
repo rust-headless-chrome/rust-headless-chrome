@@ -187,14 +187,14 @@ impl Browser {
     /// because they each have their own thread which handles events and method responses directed to them.
     ///
     /// Wait timeout: 10 secs
-    #[deprecated(since = "1.0.4", note= "Use new_tab() instead.")]
+    #[deprecated(since = "1.0.4", note = "Use new_tab() instead.")]
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>> {
         match util::Wait::with_timeout(Duration::from_secs(10))
             .until(|| self.inner.tabs.lock().unwrap().first().map(Arc::clone))
-             {
-                Ok(tab) => Ok(tab),
-                Err(_) => self.new_tab(),
-            }
+        {
+            Ok(tab) => Ok(tab),
+            Err(_) => self.new_tab(),
+        }
     }
 
     /// Create a new tab and return a handle to it.
