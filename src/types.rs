@@ -42,7 +42,7 @@ where
         return Err(error.into());
     }
 
-    let result: T = serde_json::from_value(response.result.unwrap()).unwrap();
+    let result: T = serde_json::from_value(response.result.unwrap())?;
 
     Ok(result)
 }
@@ -300,7 +300,7 @@ mod tests {
             }
         });
 
-        let _event: Message = serde_json::from_value(attached_to_target_json).unwrap();
+        let _event: Message = serde_json::from_value(attached_to_target_json)?;
     }
 
     #[test]
@@ -336,7 +336,7 @@ mod tests {
                 "targetId": "26DEBCB2A45BEFC67A84012AC32C8B2A"
             }
         });
-        let event: Event = serde_json::from_value(received_target_msg_event).unwrap();
+        let event: Event = serde_json::from_value(received_target_msg_event)?;
         match event {
             Event::ReceivedMessageFromTarget(ev) => {
                 trace!("{:?}", ev);
@@ -361,7 +361,7 @@ mod tests {
         ];
 
         for msg_string in &example_message_strings {
-            let _message: super::Message = parse_raw_message(msg_string).unwrap();
+            let _message: super::Message = parse_raw_message(msg_string)?;
         }
     }
 }
