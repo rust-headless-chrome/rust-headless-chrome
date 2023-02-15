@@ -26,6 +26,8 @@ use crate::protocol::cdp::{
 
 use Runtime::AddBinding;
 
+use base64::Engine;
+
 use Input::DispatchKeyEvent;
 
 use Page::{AddScriptToEvaluateOnNewDocument, Navigate, SetInterceptFileChooserDialog};
@@ -1049,7 +1051,9 @@ impl Tab {
                 capture_beyond_viewport: None,
             })?
             .data;
-        base64::decode(data).map_err(Into::into)
+        base64::prelude::BASE64_STANDARD
+            .decode(data)
+            .map_err(Into::into)
     }
 
     pub fn print_to_pdf(&self, options: Option<PrintToPdfOptions>) -> Result<Vec<u8>> {
@@ -1076,7 +1080,9 @@ impl Tab {
                     transfer_mode,
                 })?
                 .data;
-            base64::decode(data).map_err(Into::into)
+            base64::prelude::BASE64_STANDARD
+                .decode(data)
+                .map_err(Into::into)
         } else {
             let data = self
                 .call_method(Page::PrintToPDF {
@@ -1084,7 +1090,9 @@ impl Tab {
                 })?
                 .data;
 
-            base64::decode(data).map_err(Into::into)
+            base64::prelude::BASE64_STANDARD
+                .decode(data)
+                .map_err(Into::into)
         }
     }
 
