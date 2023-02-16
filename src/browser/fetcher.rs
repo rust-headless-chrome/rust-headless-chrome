@@ -25,7 +25,9 @@ const DEFAULT_HOST: &str = "https://storage.googleapis.com";
 
 #[cfg(target_os = "linux")]
 const PLATFORM: &str = "linux";
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+const PLATFORM: &str = "mac_arm";
+#[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
 const PLATFORM: &str = "mac";
 #[cfg(windows)]
 const PLATFORM: &str = "win";
@@ -346,10 +348,20 @@ where
         ))
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
     {
         Ok(format!(
             "{}/chromium-browser-snapshots/Mac/{}/{}.zip",
+            DEFAULT_HOST,
+            revision.as_ref(),
+            archive_name(revision.as_ref())?
+        ))
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    {
+        Ok(format!(
+            "{}/chromium-browser-snapshots/Mac_Arm/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
