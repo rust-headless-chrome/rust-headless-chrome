@@ -18,7 +18,7 @@ use walkdir::WalkDir;
 #[cfg(not(target_os = "macos"))]
 use zip;
 
-pub const CUR_REV: &str = "634997";
+pub const CUR_REV: &str = "1095492";
 
 const APP_NAME: &str = "headless-chrome";
 const DEFAULT_HOST: &str = "https://storage.googleapis.com";
