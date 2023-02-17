@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use log::{debug, error, info, trace};
 
 use process::Process;
@@ -105,10 +105,9 @@ impl Browser {
     /// binary can be found on the system.
     pub fn default() -> Result<Self> {
         let launch_options = LaunchOptions::default_builder()
-            .path(Some(default_executable().unwrap()))
-            .build()
-            .unwrap();
-        Ok(Self::new(launch_options).unwrap())
+            .path(Some(default_executable().map_err(|e| anyhow!(e))?))
+            .build()?;
+        Self::new(launch_options)
     }
 
     /// Allows you to drive an externally-launched Chrome process instead of launch one via [`Browser::new`].

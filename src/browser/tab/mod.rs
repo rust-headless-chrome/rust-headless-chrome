@@ -676,7 +676,7 @@ impl Tab {
     /// assert_eq!(attrs["id"], "foobar");
     /// #
     /// # Ok(())
-    /// # }
+    /// # }z
     /// ```
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>> {
         let root_node_id = self.get_document()?.node_id;
@@ -1727,7 +1727,7 @@ impl Tab {
             Some(mut ua) => {
                 ua = ua.replace("HeadlessChrome/", "Chrome/");
 
-                let re = regex::Regex::new(r"\(([^)]+)\)").unwrap();
+                let re = regex::Regex::new(r"\(([^)]+)\)")?;
                 ua = re.replace(&ua, "(Windows NT 10.0; Win64; x64)").to_string();
 
                 self.set_user_agent(&ua, None, None)?;

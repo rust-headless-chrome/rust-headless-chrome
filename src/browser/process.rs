@@ -388,9 +388,9 @@ impl Process {
     where
         R: Read,
     {
-        let port_taken_re = Regex::new(r"ERROR.*bind\(\)").unwrap();
+        let port_taken_re = Regex::new(r"ERROR.*bind\(\)")?;
 
-        let re = Regex::new(r"listening on (.*/devtools/browser/.*)$").unwrap();
+        let re = Regex::new(r"listening on (.*/devtools/browser/.*)$")?;
 
         let extract = |text: &str| -> Option<String> {
             let caps = re.captures(text);
@@ -416,7 +416,7 @@ impl Process {
 
     fn ws_url_from_output(child_process: &mut Child) -> Result<Url> {
         let chrome_output_result = util::Wait::with_timeout(Duration::from_secs(30)).until(|| {
-            let my_stderr = BufReader::new(child_process.stderr.as_mut().unwrap());
+            let my_stderr = BufReader::new(child_process.stderr.as_mut()?);
             match Self::ws_url_from_reader(my_stderr) {
                 Ok(output_option) => output_option.map(Ok),
                 Err(err) => Some(Err(err)),

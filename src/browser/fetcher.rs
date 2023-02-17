@@ -264,7 +264,7 @@ impl Fetcher {
                 );
                 if let Some(p) = out_path.parent() {
                     if !p.exists() {
-                        fs::create_dir_all(&p).unwrap();
+                        fs::create_dir_all(&p)?;
                     }
                 }
                 let mut out_file = BufWriter::new(File::create(&out_path)?);
@@ -276,7 +276,7 @@ impl Fetcher {
                 use std::os::unix::fs::PermissionsExt;
 
                 if let Some(mode) = file.unix_mode() {
-                    fs::set_permissions(&out_path, fs::Permissions::from_mode(mode)).unwrap();
+                    fs::set_permissions(&out_path, fs::Permissions::from_mode(mode))?;
                 }
             }
         }
