@@ -31,6 +31,9 @@ pub struct Element<'a> {
     pub backend_node_id: DOM::NodeId,
     pub node_id: DOM::NodeId,
     pub parent: &'a super::Tab,
+    pub attributes: Option<Vec<String>>,
+    pub tag_name: String,
+    pub value: String,
 }
 
 impl<'a> Debug for Element<'a> {
@@ -49,28 +52,33 @@ impl<'a> Element<'a> {
             return Err(NoElementFound {}.into());
         }
 
-        let backend_node_id = parent
-            .describe_node(node_id)
-            .map_err(NoElementFound::map)?
-            .backend_node_id;
+        let node = parent.describe_node(node_id).map_err(NoElementFound::map)?;
 
-        let remote_object_id = {
-            let object = parent
-                .call_method(DOM::ResolveNode {
-                    backend_node_id: Some(backend_node_id),
-                    node_id: None,
-                    object_group: None,
-                    execution_context_id: None,
-                })?
-                .object;
-            object.object_id.expect("couldn't find object ID")
-        };
+        let attributes = node.attributes;
+        let tag_name = node.node_name;
+
+        let backend_node_id = node.backend_node_id;
+
+        let object = parent
+            .call_method(DOM::ResolveNode {
+                backend_node_id: Some(backend_node_id),
+                node_id: None,
+                object_group: None,
+                execution_context_id: None,
+            })?
+            .object;
+
+        let value = object.value.unwrap_or("".into()).to_string();
+        let remote_object_id = object.object_id.expect("couldn't find object ID");
 
         Ok(Element {
             remote_object_id,
             backend_node_id,
             node_id,
             parent,
+            attributes,
+            tag_name,
+            value,
         })
     }
 
