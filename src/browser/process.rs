@@ -77,7 +77,7 @@ impl Drop for TemporaryProcess {
 
 /// Represents the way in which Chrome is run. By default it will search for a Chrome
 /// binary on the system, use an available port for debugging, and start in headless mode.
-#[derive(Builder)]
+#[derive(Debug, Builder)]
 pub struct LaunchOptions<'a> {
     /// Determines whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
@@ -371,6 +371,8 @@ impl Process {
             .ok_or_else(|| anyhow!("Chrome path required"))?;
 
         info!("Launching Chrome binary at {:?}", &path);
+        trace!("with CLI arguments: {:?}", args);
+
         let mut command = Command::new(path);
 
         if let Some(process_envs) = launch_options.process_envs.clone() {
