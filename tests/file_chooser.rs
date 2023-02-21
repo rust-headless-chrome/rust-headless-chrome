@@ -12,9 +12,9 @@ mod server;
 fn file_chooser_works() -> Result<()> {
     // ignore in CI
     if std::env::var("RUST_CI").is_ok() {
-        return Ok(())
+        return Ok(());
     }
-    
+
     logging::enable_logging();
     let browser = Browser::new(
         LaunchOptionsBuilder::default()

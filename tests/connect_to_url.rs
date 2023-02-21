@@ -8,7 +8,7 @@ use anyhow::Result;
 fn connect_to_url() -> Result<()> {
     // ignore in CI
     if std::env::var("RUST_CI").is_ok() {
-        return Ok(())
+        return Ok(());
     }
 
     let debug_ws_url = env::args().nth(1).expect("Must provide debug_ws_url");

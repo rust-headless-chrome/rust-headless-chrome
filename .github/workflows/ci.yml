@@ -13,7 +13,7 @@ env:
 
 jobs:
   check:
-    name: cargo clippy --all-features --all-targets && cargo fmt --all -- --check && cargo test --all-features --all-targets
+    name: cargo clippy && cargo fmt && cargo test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -21,6 +21,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - run: cargo clippy --all-features --all-targets
       - run: cargo fmt --all -- --check
       - run: cargo test --all-features --all-targets
+      - run: cargo clippy --all-features --all-targets

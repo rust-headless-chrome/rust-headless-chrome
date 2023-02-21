@@ -16,6 +16,7 @@ use headless_chrome::protocol::cdp::Fetch::{
 use headless_chrome::protocol::cdp::Network::{Cookie, CookieParam};
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
 use headless_chrome::protocol::cdp::Runtime::{RemoteObjectSubtype, RemoteObjectType};
+use headless_chrome::protocol::cdp::CSS;
 use headless_chrome::protocol::cdp::DOM::RGBA;
 use headless_chrome::types::{Bounds, RemoteError};
 use headless_chrome::util::Wait;
@@ -456,10 +457,10 @@ fn find_element_on_tab_by_xpath() -> Result<()> {
     let containing_element_xpath = tab.wait_for_xpath("/html/body/div[2]")?;
     let inner_element_xpath =
         containing_element_xpath.wait_for_xpath(r#"//*[@id="strictly-above"]"#)?;
-    dbg!(&inner_element_xpath);
+    // dbg!(&inner_element_xpath);
     let attrs = inner_element_xpath.get_attributes()?.unwrap();
-    let id: Vec<&String> = attrs.iter().filter(|v| v.as_str() == "id").collect();
-    assert_eq!(id[0].as_str(), "strictly-above");
+
+    assert_eq!(attrs[1].as_str(), "strictly-above");
 
     Ok(())
 }
@@ -895,31 +896,33 @@ fn close_tabs() -> Result<()> {
         }
     };
 
-    check_tabs(1);
+    // there is already one tab initialised with the browser
 
-    let new_tab1 = browser.new_tab()?;
-    new_tab1
-        .navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
-        .wait_until_navigated()?;
     check_tabs(2);
 
-    let new_tab2 = browser.new_tab()?;
-    new_tab2
+    let second_tab = browser.new_tab()?;
+    second_tab
         .navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
         .wait_until_navigated()?;
 
     check_tabs(3);
 
-    let closed = new_tab1.close(true)?;
+    let third_tab = browser.new_tab()?;
+    third_tab
+        .navigate_to(&format!("http://127.0.0.1:{}", server.port()))?
+        .wait_until_navigated()?;
 
+    check_tabs(4);
+
+    let closed = second_tab.close(true)?;
     assert!(closed);
 
+    wait.until(|| wait_tabs(3))?;
+    check_tabs(3);
+
+    third_tab.close_with_unload()?;
     wait.until(|| wait_tabs(2))?;
     check_tabs(2);
-
-    new_tab2.close_with_unload()?;
-    wait.until(|| wait_tabs(1))?;
-    check_tabs(1);
 
     Ok(())
 }
@@ -965,6 +968,7 @@ fn get_css_styles() -> Result<()> {
 
     let element = tab.wait_for_element("#within")?;
 
+    tab.call_method(CSS::Enable(None))?;
     let styles = element.get_computed_styles()?;
 
     let v = styles
