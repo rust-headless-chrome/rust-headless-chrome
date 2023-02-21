@@ -5,6 +5,9 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
+use base64::engine::Engine;
+use headless_chrome::browser::tab::RequestPausedDecision;
+use headless_chrome::browser::transport::{SessionId, Transport};
 use headless_chrome::protocol::cdp::Browser::WindowState;
 use headless_chrome::protocol::cdp::Fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::cdp::Fetch::{
@@ -15,14 +18,11 @@ use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
 use headless_chrome::protocol::cdp::Runtime::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::cdp::DOM::RGBA;
 use headless_chrome::types::{Bounds, RemoteError};
+use headless_chrome::util::Wait;
 use headless_chrome::LaunchOptionsBuilder;
+use headless_chrome::{Browser, Tab};
 use log::*;
 use rand::prelude::*;
-
-use headless_chrome::browser::tab::RequestPausedDecision;
-use headless_chrome::browser::transport::{SessionId, Transport};
-use headless_chrome::util::Wait;
-use headless_chrome::{Browser, Tab};
 use std::collections::HashMap;
 
 pub mod logging;
@@ -615,7 +615,7 @@ fn set_request_interception() -> Result<()> {
                     response_code: 200,
                     response_headers: Some(headers),
                     binary_response_headers: None,
-                    body: Some(base64::encode(js_body)),
+                    body: Some(base64::prelude::BASE64_STANDARD.encode(js_body)),
                     response_phrase: None,
                 };
 

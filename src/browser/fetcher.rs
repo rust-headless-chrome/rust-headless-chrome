@@ -79,6 +79,7 @@ impl FetcherOptions {
         self
     }
 
+    #[must_use]
     pub fn with_install_dir<P: Into<PathBuf>>(mut self, install_dir: Option<P>) -> Self {
         match install_dir {
             Some(dir) => self.install_dir = Some(dir.into()),
@@ -87,11 +88,13 @@ impl FetcherOptions {
         self
     }
 
+    #[must_use]
     pub fn with_allow_download(mut self, allow_download: bool) -> Self {
         self.allow_download = allow_download;
         self
     }
 
+    #[must_use]
     pub fn with_allow_standard_dirs(mut self, allow_standard_dirs: bool) -> Self {
         self.allow_standard_dirs = allow_standard_dirs;
         self
@@ -104,8 +107,8 @@ pub struct Fetcher {
 }
 
 impl Fetcher {
-    pub fn new(options: FetcherOptions) -> Result<Self> {
-        Ok(Self { options })
+    pub fn new(options: FetcherOptions) -> Self {
+        Self { options }
     }
 
     // look for good existing installation, if none exists then download and install
@@ -219,7 +222,7 @@ impl Fetcher {
         )
         .map_err(|_err| anyhow!("Could not create directory at {:?}", path.parent()))?;
 
-        println!("{:?}", path);
+        println!("{path:?}");
 
         info!("Creating file for download: {}", &path.display());
         let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
@@ -248,6 +251,7 @@ impl Fetcher {
     }
 
     #[cfg(not(target_os = "macos"))]
+    #[allow(clippy::unused_self)]
     fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Result<()> {
         let mut archive = zip::ZipArchive::new(File::open(zip_path.as_ref())?)?;
 
@@ -261,7 +265,7 @@ impl Fetcher {
                 trace!("File {} comment: {}", i, comment);
             }
 
-            if (&*file.name()).ends_with('/') {
+            if (file.name()).ends_with('/') {
                 trace!(
                     "File {} extracted to \"{}\"",
                     i,
@@ -277,7 +281,7 @@ impl Fetcher {
                 );
                 if let Some(p) = out_path.parent() {
                     if !p.exists() {
-                        fs::create_dir_all(&p)?;
+                        fs::create_dir_all(p)?;
                     }
                 }
                 let mut out_file = BufWriter::new(File::create(&out_path)?);
@@ -345,73 +349,73 @@ fn get_project_dirs() -> Result<ProjectDirs> {
     }
 }
 
-fn dl_url<R>(revision: R) -> Result<String>
+fn dl_url<R>(revision: R) -> String
 where
     R: AsRef<str>,
 {
     #[cfg(target_os = "linux")]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
-            archive_name(revision.as_ref())?
-        ))
+            archive_name(revision.as_ref())
+        )
     }
 
     #[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Mac/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
-        ))
+        )
     }
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Mac_Arm/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
-        ))
+        )
     }
 
     #[cfg(windows)]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Win_x64/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
-        ))
+        )
     }
 }
 
-fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str> {
+fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
     #[cfg(target_os = "linux")]
     {
         drop(revision);
 
-        Ok("chrome-linux")
+        "chrome-linux"
     }
 
     #[cfg(target_os = "macos")]
     {
         drop(revision);
 
-        Ok("chrome-mac")
+        "chrome-mac"
     }
 
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
         if revision.as_ref().parse::<u32>()? > 591_479 {
-            Ok("chrome-win")
+            "chrome-win"
         } else {
-            Ok("chrome-win32")
+            "chrome-win32"
         }
     }
 }

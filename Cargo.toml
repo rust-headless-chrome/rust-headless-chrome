@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.5"
+version = "1.0.6"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2021"
 description = "Control Chrome programatically"
@@ -29,7 +29,7 @@ which = "4.0"
 zip = { version = "0.6.3", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.10"
+winreg = "0.11"
 
 [dev-dependencies]
 chrono = { version = "0.4", default_features = false, features = ["clock"] }

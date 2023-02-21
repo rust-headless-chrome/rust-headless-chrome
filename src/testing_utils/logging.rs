@@ -1,7 +1,4 @@
 use std::io::Write;
-
-
-
 use env_logger::fmt;
 use log::*;
 
@@ -19,7 +16,7 @@ pub fn enable_logging() {
             let seconds_millis = date.format("%S%.3f").to_string();
             let fmt_seconds = style.set_bold(true).value(seconds_millis);
 
-            let truncated_module_path = &record.module_path()?[5..];
+            let truncated_module_path = &record.module_path().unwrap()[5..];
 
             writeln!(
                 buf,

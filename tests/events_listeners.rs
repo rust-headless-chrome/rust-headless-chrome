@@ -24,13 +24,15 @@ fn listen_to_events() -> Result<()> {
     let counter_exception_thrown_clone = Arc::clone(&counter_exception_thrown);
 
     let sync_event = move |event: &Event| match event {
-        Event::LogEntryAdded(_) => {
+        Event::RuntimeConsoleAPICalled(_) => {
             *counter_log_entries_clone.lock().unwrap() += 1;
         }
         Event::RuntimeExceptionThrown(_) => {
             *counter_exception_thrown_clone.lock().unwrap() += 1;
         }
-        _ => {}
+        other => {
+            dbg!(other);
+        }
     };
 
     tab.add_event_listener(Arc::new(sync_event))?;
@@ -59,7 +61,7 @@ fn remove_event_listener() -> Result<()> {
     let counter_exception_thrown_clone = Arc::clone(&counter_exception_thrown);
 
     let sync_event = move |event: &Event| {
-        if let Event::LogEntryAdded(_) = event {
+        if let Event::RuntimeConsoleAPICalled(_) = event {
             *counter_log_entries_clone.lock().unwrap() += 1;
         }
     };
