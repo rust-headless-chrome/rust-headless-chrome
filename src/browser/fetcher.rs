@@ -74,6 +74,7 @@ impl Default for FetcherOptions {
 }
 
 impl FetcherOptions {
+    #[must_use]
     pub fn with_revision(mut self, revision: Revision) -> Self {
         self.revision = revision;
         self
@@ -173,7 +174,7 @@ impl Fetcher {
     // find full path to chrome executable from base_path
     fn chrome_path(&self, revision: &str) -> Result<PathBuf> {
         let mut path = self.base_path(revision)?;
-        path.push(archive_name(revision)?);
+        path.push(archive_name(revision));
 
         #[cfg(target_os = "linux")]
         {
@@ -196,18 +197,18 @@ impl Fetcher {
 
     // download a .zip of the revision we want
     fn download(&self, revision: &str) -> Result<PathBuf> {
-        let url = dl_url(revision)?;
+        let url = dl_url(revision);
         info!("Chrome download url: {}", url);
         let total = get_size(&url)?;
         info!("Total size of download: {} MiB", total);
 
         let mut path: PathBuf = if let Some(mut dir) = self.options.install_dir.clone() {
             // we have a preferred install location
-            dir.push(format!("{}-{}", PLATFORM, revision));
+            dir.push(format!("{PLATFORM}-{revision}"));
             dir
         } else if self.options.allow_standard_dirs {
             let mut dir = get_project_dirs()?.data_dir().to_path_buf();
-            dir.push(format!("{}-{}", PLATFORM, revision));
+            dir.push(format!("{PLATFORM}-{revision}"));
             dir
         } else {
             // No preferred install dir and not allowed to use standard dirs.
@@ -423,11 +424,11 @@ fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
 // Returns the latest chrome revision for the current platform.
 // This function will panic on unsupported platforms.
 fn latest_revision() -> Result<String> {
-    let mut url = format!("{}/chromium-browser-snapshots", DEFAULT_HOST);
+    let mut url = format!("{DEFAULT_HOST}/chromium-browser-snapshots");
 
     #[cfg(target_os = "linux")]
     {
-        url = format!("{}/Linux_x64/LAST_CHANGE", url);
+        url = format!("{url}/Linux_x64/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
@@ -436,7 +437,7 @@ fn latest_revision() -> Result<String> {
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
-        url = format!("{}/Mac_Arm/LAST_CHANGE", url);
+        url = format!("{url}/Mac_Arm/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
@@ -445,7 +446,7 @@ fn latest_revision() -> Result<String> {
 
     #[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
     {
-        url = format!("{}/Mac/LAST_CHANGE", url);
+        url = format!("{url}/Mac/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
@@ -454,7 +455,7 @@ fn latest_revision() -> Result<String> {
 
     #[cfg(windows)]
     {
-        url = format!("{}/Win_x64/LAST_CHANGE", url);
+        url = format!("{url}/Win_x64/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
