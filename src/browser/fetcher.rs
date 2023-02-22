@@ -33,11 +33,17 @@ const PLATFORM: &str = "mac";
 const PLATFORM: &str = "win";
 
 #[derive(Clone, Debug)]
+pub enum Revision {
+    Specific(String),
+    Latest
+}
+
+#[derive(Clone, Debug)]
 pub struct FetcherOptions {
     /// The desired chrome revision.
     ///
     /// defaults to CUR_REV
-    revision: String,
+    revision: Revision,
 
     /// The prefered installation directory. If not None we will look here first
     /// for existing installs.
@@ -59,7 +65,7 @@ pub struct FetcherOptions {
 impl Default for FetcherOptions {
     fn default() -> Self {
         Self {
-            revision: CUR_REV.into(),
+            revision: Revision::Specific(CUR_REV.into()),
             install_dir: None,
             allow_download: true,
             allow_standard_dirs: true,
@@ -68,8 +74,8 @@ impl Default for FetcherOptions {
 }
 
 impl FetcherOptions {
-    pub fn with_revision<S: Into<String>>(mut self, revision: S) -> Self {
-        self.revision = revision.into();
+    pub fn with_revision(mut self, revision: Revision) -> Self {
+        self.revision = revision;
         self
     }
 
@@ -104,18 +110,23 @@ impl Fetcher {
 
     // look for good existing installation, if none exists then download and install
     pub fn fetch(&self) -> Result<PathBuf> {
-        if let Ok(chrome_path) = self.chrome_path() {
+        let rev = match self.options.revision {
+            Revision::Specific(ref v) => v.to_string(),
+            Revision::Latest => latest_revision()?,
+        };
+
+        if let Ok(chrome_path) = self.chrome_path(&rev) {
             // we found it!
             return Ok(chrome_path);
         }
 
         if self.options.allow_download {
-            let zip_path = self.download()?;
+            let zip_path = self.download(&rev)?;
 
             self.unzip(zip_path)?;
 
             // look again
-            return self.chrome_path();
+            return self.chrome_path(&rev);
         }
 
         // couldn't find and not allowed to download
@@ -123,7 +134,7 @@ impl Fetcher {
     }
 
     // Look for an installation directory matching self.options.revision
-    fn base_path(&self) -> Result<PathBuf> {
+    fn base_path(&self, revision: &str) -> Result<PathBuf> {
         // we want to look in install_dir first, then data dir
         let mut search_dirs: Vec<&Path> = Vec::new();
         let project_dirs = get_project_dirs()?;
@@ -146,7 +157,7 @@ impl Fetcher {
 
                 if filename_parts.len() == 2
                     && filename_parts[0] == PLATFORM
-                    && filename_parts[1] == self.options.revision
+                    && filename_parts[1] == revision
                 {
                     return Ok(entry.path().into());
                 }
@@ -157,9 +168,9 @@ impl Fetcher {
     }
 
     // find full path to chrome executable from base_path
-    fn chrome_path(&self) -> Result<PathBuf> {
-        let mut path = self.base_path()?;
-        path.push(archive_name(&self.options.revision)?);
+    fn chrome_path(&self, revision: &str) -> Result<PathBuf> {
+        let mut path = self.base_path(revision)?;
+        path.push(archive_name(revision)?);
 
         #[cfg(target_os = "linux")]
         {
@@ -181,19 +192,19 @@ impl Fetcher {
     }
 
     // download a .zip of the revision we want
-    fn download(&self) -> Result<PathBuf> {
-        let url = dl_url(&self.options.revision)?;
+    fn download(&self, revision: &str) -> Result<PathBuf> {
+        let url = dl_url(revision)?;
         info!("Chrome download url: {}", url);
         let total = get_size(&url)?;
         info!("Total size of download: {} MiB", total);
 
         let mut path: PathBuf = if let Some(mut dir) = self.options.install_dir.clone() {
             // we have a preferred install location
-            dir.push(format!("{}-{}", PLATFORM, self.options.revision));
+            dir.push(format!("{}-{}", PLATFORM, revision));
             dir
         } else if self.options.allow_standard_dirs {
             let mut dir = get_project_dirs()?.data_dir().to_path_buf();
-            dir.push(format!("{}-{}", PLATFORM, self.options.revision));
+            dir.push(format!("{}-{}", PLATFORM, revision));
             dir
         } else {
             // No preferred install dir and not allowed to use standard dirs.
@@ -402,5 +413,48 @@ fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str> {
         } else {
             Ok("chrome-win32")
         }
+    }
+}
+
+
+// Returns the latest chrome revision for the current platform.
+// This function will panic on unsupported platforms.
+fn latest_revision() -> Result<String> {
+    let mut url = format!("{}/chromium-browser-snapshots", DEFAULT_HOST);
+
+    #[cfg(target_os = "linux")]
+    {
+        url = format!("{}/Linux_x64/LAST_CHANGE", url);
+        ureq::get(&url)
+            .call()?
+            .into_string()
+            .map_err(anyhow::Error::from)
+    }
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    {
+        url = format!("{}/Mac_Arm/LAST_CHANGE", url);
+        ureq::get(&url)
+            .call()?
+            .into_string()
+            .map_err(anyhow::Error::from)
+    }
+
+    #[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
+    {
+        url = format!("{}/Mac/LAST_CHANGE", url);
+        ureq::get(&url)
+            .call()?
+            .into_string()
+            .map_err(anyhow::Error::from)
+    }
+
+    #[cfg(windows)]
+    {
+        url = format!("{}/Win_x64/LAST_CHANGE", url);
+        ureq::get(&url)
+            .call()?
+            .into_string()
+            .map_err(anyhow::Error::from)
     }
 }
