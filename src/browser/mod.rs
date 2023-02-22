@@ -26,6 +26,9 @@ pub use B::GetVersionReturnObject;
 #[cfg(feature = "fetch")]
 pub use fetcher::FetcherOptions;
 
+#[cfg(feature = "fetch")]
+pub use fetcher::Revision;
+
 pub mod context;
 #[cfg(feature = "fetch")]
 mod fetcher;

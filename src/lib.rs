@@ -94,6 +94,9 @@ pub use browser::{
 #[cfg(feature = "fetch")]
 pub use browser::FetcherOptions;
 
+#[cfg(feature = "fetch")]
+pub use browser::Revision;
+
 pub mod browser;
 pub mod protocol;
 pub mod types;
