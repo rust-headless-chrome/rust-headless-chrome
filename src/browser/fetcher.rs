@@ -35,7 +35,7 @@ const PLATFORM: &str = "win";
 #[derive(Clone, Debug)]
 pub enum Revision {
     Specific(String),
-    Latest
+    Latest,
 }
 
 #[derive(Clone, Debug)]
@@ -415,7 +415,6 @@ fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str> {
         }
     }
 }
-
 
 // Returns the latest chrome revision for the current platform.
 // This function will panic on unsupported platforms.
