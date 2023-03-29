@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use anyhow::Result;
 use log::{debug, info, trace, warn};
 use tungstenite::http::Response;
+use tungstenite::protocol::WebSocketConfig;
 use tungstenite::stream::MaybeTlsStream;
 use url::Url;
 
@@ -131,7 +132,16 @@ impl WebSocketConnection {
         tungstenite::WebSocket<MaybeTlsStream<TcpStream>>,
         Response<Option<Vec<u8>>>,
     )> {
-        let mut client = tungstenite::connect(ws_url)?;
+        let mut client = tungstenite::client::connect_with_config(
+            ws_url,
+            Some(WebSocketConfig {
+                max_send_queue: None,
+                max_message_size: None,
+                max_frame_size: None,
+                accept_unmasked_frames: true,
+            }),
+            u8::MAX - 1,
+        )?;
 
         let stream = client.0.get_mut();
 
