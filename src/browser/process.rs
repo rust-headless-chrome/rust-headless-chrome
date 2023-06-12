@@ -87,6 +87,10 @@ pub struct LaunchOptions<'a> {
     #[builder(default = "true")]
     pub sandbox: bool,
 
+    /// Determines whether to enable GPU or not. Default to false.
+    #[builder(default = "false")]
+    pub enable_gpu: bool,
+
     /// Determines whether to run the browser with logging enabled
     /// (this can cause unwanted new shell window in Windows 10 and above).
     /// Check <https://github.com/rust-headless-chrome/rust-headless-chrome/issues/371>
@@ -165,6 +169,7 @@ impl<'a> Default for LaunchOptions<'a> {
         LaunchOptions {
             headless: true,
             sandbox: true,
+            enable_gpu: false,
             enable_logging: false,
             idle_browser_timeout: Duration::from_secs(30),
             window_size: None,
@@ -316,7 +321,6 @@ impl Process {
 
         let mut args = vec![
             port_option.as_str(),
-            "--disable-gpu",
             "--verbose",
             "--log-level=0",
             "--no-first-run",
@@ -351,6 +355,10 @@ impl Process {
 
         if launch_options.enable_logging {
             args.extend(["--enable-logging"]);
+        }
+
+        if !launch_options.enable_gpu {
+            args.extend(["--disable-gpu"]);
         }
 
         let proxy_server_option = if let Some(proxy_server) = launch_options.proxy_server {
