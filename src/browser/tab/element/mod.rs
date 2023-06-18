@@ -515,7 +515,7 @@ impl<'a> Element<'a> {
                 object_id: None,
             })
             .map(|quad| {
-                let raw_quad = quad.quads.first().except("tried to get the midpoint of an element which is not visible");
+                let raw_quad = quad.quads.first().expect("tried to get the midpoint of an element which is not visible");
                 let input_quad = ElementQuad::from_raw_points(raw_quad);
 
                 (input_quad.bottom_right + input_quad.top_left) / 2.0
