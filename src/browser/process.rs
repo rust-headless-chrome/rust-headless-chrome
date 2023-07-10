@@ -77,7 +77,7 @@ impl Drop for TemporaryProcess {
 
 /// Represents the way in which Chrome is run. By default it will search for a Chrome
 /// binary on the system, use an available port for debugging, and start in headless mode.
-#[derive(Debug, Builder)]
+#[derive(Clone, Debug, Builder)]
 pub struct LaunchOptions<'a> {
     /// Determines whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
