@@ -397,6 +397,14 @@ impl Process {
             command.envs(process_envs);
         }
 
+        // Suppress creation of a console window on windows
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
+
         let process = TemporaryProcess(
             command.args(&args).stderr(Stdio::piped()).spawn()?,
             temp_user_data_dir,
