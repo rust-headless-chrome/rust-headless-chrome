@@ -526,11 +526,11 @@ impl<'a> Element<'a> {
                 backend_node_id: Some(self.backend_node_id),
                 object_id: None,
             })
-            .map(|quad| {
-                let raw_quad = quad.quads.first().expect("tried to get the midpoint of an element which is not visible");
-                let input_quad = ElementQuad::from_raw_points(raw_quad);
-
-                (input_quad.bottom_right + input_quad.top_left) / 2.0
+            .and_then(|quad| {
+                quad.quads.first()
+                    .map(|raw_quad| ElementQuad::from_raw_points(raw_quad))
+                    .map(|input_quad| (input_quad.bottom_right + input_quad.top_left) / 2.0)
+                    .ok_or_else(|| anyhow::anyhow!("tried to get the midpoint of an element which is not visible"))
             })
         {
             return Ok(e);
