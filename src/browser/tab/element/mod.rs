@@ -486,6 +486,18 @@ impl<'a> Element<'a> {
         Ok(description.attributes)
     }
 
+    pub fn get_attribute_value(&self, attribute_name: &str) -> Result<Option<String>> {
+        let js_fn = format!("function() {{ return this.getAttribute('{attribute_name}'); }}");
+
+        Ok(
+            if let Some(attribute_value) = self.call_js_fn(&js_fn, Vec::new(), true)?.value {
+                Some(serde_json::from_value(attribute_value)?)
+            } else {
+                None
+            }
+        )
+    }
+
     /// Get boxes for this element
     pub fn get_box_model(&self) -> Result<BoxModel> {
         let model = self
