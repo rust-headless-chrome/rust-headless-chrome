@@ -271,7 +271,7 @@ impl Process {
             attempts += 1;
         }
 
-        let mut child = process.0.borrow_mut();
+        let child = process.0.borrow_mut();
         child.stderr = None;
 
         Ok(Self {

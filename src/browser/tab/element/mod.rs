@@ -494,7 +494,7 @@ impl<'a> Element<'a> {
                 Some(serde_json::from_value(attribute_value)?)
             } else {
                 None
-            }
+            },
         )
     }
 
@@ -527,10 +527,15 @@ impl<'a> Element<'a> {
                 object_id: None,
             })
             .and_then(|quad| {
-                quad.quads.first()
+                quad.quads
+                    .first()
                     .map(|raw_quad| ElementQuad::from_raw_points(raw_quad))
                     .map(|input_quad| (input_quad.bottom_right + input_quad.top_left) / 2.0)
-                    .ok_or_else(|| anyhow::anyhow!("tried to get the midpoint of an element which is not visible"))
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "tried to get the midpoint of an element which is not visible"
+                        )
+                    })
             })
         {
             return Ok(e);
