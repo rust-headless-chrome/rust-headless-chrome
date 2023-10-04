@@ -47,6 +47,7 @@ name = "headless_chrome"
 path = "src/lib.rs"
 
 [features]
+default = ["offline"]
 fetch = ["ureq", "directories", "zip", "walkdir"]
 nightly = []
 offline = ["auto_generate_cdp/offline"]
