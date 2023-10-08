@@ -5,6 +5,7 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
+use base64::Engine;
 use headless_chrome::protocol::cdp::Browser::WindowState;
 use headless_chrome::protocol::cdp::Fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::cdp::Fetch::{
@@ -615,7 +616,7 @@ fn set_request_interception() -> Result<()> {
                     response_code: 200,
                     response_headers: Some(headers),
                     binary_response_headers: None,
-                    body: Some(base64::encode(js_body)),
+                    body: Some(base64::prelude::BASE64_STANDARD.encode(js_body)),
                     response_phrase: None,
                 };
 

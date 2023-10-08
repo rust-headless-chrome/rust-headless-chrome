@@ -312,7 +312,7 @@ impl Browser {
             trace!("Starting browser's event handling loop");
             loop {
                 match shutdown_rx.try_recv() {
-                    Ok(_) | Err(TryRecvError::Disconnected) => {
+                    Ok(()) | Err(TryRecvError::Disconnected) => {
                         info!("Browser event loop received shutdown message");
                         break;
                     }

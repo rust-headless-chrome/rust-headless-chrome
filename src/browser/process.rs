@@ -66,7 +66,7 @@ struct TemporaryProcess(Child, Option<tempfile::TempDir>);
 impl Drop for TemporaryProcess {
     fn drop(&mut self) {
         info!("Killing Chrome. PID: {}", self.0.id());
-        self.0.kill().and_then(|_| self.0.wait()).ok();
+        self.0.kill().and_then(|()| self.0.wait()).ok();
         if let Some(dir) = self.1.take() {
             if let Err(e) = dir.close() {
                 warn!("Failed to close temporary directory: {}", e);
@@ -259,7 +259,7 @@ impl Process {
             attempts += 1;
         }
 
-        let mut child = process.0.borrow_mut();
+        let child = process.0.borrow_mut();
         child.stderr = None;
 
         Ok(Self {

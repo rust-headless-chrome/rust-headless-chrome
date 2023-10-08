@@ -66,7 +66,7 @@ impl WaitingCallRegistry {
     pub fn cancel_outstanding_method_calls(&self) {
         trace!("Cancelling outstanding method calls");
         let calls = self.calls.lock().unwrap();
-        for (call_id, sender) in calls.iter() {
+        for (call_id, sender) in &*calls {
             trace!(
                 "Telling waiting method call {:?} that the connection closed",
                 call_id
