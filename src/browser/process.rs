@@ -50,6 +50,8 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[error("The chosen debugging port is already in use")]
     DebugPortInUse,
+    #[error("You need to set the sandbox(false) option when running as root")]
+    RunningAsRootWithoutNoSandbox,
 }
 
 #[cfg(windows)]
@@ -417,6 +419,7 @@ impl Process {
         R: Read,
     {
         let port_taken_re = Regex::new(r"ERROR.*bind\(\)")?;
+        let root_sandbox = "Running as root without --no-sandbox is not supported";
 
         let re = Regex::new(r"listening on (.*/devtools/browser/.*)$")?;
 
@@ -429,6 +432,10 @@ impl Process {
         for line in reader.lines() {
             let chrome_output = line?;
             trace!("Chrome output: {}", chrome_output);
+
+            if chrome_output.contains(root_sandbox) {
+                return Err(ChromeLaunchError::RunningAsRootWithoutNoSandbox {}.into());
+            }
 
             if port_taken_re.is_match(&chrome_output) {
                 return Err(ChromeLaunchError::DebugPortInUse {}.into());
