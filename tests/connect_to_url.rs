@@ -6,7 +6,7 @@ use anyhow::Result;
 
 #[test]
 fn connect_to_url() -> Result<()> {
-    let debug_ws_url = env::args().nth(1).expect("Must provide debug_ws_url");
+    let debug_ws_url = env::args().nth(1).unwrap_or_else(|| "google.com".into());
 
     let browser = Browser::connect(debug_ws_url);
 
