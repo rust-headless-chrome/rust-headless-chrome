@@ -74,11 +74,12 @@ impl Default for FetcherOptions {
 }
 
 impl FetcherOptions {
+    #[must_use]
     pub fn with_revision(mut self, revision: Revision) -> Self {
         self.revision = revision;
         self
     }
-
+    #[must_use]
     pub fn with_install_dir<P: Into<PathBuf>>(mut self, install_dir: Option<P>) -> Self {
         match install_dir {
             Some(dir) => self.install_dir = Some(dir.into()),
@@ -86,12 +87,12 @@ impl FetcherOptions {
         }
         self
     }
-
+    #[must_use]
     pub fn with_allow_download(mut self, allow_download: bool) -> Self {
         self.allow_download = allow_download;
         self
     }
-
+    #[must_use]
     pub fn with_allow_standard_dirs(mut self, allow_standard_dirs: bool) -> Self {
         self.allow_standard_dirs = allow_standard_dirs;
         self
@@ -104,8 +105,8 @@ pub struct Fetcher {
 }
 
 impl Fetcher {
-    pub fn new(options: FetcherOptions) -> Result<Self> {
-        Ok(Self { options })
+    pub fn new(options: FetcherOptions) -> Self {
+        Self { options }
     }
 
     // look for good existing installation, if none exists then download and install
@@ -123,7 +124,7 @@ impl Fetcher {
         if self.options.allow_download {
             let zip_path = self.download(&rev)?;
 
-            self.unzip(zip_path)?;
+            Fetcher::unzip(zip_path)?;
 
             // look again
             return self.chrome_path(&rev);
@@ -170,7 +171,7 @@ impl Fetcher {
     // find full path to chrome executable from base_path
     fn chrome_path(&self, revision: &str) -> Result<PathBuf> {
         let mut path = self.base_path(revision)?;
-        path.push(archive_name(revision)?);
+        path.push(archive_name(revision));
 
         #[cfg(target_os = "linux")]
         {
@@ -193,18 +194,18 @@ impl Fetcher {
 
     // download a .zip of the revision we want
     fn download(&self, revision: &str) -> Result<PathBuf> {
-        let url = dl_url(revision)?;
-        info!("Chrome download url: {}", url);
+        let url = dl_url(revision);
+        info!("Chrome download url: {url}");
         let total = get_size(&url)?;
-        info!("Total size of download: {} MiB", total);
+        info!("Total size of download: {total} MiB");
 
         let mut path: PathBuf = if let Some(mut dir) = self.options.install_dir.clone() {
             // we have a preferred install location
-            dir.push(format!("{}-{}", PLATFORM, revision));
+            dir.push(format!("{PLATFORM}-{revision}"));
             dir
         } else if self.options.allow_standard_dirs {
             let mut dir = get_project_dirs()?.data_dir().to_path_buf();
-            dir.push(format!("{}-{}", PLATFORM, revision));
+            dir.push(format!("{PLATFORM}-{revision}"));
             dir
         } else {
             // No preferred install dir and not allowed to use standard dirs.
@@ -219,7 +220,7 @@ impl Fetcher {
         )
         .map_err(|_err| anyhow!("Could not create directory at {:?}", path.parent()))?;
 
-        println!("{:?}", path);
+        println!("{path:?}");
 
         info!("Creating file for download: {}", &path.display());
         let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
@@ -248,7 +249,7 @@ impl Fetcher {
     }
 
     #[cfg(not(target_os = "macos"))]
-    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Result<()> {
+    fn do_unzip<P: AsRef<Path>>(zip_path: P, extract_path: &Path) -> Result<()> {
         let mut archive = zip::ZipArchive::new(File::open(zip_path.as_ref())?)?;
 
         for i in 0..archive.len() {
@@ -261,7 +262,7 @@ impl Fetcher {
                 trace!("File {} comment: {}", i, comment);
             }
 
-            if (&*file.name()).ends_with('/') {
+            if (file.name()).ends_with('/') {
                 trace!(
                     "File {} extracted to \"{}\"",
                     i,
@@ -277,7 +278,7 @@ impl Fetcher {
                 );
                 if let Some(p) = out_path.parent() {
                     if !p.exists() {
-                        fs::create_dir_all(&p)?;
+                        fs::create_dir_all(p)?;
                     }
                 }
                 let mut out_file = BufWriter::new(File::create(&out_path)?);
@@ -296,7 +297,7 @@ impl Fetcher {
         Ok(())
     }
     // unzip the downloaded file and do all the needed file manipulation
-    fn unzip<P: AsRef<Path>>(&self, zip_path: P) -> Result<PathBuf> {
+    fn unzip<P: AsRef<Path>>(zip_path: P) -> Result<PathBuf> {
         let mut extract_path: PathBuf = zip_path
             .as_ref()
             .parent()
@@ -317,7 +318,7 @@ impl Fetcher {
             extract_path.display()
         );
 
-        self.do_unzip(zip_path.as_ref(), &extract_path)?;
+        Fetcher::do_unzip(zip_path.as_ref(), &extract_path)?;
 
         info!("Cleaning up");
         if fs::remove_file(&zip_path).is_err() {
@@ -345,73 +346,73 @@ fn get_project_dirs() -> Result<ProjectDirs> {
     }
 }
 
-fn dl_url<R>(revision: R) -> Result<String>
+fn dl_url<R>(revision: R) -> String
 where
     R: AsRef<str>,
 {
     #[cfg(target_os = "linux")]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
-            archive_name(revision.as_ref())?
-        ))
+            archive_name(revision.as_ref())
+        )
     }
 
     #[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Mac/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
-        ))
+        )
     }
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Mac_Arm/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
-        ))
+        )
     }
 
     #[cfg(windows)]
     {
-        Ok(format!(
+        format!(
             "{}/chromium-browser-snapshots/Win_x64/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
             archive_name(revision.as_ref())?
-        ))
+        )
     }
 }
 
-fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str> {
+fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
     #[cfg(target_os = "linux")]
     {
         drop(revision);
 
-        Ok("chrome-linux")
+        "chrome-linux"
     }
 
     #[cfg(target_os = "macos")]
     {
         drop(revision);
 
-        Ok("chrome-mac")
+        "chrome-mac"
     }
 
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
         if revision.as_ref().parse::<u32>()? > 591_479 {
-            Ok("chrome-win")
+            "chrome-win"
         } else {
-            Ok("chrome-win32")
+            "chrome-win32"
         }
     }
 }
@@ -419,11 +420,11 @@ fn archive_name<R: AsRef<str>>(revision: R) -> Result<&'static str> {
 // Returns the latest chrome revision for the current platform.
 // This function will panic on unsupported platforms.
 fn latest_revision() -> Result<String> {
-    let mut url = format!("{}/chromium-browser-snapshots", DEFAULT_HOST);
+    let mut url = format!("{DEFAULT_HOST}/chromium-browser-snapshots");
 
     #[cfg(target_os = "linux")]
     {
-        url = format!("{}/Linux_x64/LAST_CHANGE", url);
+        url = format!("{url}/Linux_x64/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
@@ -432,7 +433,7 @@ fn latest_revision() -> Result<String> {
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
-        url = format!("{}/Mac_Arm/LAST_CHANGE", url);
+        url = format!("{url}/Mac_Arm/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
@@ -441,7 +442,7 @@ fn latest_revision() -> Result<String> {
 
     #[cfg(all(target_os = "macos", not(target_arch = "aarch64")))]
     {
-        url = format!("{}/Mac/LAST_CHANGE", url);
+        url = format!("{url}/Mac/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()
@@ -450,7 +451,7 @@ fn latest_revision() -> Result<String> {
 
     #[cfg(windows)]
     {
-        url = format!("{}/Win_x64/LAST_CHANGE", url);
+        url = format!("{url}/Win_x64/LAST_CHANGE");
         ureq::get(&url)
             .call()?
             .into_string()

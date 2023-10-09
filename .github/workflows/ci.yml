@@ -22,5 +22,5 @@ jobs:
         with:
           toolchain: stable
       - run: cargo fmt --all -- --check
-      - run: cargo test --all-features --all-targets
+      - run: cargo test google.com --all-features --all-targets
       - run: cargo clippy --all-features --all-targets

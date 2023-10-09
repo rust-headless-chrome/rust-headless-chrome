@@ -82,10 +82,6 @@ clippy::manual_let_else, // for transport/web_socket_connection.rs:142
 clippy::should_implement_trait, // for browser/mod.rs:106
 )]
 
-#[macro_use]
-extern crate derive_builder;
-extern crate log;
-
 pub use browser::{
     tab::{element::Element, Tab},
     Browser, LaunchOptions, LaunchOptionsBuilder,
