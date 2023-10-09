@@ -916,7 +916,7 @@ impl Tab {
             code: code.clone(),
             windows_virtual_key_code: Some(definiton.key_code),
             native_virtual_key_code: Some(definiton.key_code),
-            modifiers: modifiers.clone(),
+            modifiers,
             timestamp: None,
             unmodified_text: None,
             key_identifier: None,
