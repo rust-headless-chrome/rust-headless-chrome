@@ -62,6 +62,14 @@ pub mod element;
 mod keys;
 pub mod point;
 
+#[derive(Debug, Copy, Clone)]
+pub enum ModifierKey {
+    Alt = 1,
+    Ctrl = 2,
+    Meta = 4, // Meta/Command
+    Shift = 8,
+}
+
 #[derive(Debug)]
 pub enum RequestPausedDecision {
     Fulfill(FulfillRequest),
@@ -868,7 +876,11 @@ impl Tab {
         Ok(self)
     }
 
-    pub fn press_key(&self, key: &str) -> Result<&Self> {
+    pub fn press_key_with_modifiers(
+        &self,
+        key: &str,
+        modifiers: Option<&[ModifierKey]>,
+    ) -> Result<&Self> {
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
         let definiton = keys::get_key_definition(key)?;
 
@@ -893,6 +905,8 @@ impl Tab {
         let key = Some(definiton.key.to_string());
         let code = Some(definiton.code.to_string());
 
+        let modifiers = modifiers.map(|v| v.iter().fold(0, |acc, e| acc | *e as u32));
+
         self.optional_slow_motion_sleep(25);
 
         self.call_method(Input::DispatchKeyEvent {
@@ -902,7 +916,7 @@ impl Tab {
             code: code.clone(),
             windows_virtual_key_code: Some(definiton.key_code),
             native_virtual_key_code: Some(definiton.key_code),
-            modifiers: None,
+            modifiers: modifiers.clone(),
             timestamp: None,
             unmodified_text: None,
             key_identifier: None,
@@ -919,7 +933,7 @@ impl Tab {
             code,
             windows_virtual_key_code: Some(definiton.key_code),
             native_virtual_key_code: Some(definiton.key_code),
-            modifiers: None,
+            modifiers,
             timestamp: None,
             unmodified_text: None,
             key_identifier: None,
@@ -930,6 +944,10 @@ impl Tab {
             commands: None,
         })?;
         Ok(self)
+    }
+
+    pub fn press_key(&self, key: &str) -> Result<&Self> {
+        self.press_key_with_modifiers(key, None)
     }
 
     /// Moves the mouse to this point (dispatches a mouseMoved event)
@@ -1823,6 +1841,34 @@ impl Tab {
         self.bypass_permissions()?;
         self.bypass_plugins()?;
         self.bypass_webgl_vendor()?;
+        Ok(())
+    }
+
+    pub fn start_screencast(
+        &self,
+        format: Option<Page::StartScreencastFormatOption>,
+        quality: Option<u32>,
+        max_width: Option<u32>,
+        max_height: Option<u32>,
+        every_nth_frame: Option<u32>,
+    ) -> Result<()> {
+        self.call_method(Page::StartScreencast {
+            format,
+            quality,
+            max_width,
+            max_height,
+            every_nth_frame,
+        })?;
+        Ok(())
+    }
+
+    pub fn stop_screencast(&self) -> Result<()> {
+        self.call_method(Page::StopScreencast(None))?;
+        Ok(())
+    }
+
+    pub fn ack_screencast(&self, session_id: u32) -> Result<()> {
+        self.call_method(Page::ScreencastFrameAck { session_id })?;
         Ok(())
     }
 }

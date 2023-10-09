@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.5"
+version = "1.0.6"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2021"
 description = "Control Chrome programatically"
@@ -40,14 +40,16 @@ png = { version = "0.17" }
 tiny_http = "0.12"
 
 [build-dependencies]
-auto_generate_cdp = "0.4.1"
+auto_generate_cdp = "0.4.3"
 
 [lib]
 name = "headless_chrome"
 path = "src/lib.rs"
 
 [features]
+default = ["offline"]
 fetch = ["ureq", "directories", "zip", "walkdir"]
 nightly = []
+offline = ["auto_generate_cdp/offline"]
 rustls = ["tungstenite/rustls"]
 native-tls = ["tungstenite/native-tls"]

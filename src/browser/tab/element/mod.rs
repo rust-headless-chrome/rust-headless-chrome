@@ -486,6 +486,18 @@ impl<'a> Element<'a> {
         Ok(description.attributes)
     }
 
+    pub fn get_attribute_value(&self, attribute_name: &str) -> Result<Option<String>> {
+        let js_fn = format!("function() {{ return this.getAttribute('{attribute_name}'); }}");
+
+        Ok(
+            if let Some(attribute_value) = self.call_js_fn(&js_fn, Vec::new(), true)?.value {
+                Some(serde_json::from_value(attribute_value)?)
+            } else {
+                None
+            },
+        )
+    }
+
     /// Get boxes for this element
     pub fn get_box_model(&self) -> Result<BoxModel> {
         let model = self
@@ -514,11 +526,16 @@ impl<'a> Element<'a> {
                 backend_node_id: Some(self.backend_node_id),
                 object_id: None,
             })
-            .map(|quad| {
-                let raw_quad = quad.quads.first().unwrap();
-                let input_quad = ElementQuad::from_raw_points(raw_quad);
-
-                (input_quad.bottom_right + input_quad.top_left) / 2.0
+            .and_then(|quad| {
+                quad.quads
+                    .first()
+                    .map(|raw_quad| ElementQuad::from_raw_points(raw_quad))
+                    .map(|input_quad| (input_quad.bottom_right + input_quad.top_left) / 2.0)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "tried to get the midpoint of an element which is not visible"
+                        )
+                    })
             })
         {
             return Ok(e);

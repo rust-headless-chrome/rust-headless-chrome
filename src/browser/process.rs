@@ -50,6 +50,8 @@ enum ChromeLaunchError {
     NoAvailablePorts,
     #[error("The chosen debugging port is already in use")]
     DebugPortInUse,
+    #[error("You need to set the sandbox(false) option when running as root")]
+    RunningAsRootWithoutNoSandbox,
 }
 
 #[cfg(windows)]
@@ -86,6 +88,16 @@ pub struct LaunchOptions<'a> {
     /// Determines whether to run the browser with a sandbox.
     #[builder(default = "true")]
     pub sandbox: bool,
+
+    /// Determines whether to enable GPU or not. Default to false.
+    #[builder(default = "false")]
+    pub enable_gpu: bool,
+
+    /// Determines whether to run the browser with logging enabled
+    /// (this can cause unwanted new shell window in Windows 10 and above).
+    /// Check <https://github.com/rust-headless-chrome/rust-headless-chrome/issues/371>
+    #[builder(default = "false")]
+    pub enable_logging: bool,
 
     /// Launch the browser with a specific window width and height.
     #[builder(default = "None")]
@@ -159,6 +171,8 @@ impl<'a> Default for LaunchOptions<'a> {
         LaunchOptions {
             headless: true,
             sandbox: true,
+            enable_gpu: false,
+            enable_logging: false,
             idle_browser_timeout: Duration::from_secs(30),
             window_size: None,
             path: None,
@@ -309,8 +323,6 @@ impl Process {
 
         let mut args = vec![
             port_option.as_str(),
-            "--disable-gpu",
-            "--enable-logging",
             "--verbose",
             "--log-level=0",
             "--no-first-run",
@@ -341,6 +353,14 @@ impl Process {
 
         if launch_options.ignore_certificate_errors {
             args.extend(["--ignore-certificate-errors"]);
+        }
+
+        if launch_options.enable_logging {
+            args.extend(["--enable-logging"]);
+        }
+
+        if !launch_options.enable_gpu {
+            args.extend(["--disable-gpu"]);
         }
 
         let proxy_server_option = if let Some(proxy_server) = launch_options.proxy_server {
@@ -379,6 +399,14 @@ impl Process {
             command.envs(process_envs);
         }
 
+        // Suppress creation of a console window on windows
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
+
         let process = TemporaryProcess(
             command.args(&args).stderr(Stdio::piped()).spawn()?,
             temp_user_data_dir,
@@ -391,6 +419,7 @@ impl Process {
         R: Read,
     {
         let port_taken_re = Regex::new(r"ERROR.*bind\(\)")?;
+        let root_sandbox = "Running as root without --no-sandbox is not supported";
 
         let re = Regex::new(r"listening on (.*/devtools/browser/.*)$")?;
 
@@ -403,6 +432,10 @@ impl Process {
         for line in reader.lines() {
             let chrome_output = line?;
             trace!("Chrome output: {}", chrome_output);
+
+            if chrome_output.contains(root_sandbox) {
+                return Err(ChromeLaunchError::RunningAsRootWithoutNoSandbox {}.into());
+            }
 
             if port_taken_re.is_match(&chrome_output) {
                 return Err(ChromeLaunchError::DebugPortInUse {}.into());
