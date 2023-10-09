@@ -238,7 +238,7 @@ impl Transport {
             // hence need for Connection Shutdown
             loop {
                 match shutdown_rx.try_recv() {
-                    Ok(_) | Err(TryRecvError::Disconnected) => {
+                    Ok(()) | Err(TryRecvError::Disconnected) => {
                         info!("Transport incoming message loop loop received shutdown message");
                         break;
                     }

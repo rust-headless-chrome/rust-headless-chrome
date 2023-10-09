@@ -67,7 +67,7 @@ impl WebSocketConnection {
             );
         }
 
-        self.connection.lock().unwrap().write_pending().ok();
+        self.connection.lock().unwrap().flush().ok();
         self.thread.thread().unpark();
     }
 
@@ -77,7 +77,7 @@ impl WebSocketConnection {
         process_id: Option<u32>,
     ) {
         loop {
-            let message = receiver.lock().unwrap().read_message();
+            let message = receiver.lock().unwrap().read();
 
             match message {
                 Err(err) => match err {
@@ -134,12 +134,7 @@ impl WebSocketConnection {
     )> {
         let mut client = tungstenite::client::connect_with_config(
             ws_url,
-            Some(WebSocketConfig {
-                max_send_queue: None,
-                max_message_size: None,
-                max_frame_size: None,
-                accept_unmasked_frames: true,
-            }),
+            Some(WebSocketConfig::default()),
             u8::MAX - 1,
         )?;
 
@@ -148,9 +143,9 @@ impl WebSocketConnection {
         // this should be handled in tungstenite
         let stream = match stream {
             MaybeTlsStream::Plain(s) => s,
-            #[cfg(features = "native-tls")]
+            #[cfg(feature = "native-tls")]
             MaybeTlsStream::NativeTls(s) => s.get_mut(),
-            #[cfg(features = "rustls")]
+            #[cfg(feature = "rustls")]
             MaybeTlsStream::Rustls(s) => &mut s.sock,
 
             _ => todo!(),
@@ -165,7 +160,7 @@ impl WebSocketConnection {
     pub fn send_message(&self, message_text: &str) -> Result<()> {
         let message = tungstenite::protocol::Message::text(message_text);
         let mut sender = self.connection.lock().unwrap();
-        sender.write_message(message)?;
+        sender.send(message)?;
         self.thread.thread().unpark();
         Ok(())
     }

@@ -13,7 +13,7 @@ readme = "README.md"
 anyhow = "1"
 base64 = "0.21"
 derive_builder = "0.12"
-directories = { version = "4.0", optional = true }
+directories = { version = "5.0", optional = true }
 log = "0.4"
 rand = "0.8"
 regex = "1"
@@ -23,13 +23,13 @@ tempfile = "3"
 thiserror = "1"
 ureq = { version = "2.5", optional = true }
 walkdir = { version = "2", optional = true }
-tungstenite = "0.18"
+tungstenite = "0.20"
 url = "2.3"
 which = "4.0"
 zip = { version = "0.6.3", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.10"
+winreg = "0.51"
 
 [dev-dependencies]
 chrono = { version = "0.4", default_features = false, features = ["clock"] }
@@ -51,5 +51,5 @@ default = ["offline"]
 fetch = ["ureq", "directories", "zip", "walkdir"]
 nightly = []
 offline = ["auto_generate_cdp/offline"]
-rustls = ["tungstenite/rustls"]
+rustls = ["tungstenite/rustls", "tungstenite/rustls-tls-native-roots"]
 native-tls = ["tungstenite/native-tls"]

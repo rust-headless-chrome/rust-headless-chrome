@@ -10,6 +10,8 @@ use std::{
 #[cfg(test)]
 use std::cell::RefCell;
 
+use derive_builder::Builder;
+
 use anyhow::{anyhow, Result};
 use log::*;
 use rand::seq::SliceRandom;
@@ -68,7 +70,7 @@ struct TemporaryProcess(Child, Option<tempfile::TempDir>);
 impl Drop for TemporaryProcess {
     fn drop(&mut self) {
         info!("Killing Chrome. PID: {}", self.0.id());
-        self.0.kill().and_then(|_| self.0.wait()).ok();
+        self.0.kill().and_then(|()| self.0.wait()).ok();
         if let Some(dir) = self.1.take() {
             if let Err(e) = dir.close() {
                 warn!("Failed to close temporary directory: {}", e);
@@ -230,7 +232,7 @@ impl Process {
         if launch_options.path.is_none() {
             #[cfg(feature = "fetch")]
             {
-                let fetch = Fetcher::new(launch_options.fetcher_options.clone())?;
+                let fetch = Fetcher::new(launch_options.fetcher_options.clone());
                 launch_options.path = Some(fetch.fetch()?);
             }
             #[cfg(not(feature = "fetch"))]
@@ -536,7 +538,7 @@ mod tests {
         // if we do this after it fails on windows because chrome can stay running
         // for a bit.
         let mut installed_dir = tests_temp_dir.clone();
-        installed_dir.push(format!("{}-{}", PLATFORM, CUR_REV));
+        installed_dir.push(format!("{PLATFORM}-{CUR_REV}"));
 
         if installed_dir.exists() {
             info!("Deleting pre-existing install at {:?}", &installed_dir);

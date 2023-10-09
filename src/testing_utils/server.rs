@@ -13,7 +13,7 @@ impl Server {
     pub fn new(
         mut responder: impl FnMut(tiny_http::Request) -> Result<(), io::Error> + Send + 'static,
     ) -> Self {
-        let server = Arc::new(tiny_http::Server::http("127.0.0.1:0")?);
+        let server = Arc::new(tiny_http::Server::http("127.0.0.1:0").unwrap());
         let shall_exit = Arc::new(atomic::AtomicBool::new(false));
         let srv = server.clone();
         let exit = shall_exit.clone();
@@ -41,7 +41,7 @@ impl Server {
             let response = tiny_http::Response::new(
                 200.into(),
                 vec![
-                    tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..])?,
+                    tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..]).unwrap(),
                 ],
                 io::Cursor::new(data),
                 Some(data.len()),
@@ -58,13 +58,13 @@ impl Server {
     }
 
     pub fn port(&self) -> u16 {
-        self.server.server_addr().to_ip()?.port()
+        self.server.server_addr().to_ip().unwrap().port()
     }
 
     pub fn exit(&mut self) -> Result<(), io::Error> {
         self.shall_exit.store(true, atomic::Ordering::Relaxed);
         match self.handler.take() {
-            Some(h) => h.join()?,
+            Some(h) => h.join().unwrap(),
             None => Ok(()),
         }
     }
@@ -72,7 +72,7 @@ impl Server {
 
 impl Drop for Server {
     fn drop(&mut self) {
-        self.exit()?
+        self.exit().unwrap()
     }
 }
 
@@ -82,7 +82,7 @@ fn basic_http_response<'a>(
 ) -> tiny_http::Response<&'a [u8]> {
     tiny_http::Response::new(
         200.into(),
-        vec![tiny_http::Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes())?],
+        vec![tiny_http::Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()).unwrap()],
         body.as_bytes(),
         Some(body.len()),
         None,

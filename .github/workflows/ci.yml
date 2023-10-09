@@ -9,10 +9,11 @@ permissions:
 
 env:
   RUSTFLAGS: -Dwarnings # Turn warnings into errors
+  RUST_CI: true
 
 jobs:
   check:
-    name: cargo check
+    name: cargo clippy && cargo fmt && cargo test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -20,5 +21,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - run: cargo check --all-features
       - run: cargo fmt --all -- --check
+      - run: cargo test google.com --all-features --all-targets
+      - run: cargo clippy --all-features --all-targets
