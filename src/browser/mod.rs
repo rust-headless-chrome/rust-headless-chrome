@@ -15,7 +15,9 @@ use transport::Transport;
 use url::Url;
 use which::which;
 
-use crate::protocol::cdp::{types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM};
+use crate::protocol::cdp::{
+    types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM,
+};
 
 use crate::browser::context::Context;
 use crate::util;
@@ -289,14 +291,20 @@ impl Browser {
         for target in targets.unwrap().target_infos {
             let target_id = target.target_id.clone();
 
-            if tabs_lock.iter().any(|t| t.get_target_id().clone() == target_id || !target.attached) {
+            if tabs_lock
+                .iter()
+                .any(|t| t.get_target_id().clone() == target_id || !target.attached)
+            {
                 previous_target_id = target.target_id;
                 continue;
             }
 
             let tab = Tab::new(target, self.inner.transport.clone());
             if let Ok(tab) = tab {
-                if let Some(index) = tabs_lock.iter().position(|x| x.get_target_id().clone() == previous_target_id) {
+                if let Some(index) = tabs_lock
+                    .iter()
+                    .position(|x| x.get_target_id().clone() == previous_target_id)
+                {
                     tabs_lock.insert(index, Arc::new(tab));
                 } else {
                     tabs_lock.push(Arc::new(tab));
