@@ -25,7 +25,7 @@ ureq = { version = "2.5", optional = true }
 walkdir = { version = "2", optional = true }
 tungstenite = "0.20"
 url = "2.3"
-which = "4.0"
+which = "5.0"
 zip = { version = "0.6.3", optional = true }
 
 [target.'cfg(windows)'.dependencies]
