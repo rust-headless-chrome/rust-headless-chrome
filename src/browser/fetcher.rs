@@ -366,7 +366,7 @@ where
             "{}/chromium-browser-snapshots/Mac/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
-            archive_name(revision.as_ref())?
+            archive_name(revision.as_ref())
         )
     }
 
@@ -376,7 +376,7 @@ where
             "{}/chromium-browser-snapshots/Mac_Arm/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
-            archive_name(revision.as_ref())?
+            archive_name(revision.as_ref())
         )
     }
 
@@ -386,7 +386,7 @@ where
             "{}/chromium-browser-snapshots/Win_x64/{}/{}.zip",
             DEFAULT_HOST,
             revision.as_ref(),
-            archive_name(revision.as_ref())?
+            archive_name(revision.as_ref())
         )
     }
 }
@@ -409,7 +409,7 @@ fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
-        if revision.as_ref().parse::<u32>()? > 591_479 {
+        if revision.as_ref().parse::<u32>() > Ok(591_479) {
             "chrome-win"
         } else {
             "chrome-win32"
