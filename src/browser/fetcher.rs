@@ -409,7 +409,7 @@ fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
-        if revision.as_ref().parse::<u32>() > Ok(591_479) {
+        if revision.as_ref().parse::<u32>().ok() > Some(591_479) {
             "chrome-win"
         } else {
             "chrome-win32"
