@@ -232,7 +232,7 @@ impl Fetcher {
     }
 
     #[cfg(target_os = "macos")]
-    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Result<()> {
+    fn do_unzip<P: AsRef<Path>>(zip_path: P, extract_path: &Path) -> Result<()> {
         let out = std::process::Command::new("unzip")
             .arg(zip_path.as_ref().as_os_str())
             .current_dir(&extract_path)
@@ -409,7 +409,7 @@ fn archive_name<R: AsRef<str>>(revision: R) -> &'static str {
     #[cfg(windows)]
     {
         // Windows archive name changed at r591479.
-        if revision.as_ref().parse::<u32>() > Ok(591_479) {
+        if revision.as_ref().parse::<u32>().ok() > Some(591_479) {
             "chrome-win"
         } else {
             "chrome-win32"
