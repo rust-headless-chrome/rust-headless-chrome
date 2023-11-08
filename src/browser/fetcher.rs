@@ -232,7 +232,7 @@ impl Fetcher {
     }
 
     #[cfg(target_os = "macos")]
-    fn do_unzip<P: AsRef<Path>>(&self, zip_path: P, extract_path: &Path) -> Result<()> {
+    fn do_unzip<P: AsRef<Path>>(zip_path: P, extract_path: &Path) -> Result<()> {
         let out = std::process::Command::new("unzip")
             .arg(zip_path.as_ref().as_os_str())
             .current_dir(&extract_path)
