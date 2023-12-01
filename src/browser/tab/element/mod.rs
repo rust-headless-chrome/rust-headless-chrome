@@ -544,7 +544,7 @@ impl<'a> Element<'a> {
         let p = util::Wait::with_timeout(Duration::from_secs(20)).until(|| {
             let r = self
                 .call_js_fn(
-                    r#"
+                    r"
                     function() {
                         let rect = this.getBoundingClientRect();
 
@@ -554,7 +554,7 @@ impl<'a> Element<'a> {
 
                         return this.getBoundingClientRect();
                     }
-                    "#,
+                    ",
                     vec![],
                     false,
                 )
