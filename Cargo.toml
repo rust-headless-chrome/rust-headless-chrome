@@ -23,13 +23,13 @@ tempfile = "3"
 thiserror = "1"
 ureq = { version = "2.5", optional = true }
 walkdir = { version = "2", optional = true }
-tungstenite = "0.20"
+tungstenite = "0.21"
 url = "2.3"
 which = "5.0"
 zip = { version = "0.6.3", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.51"
+winreg = "0.52"
 
 [dev-dependencies]
 chrono = { version = "0.4", default_features = false, features = ["clock"] }
