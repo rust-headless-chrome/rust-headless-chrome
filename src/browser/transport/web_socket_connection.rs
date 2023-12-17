@@ -113,6 +113,27 @@ impl WebSocketConnection {
                                 message_string
                             );
                         }
+                    } else if let tungstenite::protocol::Message::Close(close_frame) = message {
+                        match close_frame {
+                            Some(tungstenite::protocol::CloseFrame { code, reason }) => {
+                                debug!(
+                                    "Received close frame from Chrome #{:?}: {:?} {:?}",
+                                    process_id, code, reason
+                                );
+                                match code {
+                                    tungstenite::protocol::frame::coding::CloseCode::Normal => {
+                                        debug!("Normal close code, shutting down");
+                                    }
+                                    _ => {
+                                        panic!("Abnormal close code {code:?}, shutting down");
+                                    }
+                                }
+                            }
+                            None => {
+                                debug!("Received close frame from Chrome #{:?}: None", process_id);
+                            }
+                        }
+                        break;
                     } else {
                         panic!("Got a weird message: {message:?}");
                     }
