@@ -84,7 +84,7 @@ fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
 
 ```toml
 [dependencies]
-headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"]}
+headless_chrome = {git = "https://github.com/rust-headless-chrome/rust-headless-chrome", features = ["fetch"]}
 ```
 
 
