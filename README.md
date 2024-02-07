@@ -17,9 +17,9 @@ browser testing / web crawling use cases, and there are several 'advanced' featu
 - Opening incognito windows
 - [taking screenshots of elements or the entire page](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.capture_screenshot)
 - [saving pages to PDF](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.print_to_pdf)
-- ['headful' browsing](https://docs.rs/headless_chrome/latest/headless_chrome/struct.LaunchOptionsBuilder.html#method.headless)
+- ['headful' browsing](https://docs.rs/headless_chrome/latest/headless_chrome/browser/struct.LaunchOptionsBuilder.html#method.headless)
 - automatic downloading of 'known good' Chromium binaries for Linux / Mac / Windows
-- [extension pre-loading](https://docs.rs/headless_chrome/latest/headless_chrome/struct.LaunchOptionsBuilder.html#method.extensions)
+- [extension pre-loading](https://docs.rs/headless_chrome/latest/headless_chrome/browser/struct.LaunchOptionsBuilder.html#method.extensions)
 
 ## Quick Start
 
