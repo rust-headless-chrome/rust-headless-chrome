@@ -34,28 +34,28 @@ fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
 
     let tab = browser.new_tab()?;
 
-    /// Navigate to wikipedia
+    // Navigate to wikipedia
     tab.navigate_to("https://www.wikipedia.org")?;
 
-    /// Wait for network/javascript/dom to make the search-box available
-    /// and click it.
+    // Wait for network/javascript/dom to make the search-box available
+    // and click it.
     tab.wait_for_element("input#searchInput")?.click()?;
 
-    /// Type in a query and press `Enter`
+    // Type in a query and press `Enter`
     tab.type_str("WebKit")?.press_key("Enter")?;
 
-    /// We should end up on the WebKit-page once navigated
+    // We should end up on the WebKit-page once navigated
     let elem = tab.wait_for_element("#firstHeading")?;
     assert!(tab.get_url().ends_with("WebKit"));
 
-    /// Take a screenshot of the entire browser window
+    // Take a screenshot of the entire browser window
     let _jpeg_data = tab.capture_screenshot(
         Page::CaptureScreenshotFormatOption::Jpeg,
         None,
         None,
         true)?;
 
-    /// Take a screenshot of just the WebKit-Infobox
+    // Take a screenshot of just the WebKit-Infobox
     let _png_data = tab
         .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
         .capture_screenshot(Page::CaptureScreenshotFormatOption::Png)?;
