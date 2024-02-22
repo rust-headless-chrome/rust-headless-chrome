@@ -49,16 +49,20 @@ fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
     assert!(tab.get_url().ends_with("WebKit"));
 
     /// Take a screenshot of the entire browser window
-    let _jpeg_data = tab.capture_screenshot(
+    let jpeg_data = tab.capture_screenshot(
         Page::CaptureScreenshotFormatOption::Jpeg,
         None,
         None,
         true)?;
+    // Save the screenshot to disc
+    std::fs::write("screenshot.jpeg", jpeg_data)?;
 
     /// Take a screenshot of just the WebKit-Infobox
-    let _png_data = tab
+    let png_data = tab
         .wait_for_element("#mw-content-text > div > table.infobox.vevent")?
         .capture_screenshot(Page::CaptureScreenshotFormatOption::Png)?;
+    // Save the screenshot to disc
+    std::fs::write("screenshot.png", png_data)?;
 
     // Run JavaScript in the page
     let remote_object = elem.call_js_fn(r#"
