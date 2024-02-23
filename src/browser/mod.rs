@@ -15,7 +15,9 @@ use transport::Transport;
 use url::Url;
 use which::which;
 
-use crate::protocol::cdp::{self, types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM};
+use crate::protocol::cdp::{
+    self, types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM,
+};
 
 use crate::browser::context::Context;
 use crate::util;
