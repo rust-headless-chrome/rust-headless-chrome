@@ -84,7 +84,7 @@ fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
 
 ```toml
 [dependencies]
-headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"]}
+headless_chrome = {git = "https://github.com/rust-headless-chrome/rust-headless-chrome", features = ["fetch"]}
 ```
 
 
@@ -127,14 +127,7 @@ Starting with v0.2.0, we're trying to follow SemVar strictly.
 
 ## Troubleshooting
 
-If you get errors related to timeouts, you likely need to enable sandboxing either in the kernel or as a setuid sandbox. Puppeteer has some information about how to do that [here](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md)
-
-By default, `headless_chrome` will download a compatible version of chrome to `XDG_DATA_HOME` (or equivalent on Windows/Mac). This behaviour can be optionally turned off, and you can use the system version of chrome (assuming you have chrome installed) by disabling the default feature in your `Cargo.toml`:
-
-```toml
-[dependencies.headless_chrome]
-default-features = false
-```
+If you get errors related to timeouts, you likely need to enable sandboxing either in the kernel or as a setuid sandbox. Puppeteer has some information about how to do that [here](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md).
 
 ## Contributing
 

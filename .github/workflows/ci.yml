@@ -13,7 +13,7 @@ env:
 
 jobs:
   check:
-    name: cargo clippy && cargo fmt && cargo test
+    name: "ubuntu: cargo clippy && cargo fmt && cargo test"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -22,5 +22,29 @@ jobs:
         with:
           toolchain: stable
       - run: cargo fmt --all -- --check
+      - run: cargo test google.com --all-features --all-targets
+      - run: cargo clippy --all-features --all-targets
+
+  check-win:
+    name: "win: cargo clippy && cargo test"
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - run: cargo test google.com --all-features --all-targets
+      - run: cargo clippy --all-features --all-targets
+
+  check-macos:
+    name: "macos: cargo clippy && cargo test"
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
       - run: cargo test google.com --all-features --all-targets
       - run: cargo clippy --all-features --all-targets

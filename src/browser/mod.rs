@@ -15,9 +15,7 @@ use transport::Transport;
 use url::Url;
 use which::which;
 
-use crate::protocol::cdp::{
-    types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM,
-};
+use crate::protocol::cdp::{self, types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM};
 
 use crate::browser::context::Context;
 use crate::util;
@@ -140,7 +138,7 @@ impl Browser {
         transport: Arc<Transport>,
         idle_browser_timeout: Duration,
     ) -> Result<Self> {
-        let tabs = Arc::new(Mutex::new(vec![]));
+        let tabs = Arc::new(Mutex::new(Vec::with_capacity(1)));
 
         let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(100);
 
@@ -450,7 +448,10 @@ impl Browser {
 impl Drop for BrowserInner {
     fn drop(&mut self) {
         info!("Dropping browser");
-        let _ = self.loop_shutdown_tx.send(());
+        self.transport
+            .call_method_on_browser(cdp::Browser::Close(None))
+            .ok();
+        self.loop_shutdown_tx.send(()).ok();
         self.transport.shutdown();
     }
 }

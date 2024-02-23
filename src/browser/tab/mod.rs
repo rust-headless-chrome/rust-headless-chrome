@@ -456,7 +456,7 @@ impl Tab {
 
         bindings.insert(name.to_string(), func);
 
-        let expression = r#"
+        let expression = r"
         (function addPageBinding(bindingName) {
             const binding = window[bindingName];
             window[bindingName] = (...args) => {
@@ -473,7 +473,7 @@ impl Tab {
               return promise;
             };
           })()
-        "#; // https://github.com/puppeteer/puppeteer/blob/97c9fe2520723d45a5a86da06b888ae888d400be/src/common/helper.ts#L183
+        "; // https://github.com/puppeteer/puppeteer/blob/97c9fe2520723d45a5a86da06b888ae888d400be/src/common/helper.ts#L183
 
         self.call_method(AddBinding {
             name: name.to_string(),
@@ -703,13 +703,14 @@ impl Tab {
             include_user_agent_shadow_dom: None,
         })
         .and_then(|o| {
-            Ok(self
-                .call_method(DOM::GetSearchResults {
-                    search_id: o.search_id,
-                    from_index: 0,
-                    to_index: o.result_count,
-                })?
-                .node_ids[0])
+            match self.call_method(DOM::GetSearchResults {
+                search_id: o.search_id,
+                from_index: 0,
+                to_index: o.result_count,
+            }) {
+                Ok(res) => Ok(res.node_ids.get(0).cloned().unwrap_or(0)),
+                Err(_) => Ok(0),
+            }
         })
         .and_then(|id| {
             if id == 0 {
