@@ -686,7 +686,7 @@ impl Tab {
     /// assert_eq!(attrs["id"], "foobar");
     /// #
     /// # Ok(())
-    /// # }z
+    /// # }
     /// ```
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>> {
         let root_node_id = self.get_document()?.node_id;
