@@ -75,7 +75,7 @@ clippy::wildcard_imports, // for autogen protocol.rs
 clippy::cast_possible_truncation, // for types.rs:189 & 190
 clippy::cast_sign_loss, // for tab/element/mod.rs:492 & 493
 clippy::cast_lossless, // for tab/element/mod.rs:492 & 493
-clippy::vtable_address_comparisons, // for tab/mod.rs:1415
+ambiguous_wide_pointer_comparisons, // for tab/mod.rs:1415
 clippy::derivable_impls, // for types.rs Default for PrintToPDF because autogen
 clippy::type_complexity, // for transport/web_socket_connection.rs:133
 clippy::manual_let_else, // for transport/web_socket_connection.rs:142
