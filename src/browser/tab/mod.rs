@@ -702,14 +702,14 @@ impl Tab {
             query: query.to_string(),
             include_user_agent_shadow_dom: None,
         })
-        .and_then(|o| {
+        .map(|o| {
             match self.call_method(DOM::GetSearchResults {
                 search_id: o.search_id,
                 from_index: 0,
                 to_index: o.result_count,
             }) {
-                Ok(res) => Ok(res.node_ids.get(0).cloned().unwrap_or(0)),
-                Err(_) => Ok(0),
+                Ok(res) => res.node_ids.first().copied().unwrap_or(0),
+                Err(_) => 0,
             }
         })
         .and_then(|id| {
