@@ -350,7 +350,17 @@ fn dl_url<R>(revision: R) -> String
 where
     R: AsRef<str>,
 {
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+    {
+        format!(
+            "{}/chromium-browser-snapshots/Linux_ARM_Cross-Compile/{}/{}.zip",
+            DEFAULT_HOST,
+            revision.as_ref(),
+            archive_name(revision.as_ref())
+        )
+    }
+
+    #[cfg(all(target_os = "linux", not(target_arch = "aarch64")))]
     {
         format!(
             "{}/chromium-browser-snapshots/Linux_x64/{}/{}.zip",
