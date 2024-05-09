@@ -223,7 +223,11 @@ impl Fetcher {
         println!("{path:?}");
 
         info!("Creating file for download: {}", &path.display());
-        let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
+        let mut file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(&path)?;
 
         let resp = ureq::get(&url).call();
         io::copy(&mut resp?.into_reader(), &mut file)?;

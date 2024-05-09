@@ -35,7 +35,7 @@ struct ForTesting;
 #[cfg(test)]
 impl ForTesting {
     thread_local! {
-        static USER_DATA_DIR: RefCell<Option<String>> = RefCell::new(None);
+        static USER_DATA_DIR: RefCell<Option<String>> = const { RefCell::new(None) };
     }
 }
 
@@ -328,7 +328,6 @@ impl Process {
             "--verbose",
             "--log-level=0",
             "--no-first-run",
-            "--disable-audio-output",
             data_dir_option.as_str(),
         ];
 

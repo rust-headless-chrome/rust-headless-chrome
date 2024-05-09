@@ -1,6 +1,6 @@
 # Headless Chrome
 
-[![Build Status](https://github.com/atroche/rust-headless-chrome/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/atroche/rust-headless-chrome/actions/workflows/ci.yml)
+[![Build Status](https://github.com/rust-headless-chrome/rust-headless-chrome/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rust-headless-chrome/rust-headless-chrome/actions/workflows/ci.yml)
 [![Crate](https://img.shields.io/crates/v/headless_chrome.svg)](https://crates.io/crates/headless_chrome)
 [![API](https://docs.rs/headless_chrome/badge.svg)](https://docs.rs/headless_chrome)
 [![Discord channel](https://img.shields.io/discord/557374784233799681.svg?logo=discord)](https://discord.gg/yyGEzcc)
@@ -17,9 +17,9 @@ browser testing / web crawling use cases, and there are several 'advanced' featu
 - Opening incognito windows
 - [taking screenshots of elements or the entire page](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.capture_screenshot)
 - [saving pages to PDF](https://docs.rs/headless_chrome/latest/headless_chrome/browser/tab/struct.Tab.html#method.print_to_pdf)
-- ['headful' browsing](https://docs.rs/headless_chrome/latest/headless_chrome/struct.LaunchOptionsBuilder.html#method.headless)
+- ['headful' browsing](https://docs.rs/headless_chrome/latest/headless_chrome/browser/struct.LaunchOptionsBuilder.html#method.headless)
 - automatic downloading of 'known good' Chromium binaries for Linux / Mac / Windows
-- [extension pre-loading](https://docs.rs/headless_chrome/latest/headless_chrome/struct.LaunchOptionsBuilder.html#method.extensions)
+- [extension pre-loading](https://docs.rs/headless_chrome/latest/headless_chrome/browser/struct.LaunchOptionsBuilder.html#method.extensions)
 
 ## Quick Start
 
@@ -34,17 +34,17 @@ fn browse_wikipedia() -> Result<(), Box<dyn Error>> {
 
     let tab = browser.new_tab()?;
 
-    /// Navigate to wikipedia
+    // Navigate to wikipedia
     tab.navigate_to("https://www.wikipedia.org")?;
 
-    /// Wait for network/javascript/dom to make the search-box available
-    /// and click it.
+    // Wait for network/javascript/dom to make the search-box available
+    // and click it.
     tab.wait_for_element("input#searchInput")?.click()?;
 
-    /// Type in a query and press `Enter`
+    // Type in a query and press `Enter`
     tab.type_str("WebKit")?.press_key("Enter")?;
 
-    /// We should end up on the WebKit-page once navigated
+    // We should end up on the WebKit-page once navigated
     let elem = tab.wait_for_element("#firstHeading")?;
     assert!(tab.get_url().ends_with("WebKit"));
 
