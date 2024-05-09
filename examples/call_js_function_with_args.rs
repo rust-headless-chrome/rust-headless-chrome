@@ -19,7 +19,7 @@ fn main() -> Result<()> {
     let element = tab.wait_for_xpath("/html/body/div[1]/div[5]/div[1]")?;
 
     element.call_js_fn(
-        "function(...args) {if(arg[0]) {return this.innerText;}}",
+        "function(...args) {if(args[0]) {return this.innerText;}}",
         vec![],
         false,
     )?;
