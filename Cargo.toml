@@ -6,8 +6,8 @@ edition = "2021"
 rust-version = "1.70"
 description = "Control Chrome programatically"
 license = "MIT"
-homepage = "https://github.com/atroche/rust-headless-chrome"
-repository = "https://github.com/atroche/rust-headless-chrome"
+homepage = "https://github.com/rust-headless-chrome/rust-headless-chrome"
+repository = "https://github.com/rust-headless-chrome/rust-headless-chrome"
 readme = "README.md"
 
 [dependencies]
