@@ -328,7 +328,6 @@ impl Process {
             "--verbose",
             "--log-level=0",
             "--no-first-run",
-            "--disable-audio-output",
             data_dir_option.as_str(),
         ];
 
