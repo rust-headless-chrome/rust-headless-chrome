@@ -30,8 +30,9 @@ impl Default for Wait {
 }
 
 pub fn extract_midpoint(remote_obj: RemoteObject) -> Result<Point> {
-    let point = remote_obj.preview.map(|v| {
-        let mut prop_map = HashMap::new();
+    let mut prop_map = HashMap::new();
+
+    let points = remote_obj.preview.map(|v| {
         for prop in v.properties {
             prop_map.insert(prop.name, prop.value.unwrap().parse::<f64>().unwrap());
         }
@@ -41,7 +42,7 @@ pub fn extract_midpoint(remote_obj: RemoteObject) -> Result<Point> {
         }
     });
 
-    match point {
+    match points {
         Some(v) => Ok(v),
         None => Ok(Point { x: 0.0, y: 0.0 }),
     }

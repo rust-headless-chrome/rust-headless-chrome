@@ -1,9 +1,6 @@
-use std::io::Write;
-
-
-
 use env_logger::fmt;
 use log::*;
+use std::io::Write;
 
 pub fn enable_logging() {
     let mut builder = env_logger::Builder::from_default_env();
@@ -14,10 +11,8 @@ pub fn enable_logging() {
             let date = chrono::Local::now();
 
             let level_str = level_to_emoji(record.level());
-            let mut style = buf.style();
             let hours_minutes = date.format("%H:%M").to_string();
             let seconds_millis = date.format("%S%.3f").to_string();
-            let fmt_seconds = style.set_bold(true).value(seconds_millis);
 
             let truncated_module_path = &record.module_path().unwrap()[5..];
 
@@ -26,7 +21,7 @@ pub fn enable_logging() {
                 "{:<2} [{}:{}] - {:<12} - {}",
                 level_str,
                 hours_minutes,
-                fmt_seconds,
+                seconds_millis,
                 truncated_module_path,
                 record.args()
             )
