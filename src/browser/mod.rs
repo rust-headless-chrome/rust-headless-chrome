@@ -194,7 +194,7 @@ impl Browser {
     #[deprecated(since = "1.0.4", note = "Use new_tab() instead.")]
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>> {
         match util::Wait::with_timeout(Duration::from_secs(10))
-            .until(|| self.inner.tabs.lock().unwrap().first().map(Arc::clone))
+            .until(|| self.inner.tabs.lock().unwrap().first().cloned())
         {
             Ok(tab) => Ok(tab),
             Err(_) => self.new_tab(),
