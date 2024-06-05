@@ -154,7 +154,7 @@ impl WebSocketConnection {
         Response<Option<Vec<u8>>>,
     )> {
         let mut client = tungstenite::client::connect_with_config(
-            ws_url,
+            ws_url.as_str(),
             Some(WebSocketConfig {
                 max_message_size: None,
                 max_frame_size: None,
