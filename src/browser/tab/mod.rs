@@ -509,7 +509,10 @@ impl Tab {
             .transport
             .call_method_on_target(self.session_id.clone(), method);
         let result_string = format!("{result:?}");
-        trace!("Got result: {:?}", result_string.chars().take(70));
+        trace!(
+            "Got result: {:?}",
+            result_string.chars().take(70).collect::<String>()
+        );
         result
     }
 
