@@ -69,7 +69,7 @@ impl Wait {
 
     pub fn forever() -> Self {
         Self {
-            timeout: Duration::from_secs(u64::max_value()),
+            timeout: Duration::from_secs(u64::MAX),
             ..Self::default()
         }
     }
