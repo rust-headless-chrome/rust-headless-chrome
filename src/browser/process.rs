@@ -141,6 +141,10 @@ pub struct LaunchOptions<'a> {
     #[builder(default)]
     pub args: Vec<&'a OsStr>,
 
+    /// Ignore a default given flag
+    #[builder(default)]
+    pub ignore_default_args: Vec<&'a OsStr>,
+
     /// Disable default arguments
     #[builder(default)]
     pub disable_default_args: bool,
@@ -186,6 +190,7 @@ impl<'a> Default for LaunchOptions<'a> {
             #[cfg(feature = "fetch")]
             fetcher_options: Default::default(),
             args: Vec::new(),
+            ignore_default_args: Vec::new(),
             disable_default_args: false,
             proxy_server: None,
         }
@@ -332,7 +337,18 @@ impl Process {
         ];
 
         if !launch_options.disable_default_args {
-            args.extend(DEFAULT_ARGS);
+            let ignore_default_args: Vec<&str> = launch_options
+                .ignore_default_args
+                .iter()
+                .map(|arg| arg.to_str().unwrap())
+                .collect();
+
+            let defaults: Vec<_> = DEFAULT_ARGS
+                .iter()
+                .filter(|arg| !ignore_default_args.contains(arg))
+                .collect();
+
+            args.extend(defaults);
         }
 
         if !launch_options.args.is_empty() {
