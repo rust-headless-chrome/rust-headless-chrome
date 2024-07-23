@@ -91,6 +91,10 @@ pub struct LaunchOptions<'a> {
     #[builder(default = "true")]
     pub sandbox: bool,
 
+    /// Automatically open devtools for tabs. Forces headless to be false
+    #[builder(default = "true")]
+    pub devtools: bool,
+
     /// Determines whether to enable GPU or not. Default to false.
     #[builder(default = "false")]
     pub enable_gpu: bool,
@@ -172,6 +176,7 @@ impl<'a> Default for LaunchOptions<'a> {
     fn default() -> Self {
         LaunchOptions {
             headless: true,
+            devtools: false,
             sandbox: true,
             enable_gpu: false,
             enable_logging: false,
@@ -348,8 +353,10 @@ impl Process {
             args.extend([window_size_option.as_str()]);
         }
 
-        if launch_options.headless {
+        if launch_options.headless && !launch_options.devtools {
             args.extend(["--headless"]);
+        } else if launch_options.devtools {
+            args.extend(["--auto-open-devtools-for-tabs"]);
         }
 
         if launch_options.ignore_certificate_errors {

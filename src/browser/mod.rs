@@ -380,6 +380,9 @@ impl Browser {
                             Event::TargetCreated(ev) => {
                                 let target_info = ev.params.target_info;
                                 trace!("Creating target: {:?}", target_info);
+                                // when Type == other and url == "" the next trigger would be AttachedToTarget
+                                // meaning the devtools has ben opened automatically..
+                                // for now ignoring devtools tabs to be in tabs..
                                 if target_info.Type == "page" {
                                     match Tab::new(target_info, Arc::clone(&transport)) {
                                         Ok(new_tab) => {
@@ -395,7 +398,9 @@ impl Browser {
                             Event::TargetInfoChanged(ev) => {
                                 let target_info = ev.params.target_info;
                                 trace!("Target info changed: {:?}", target_info);
-                                if target_info.Type == "page" {
+                                if target_info.Type == "page"
+                                    && !target_info.url.starts_with("devtools://")
+                                {
                                     let locked_tabs = tabs.lock().unwrap();
                                     let updated_tab = locked_tabs
                                         .iter()
@@ -403,6 +408,12 @@ impl Browser {
                                         .expect("got TargetInfoChanged event about a tab not in our list");
                                     updated_tab.update_target_info(target_info);
                                 }
+                            }
+                            Event::AttachedToTarget(ev) => {
+                                let target_info = ev.params.target_info;
+                                trace!("Attached To Target : {:?}", target_info);
+                                // can be usefull when knowing if there is a devtools tab open and
+                                // to which tab it is connected (parent)
                             }
                             Event::TargetDestroyed(ev) => {
                                 trace!("Target destroyed: {:?}", ev.params.target_id);
