@@ -169,11 +169,7 @@ impl Browser {
         // so we get events like 'targetCreated' and 'targetDestroyed'
         trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
-
-        let tab = browser.new_tab()?;
-
-        tab.call_method(DOM::Enable(None))?;
-        tab.call_method(CSS::Enable(None))?;
+        
         Ok(browser)
     }
 
