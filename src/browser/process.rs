@@ -92,7 +92,7 @@ pub struct LaunchOptions<'a> {
     pub sandbox: bool,
 
     /// Automatically open devtools for tabs. Forces headless to be false
-    #[builder(default = "true")]
+    #[builder(default = "false")]
     pub devtools: bool,
 
     /// Determines whether to enable GPU or not. Default to false.
