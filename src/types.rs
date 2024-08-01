@@ -56,7 +56,7 @@ pub enum Message {
     ConnectionShutdown,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct TransferMode {
     mode: String,
 }
