@@ -30,6 +30,7 @@ impl<'a> Context<'a> {
             enable_begin_frame_control: None,
             new_window: None,
             background: None,
+            for_tab: None,
         };
         self.browser.new_tab_with_options(tab_in_context)
     }

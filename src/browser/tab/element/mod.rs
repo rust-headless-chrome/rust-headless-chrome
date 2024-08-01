@@ -311,6 +311,8 @@ impl<'a> Element<'a> {
                 execution_context_id: None,
                 object_group: None,
                 throw_on_side_effect: None,
+                serialization_options: None,
+                unique_context_id: None,
             })?
             .result;
 
