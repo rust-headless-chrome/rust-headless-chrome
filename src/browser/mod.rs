@@ -16,7 +16,7 @@ use url::Url;
 use which::which;
 
 use crate::protocol::cdp::{
-    self, types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM,
+    self, types::Event, types::Method, Browser as B, Target, Target::GetTargets,
 };
 
 use crate::browser::context::Context;
@@ -169,7 +169,7 @@ impl Browser {
         // so we get events like 'targetCreated' and 'targetDestroyed'
         trace!("Calling set discover");
         browser.call_method(SetDiscoverTargets { discover: true })?;
-        
+
         Ok(browser)
     }
 
