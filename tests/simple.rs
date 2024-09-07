@@ -6,13 +6,14 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use base64::Engine;
+use headless_chrome::protocol::cdp::types::Event;
 use headless_chrome::protocol::cdp::Browser::WindowState;
 use headless_chrome::protocol::cdp::Fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::cdp::Fetch::{
     FulfillRequest, HeaderEntry, RequestPattern, RequestStage,
 };
 use headless_chrome::protocol::cdp::Network::{Cookie, CookieParam};
-use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
+use headless_chrome::protocol::cdp::Page::{CaptureScreenshotFormatOption, DialogType};
 use headless_chrome::protocol::cdp::Runtime::{RemoteObjectSubtype, RemoteObjectType};
 use headless_chrome::protocol::cdp::DOM::RGBA;
 use headless_chrome::types::{Bounds, RemoteError};
@@ -983,5 +984,57 @@ fn get_css_styles() -> Result<()> {
 
     assert_eq!(["rgb(255, 255, 0)", "absolute", "5px"], v.as_slice());
 
+    Ok(())
+}
+
+#[test]
+fn handle_dialog() -> Result<()> {
+    logging::enable_logging();
+    let (server, browser, tab) = dumb_server(include_str!("simple.html"));
+
+    let dialog = tab.get_dialog();
+    tab.add_event_listener(Arc::new(move |event: &Event| {
+        if let Event::PageJavascriptDialogOpening(event) = event {
+            if event.params.message == "accept" {
+                if event.params.Type == DialogType::Prompt {
+                    dialog.accept(Some("prompt value".to_owned()))
+                } else {
+                    dialog.accept(None)
+                }
+            } else {
+                dialog.dismiss()
+            }
+            .unwrap();
+        }
+    }))
+    .unwrap();
+    let element = tab.wait_for_element("#foobar")?;
+    {
+        let result = element.call_js_fn(
+            r#"function() { return confirm("dismiss"); }"#,
+            vec![],
+            false,
+        )?;
+        assert_eq!(result.Type, RemoteObjectType::Boolean);
+        assert_eq!(result.value, Some((false).into()));
+    }
+    {
+        let result =
+            element.call_js_fn(r#"function() { return confirm("accept"); }"#, vec![], false)?;
+        assert_eq!(result.Type, RemoteObjectType::Boolean);
+        assert_eq!(result.value, Some((true).into()));
+    }
+    {
+        let result =
+            element.call_js_fn(r#"function() { return prompt("accept"); }"#, vec![], false)?;
+        assert_eq!(result.Type, RemoteObjectType::String);
+        assert_eq!(result.value, Some(("prompt value").into()));
+    }
+    {
+        let result =
+            element.call_js_fn(r#"function() { return prompt("dismiss"); }"#, vec![], false)?;
+        assert_eq!(result.Type, RemoteObjectType::Object);
+        assert_eq!(result.value, None);
+    }
     Ok(())
 }

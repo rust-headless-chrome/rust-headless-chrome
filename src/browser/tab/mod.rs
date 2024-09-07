@@ -16,6 +16,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value as Json};
 
+use dialog::Dialog;
 use element::Element;
 use point::Point;
 
@@ -58,6 +59,7 @@ use super::transport::SessionId;
 use crate::browser::transport::Transport;
 use std::thread::sleep;
 
+pub mod dialog;
 pub mod element;
 mod keys;
 pub mod point;
@@ -1881,5 +1883,10 @@ impl Tab {
     pub fn ack_screencast(&self, session_id: u32) -> Result<()> {
         self.call_method(Page::ScreencastFrameAck { session_id })?;
         Ok(())
+    }
+
+    /// Get the handle of the dialog opened in this tab.
+    pub fn get_dialog(&self) -> Dialog {
+        Dialog::new(self.session_id.clone(), self.transport.clone())
     }
 }
