@@ -41,7 +41,7 @@ png = { version = "0.17" }
 tiny_http = "0.12"
 
 [build-dependencies]
-auto_generate_cdp = { git = "https://github.com/whamcloud/auto_generate_cdp", branch = "update_cdp"}
+auto_generate_cdp = { git = "https://github.com/mdrokz/auto_generate_cdp", branch = "master"}
 
 [lib]
 name = "headless_chrome"
