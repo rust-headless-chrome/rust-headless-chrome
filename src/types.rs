@@ -150,6 +150,7 @@ impl From<CookieParam> for DeleteCookies {
             url: v.url,
             domain: v.domain,
             path: v.path,
+            partition_key: v.partition_key,
         }
     }
 }
@@ -221,7 +222,8 @@ impl Default for PrintToPDF {
             display_header_footer: None,
             footer_template: None,
             header_template: None,
-            ignore_invalid_page_ranges: None,
+            generate_document_outline: None,
+            generate_tagged_pdf: None,
             landscape: None,
             margin_bottom: None,
             margin_left: None,
