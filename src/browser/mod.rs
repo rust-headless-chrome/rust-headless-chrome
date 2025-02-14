@@ -168,11 +168,16 @@ impl Browser {
 
         // so we get events like 'targetCreated' and 'targetDestroyed'
         trace!("Calling set discover");
-        browser.call_method(SetDiscoverTargets { discover: true })?;
+        browser.call_method(SetDiscoverTargets {
+            discover: true,
+            filter: None,
+        })?;
 
         let tab = browser.new_tab()?;
 
-        tab.call_method(DOM::Enable(None))?;
+        tab.call_method(DOM::Enable {
+            include_whitespace: None,
+        })?;
         tab.call_method(CSS::Enable(None))?;
         Ok(browser)
     }
@@ -231,6 +236,7 @@ impl Browser {
             enable_begin_frame_control: None,
             new_window: None,
             background: None,
+            for_tab: None,
         };
         self.new_tab_with_options(default_blank_tab)
     }
@@ -287,7 +293,7 @@ impl Browser {
 
     /// Adds tabs that have not been opened with new_tab to the list of tabs
     pub fn register_missing_tabs(&self) {
-        let targets = self.call_method(GetTargets(None));
+        let targets = self.call_method(GetTargets { filter: None });
 
         let mut tabs_lock = self.inner.tabs.lock().unwrap();
         let mut previous_target_id: String = String::default();

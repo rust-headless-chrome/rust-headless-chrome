@@ -485,6 +485,7 @@ impl Tab {
             source: expression.to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
 
         Ok(())
@@ -1078,6 +1079,7 @@ impl Tab {
                 quality,
                 from_surface: Some(from_surface),
                 capture_beyond_viewport: None,
+                optimize_for_speed: None,
             })?
             .data;
         base64::prelude::BASE64_STANDARD
@@ -1102,7 +1104,8 @@ impl Tab {
                     margin_left: options.margin_left,
                     margin_right: options.margin_right,
                     page_ranges: options.page_ranges,
-                    ignore_invalid_page_ranges: options.ignore_invalid_page_ranges,
+                    generate_document_outline: None,
+                    generate_tagged_pdf: None,
                     header_template: options.header_template,
                     footer_template: options.footer_template,
                     prefer_css_page_size: options.prefer_css_page_size,
@@ -1140,6 +1143,7 @@ impl Tab {
             ignore_cache: Some(ignore_cache),
             script_to_evaluate_on_load: script_to_evaluate_on_load
                 .map(std::string::ToString::to_string),
+            loader_id: None,
         })?;
         Ok(self)
     }
@@ -1455,6 +1459,7 @@ impl Tab {
                 repl_mode: None,
                 allow_unsafe_eval_blocked_by_csp: None,
                 unique_context_id: None,
+                serialization_options: None,
             })?
             .result;
         Ok(result)
@@ -1780,6 +1785,7 @@ impl Tab {
                 .to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1789,6 +1795,7 @@ impl Tab {
             source: "window.chrome = { runtime: {} };".to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1804,6 +1811,7 @@ impl Tab {
             source: r.to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1818,6 +1826,7 @@ impl Tab {
                 .to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1841,6 +1850,7 @@ impl Tab {
             source: r.to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
