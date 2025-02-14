@@ -16,7 +16,7 @@ use url::Url;
 use which::which;
 
 use crate::protocol::cdp::{
-    self, types::Event, types::Method, Browser as B, Target, Target::GetTargets, CSS, DOM,
+    self, types::Event, types::Method, Browser as B, Target, Target::GetTargets,
 };
 
 use crate::browser::context::Context;
@@ -173,17 +173,18 @@ impl Browser {
             filter: None,
         })?;
 
-        let tab = browser.new_tab()?;
-
-        tab.call_method(DOM::Enable {
-            include_whitespace: None,
-        })?;
-        tab.call_method(CSS::Enable(None))?;
         Ok(browser)
     }
 
     pub fn get_process_id(&self) -> Option<u32> {
         self.inner.process.as_ref().map(process::Process::get_id)
+    }
+
+    pub fn get_ws_url(&self) -> String {
+        match &self.inner.process {
+            None => "browser is not running".to_string(),
+            Some(process) => process.debug_ws_url.clone().to_string(),
+        }
     }
 
     /// The tabs are behind an `Arc` and `Mutex` because they're accessible from multiple threads

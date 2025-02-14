@@ -92,7 +92,7 @@ pub struct LaunchOptions<'a> {
     pub sandbox: bool,
 
     /// Automatically open devtools for tabs. Forces headless to be false
-    #[builder(default = "true")]
+    #[builder(default = "false")]
     pub devtools: bool,
 
     /// Determines whether to enable GPU or not. Default to false.
@@ -270,6 +270,13 @@ impl Process {
                 }
                 Err(error) => {
                     trace!("Problem getting WebSocket URL from Chrome: {}", error);
+
+                    if let Some(&ChromeLaunchError::RunningAsRootWithoutNoSandbox) =
+                        error.downcast_ref::<ChromeLaunchError>()
+                    {
+                        return Err(error);
+                    }
+
                     if launch_options.port.is_none() {
                         process = Self::start_process(&launch_options)?;
                     } else {
