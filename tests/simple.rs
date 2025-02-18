@@ -151,8 +151,8 @@ fn actions_on_tab_wont_hang_after_browser_drops() -> Result<()> {
     for _ in 0..20 {
         let (_, browser, tab) = dumb_server(include_str!("simple.html"));
         std::thread::spawn(move || {
-            let mut rng = rand::thread_rng();
-            let millis: u64 = rng.gen_range(0..5000);
+            let mut rng = rand::rng();
+            let millis: u64 = rng.random_range(0..5000);
             std::thread::sleep(std::time::Duration::from_millis(millis));
             trace!("dropping browser");
             drop(browser);
@@ -600,7 +600,7 @@ fn set_request_interception() -> Result<()> {
             request_stage: Some(RequestStage::Request),
         },
     ];
-    tab.enable_fetch(Some(&patterns), None)?;
+    tab.enable_fetch(Some(patterns.as_slice()), None)?;
 
     tab.enable_request_interception(Arc::new(
         move |transport: Arc<Transport>, session_id: SessionId, intercepted: RequestPausedEvent| {

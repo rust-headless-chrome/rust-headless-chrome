@@ -227,8 +227,9 @@ impl Fetcher {
             .write(true)
             .open(&path)?;
 
-        let resp = ureq::get(&url).call();
-        io::copy(&mut resp?.into_reader(), &mut file)?;
+        let mut resp = ureq::get(&url).call()?;
+        let mut body = resp.body_mut().as_reader();
+        io::copy(&mut body, &mut file)?;
 
         Ok(path)
     }
@@ -334,8 +335,8 @@ impl Fetcher {
 
 fn get_size<U: AsRef<str>>(url: U) -> Result<u64> {
     let resp = ureq::get(url.as_ref()).call();
-    match resp?.header("Content-Length") {
-        Some(len) => Ok(u64::from_str(len)? / 2_u64.pow(20)),
+    match resp?.headers().get("Content-Length") {
+        Some(len) => Ok(u64::from_str(len.to_str()?)? / 2_u64.pow(20)),
         None => Err(anyhow!("response doesn't include the content length")),
     }
 }
@@ -429,7 +430,8 @@ fn latest_revision() -> Result<String> {
         url = format!("{url}/Linux_x64/LAST_CHANGE");
         ureq::get(&url)
             .call()?
-            .into_string()
+            .body_mut()
+            .read_to_string()
             .map_err(anyhow::Error::from)
     }
 
@@ -438,7 +440,8 @@ fn latest_revision() -> Result<String> {
         url = format!("{url}/Mac_Arm/LAST_CHANGE");
         ureq::get(&url)
             .call()?
-            .into_string()
+            .body_mut()
+            .read_to_string()
             .map_err(anyhow::Error::from)
     }
 
@@ -447,7 +450,8 @@ fn latest_revision() -> Result<String> {
         url = format!("{url}/Mac/LAST_CHANGE");
         ureq::get(&url)
             .call()?
-            .into_string()
+            .body_mut()
+            .read_to_string()
             .map_err(anyhow::Error::from)
     }
 
@@ -456,7 +460,8 @@ fn latest_revision() -> Result<String> {
         url = format!("{url}/Win_x64/LAST_CHANGE");
         ureq::get(&url)
             .call()?
-            .into_string()
+            .body_mut()
+            .read_to_string()
             .map_err(anyhow::Error::from)
     }
 }

@@ -487,6 +487,7 @@ impl Tab {
             source: expression.to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
 
         Ok(())
@@ -573,7 +574,6 @@ impl Tab {
     /// #
     /// # Ok(())
     /// # }
-
     /// ```
     pub fn set_default_timeout(&self, timeout: Duration) -> &Self {
         let mut current_timeout = self.default_timeout.write().unwrap();
@@ -773,7 +773,7 @@ impl Tab {
     /// Get the full HTML contents of the page.
     pub fn get_content(&self) -> Result<String> {
         let func = "
-            (function () { 
+            (function () {
                 let retVal = '';
                 if (document.doctype)
                     retVal = new XMLSerializer().serializeToString(document.doctype);
@@ -892,13 +892,13 @@ impl Tab {
         modifiers: Option<&[ModifierKey]>,
     ) -> Result<&Self> {
         // See https://github.com/GoogleChrome/puppeteer/blob/62da2366c65b335751896afbb0206f23c61436f1/lib/Input.js#L114-L115
-        let definiton = keys::get_key_definition(key)?;
+        let definition = keys::get_key_definition(key)?;
 
-        let text = definiton
+        let text = definition
             .text
             .or({
-                if definiton.key.len() == 1 {
-                    Some(definiton.key)
+                if definition.key.len() == 1 {
+                    Some(definition.key)
                 } else {
                     None
                 }
@@ -912,8 +912,8 @@ impl Tab {
             Input::DispatchKeyEventTypeOption::RawKeyDown
         };
 
-        let key = Some(definiton.key.to_string());
-        let code = Some(definiton.code.to_string());
+        let key = Some(definition.key.to_string());
+        let code = Some(definition.code.to_string());
 
         let modifiers = modifiers.map(|v| v.iter().fold(0, |acc, e| acc | *e as u32));
 
@@ -924,8 +924,8 @@ impl Tab {
             key: key.clone(),
             text: text.clone(),
             code: code.clone(),
-            windows_virtual_key_code: Some(definiton.key_code),
-            native_virtual_key_code: Some(definiton.key_code),
+            windows_virtual_key_code: Some(definition.key_code),
+            native_virtual_key_code: Some(definition.key_code),
             modifiers,
             timestamp: None,
             unmodified_text: None,
@@ -941,8 +941,8 @@ impl Tab {
             key,
             text,
             code,
-            windows_virtual_key_code: Some(definiton.key_code),
-            native_virtual_key_code: Some(definiton.key_code),
+            windows_virtual_key_code: Some(definition.key_code),
+            native_virtual_key_code: Some(definition.key_code),
             modifiers,
             timestamp: None,
             unmodified_text: None,
@@ -1044,8 +1044,8 @@ impl Tab {
     /// Capture a screenshot of the current page.
     ///
     /// If `clip` is given, the screenshot is taken of the specified region only.
-    /// `Element::get_box_model()` can be used to get regions of certains elements
-    /// on the page; there is also `Element::capture_screenhot()` as a shorthand.
+    /// `Element::get_box_model()` can be used to get regions of certain elements
+    /// on the page; there is also `Element::capture_screenshot()` as a shorthand.
     ///
     /// If `from_surface` is true, the screenshot is taken from the surface rather than
     /// the view.
@@ -1080,6 +1080,7 @@ impl Tab {
                 quality,
                 from_surface: Some(from_surface),
                 capture_beyond_viewport: None,
+                optimize_for_speed: None,
             })?
             .data;
         base64::prelude::BASE64_STANDARD
@@ -1104,7 +1105,8 @@ impl Tab {
                     margin_left: options.margin_left,
                     margin_right: options.margin_right,
                     page_ranges: options.page_ranges,
-                    ignore_invalid_page_ranges: options.ignore_invalid_page_ranges,
+                    generate_tagged_pdf: options.generate_tagged_pdf,
+                    generate_document_outline: options.generate_document_outline,
                     header_template: options.header_template,
                     footer_template: options.footer_template,
                     prefer_css_page_size: options.prefer_css_page_size,
@@ -1139,6 +1141,7 @@ impl Tab {
     ) -> Result<&Self> {
         self.optional_slow_motion_sleep(100);
         self.call_method(Page::Reload {
+            loader_id: None,
             ignore_cache: Some(ignore_cache),
             script_to_evaluate_on_load: script_to_evaluate_on_load
                 .map(std::string::ToString::to_string),
@@ -1177,7 +1180,7 @@ impl Tab {
 
     /// Set the default background color of the dom.
     ///
-    /// Pass a RGBA to override the backrgound color of the dom.
+    /// Pass a RGBA to override the background color of the dom.
     ///
     /// ```rust,no_run
     /// # use anyhow::Result;
@@ -1304,7 +1307,7 @@ impl Tab {
     /// Lets you register a listener for responses, and gives you a way to get the response body too.
     ///
     /// Please note that the 'response' does not include the *body* of the response -- Chrome tells
-    /// us about them seperately (because you might quickly get the status code and headers from a
+    /// us about them separately (because you might quickly get the status code and headers from a
     /// server well before you receive the entire response body which could, after all, be gigabytes
     /// long).
     ///
@@ -1312,7 +1315,7 @@ impl Tab {
     /// argument to the response handler), although ideally it wouldn't be possible until Chrome has
     /// sent the `Network.loadingFinished` event.
     ///
-    /// Return a option for ResponseHander for existing handler with same name if existed.
+    /// Return a option for ResponseHandler for existing handler with same name if existed.
     pub fn register_response_handling<S: ToString>(
         &self,
         handler_name: S,
@@ -1347,7 +1350,7 @@ impl Tab {
             .insert(handler_name.to_string(), handler))
     }
 
-    /// Deregister a reponse handler based on its name.
+    /// Deregister a response handler based on its name.
     ///
     /// Return a option for ResponseHandler for removed handler if existed.
     pub fn deregister_response_handling(
@@ -1457,6 +1460,7 @@ impl Tab {
                 repl_mode: None,
                 allow_unsafe_eval_blocked_by_csp: None,
                 unique_context_id: None,
+                serialization_options: None,
             })?
             .result;
         Ok(result)
@@ -1782,6 +1786,7 @@ impl Tab {
                 .to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1791,6 +1796,7 @@ impl Tab {
             source: "window.chrome = { runtime: {} };".to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1806,6 +1812,7 @@ impl Tab {
             source: r.to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1820,6 +1827,7 @@ impl Tab {
                 .to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
@@ -1843,6 +1851,7 @@ impl Tab {
             source: r.to_string(),
             world_name: None,
             include_command_line_api: None,
+            run_immediately: None,
         })?;
         Ok(())
     }
