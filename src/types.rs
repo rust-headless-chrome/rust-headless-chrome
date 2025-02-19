@@ -108,6 +108,10 @@ pub struct PrintToPdfOptions {
     pub prefer_css_page_size: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transfer_mode: Option<TransferMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generate_document_outline: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generate_tagged_pdf: Option<bool>,
 }
 
 pub fn parse_raw_message(raw_message: &str) -> Result<Message> {
@@ -150,6 +154,7 @@ impl From<CookieParam> for DeleteCookies {
             url: v.url,
             domain: v.domain,
             path: v.path,
+            partition_key: v.partition_key,
         }
     }
 }
@@ -220,8 +225,9 @@ impl Default for PrintToPDF {
         PrintToPDF {
             display_header_footer: None,
             footer_template: None,
+            generate_document_outline: None,
+            generate_tagged_pdf: None,
             header_template: None,
-            ignore_invalid_page_ranges: None,
             landscape: None,
             margin_bottom: None,
             margin_left: None,

@@ -205,7 +205,8 @@
                         },
                         {
                             "name": "url",
-                            "description": "JavaScript script name or url.",
+                            "description": "JavaScript script name or url.\nDeprecated in favor of using the `location.scriptId` to resolve the URL via a previously\nsent `Debugger.scriptParsed` event.",
+                            "deprecated": true,
                             "type": "string"
                         },
                         {
@@ -226,6 +227,13 @@
                             "description": "The value being returned, if the function is at return point.",
                             "optional": true,
                             "$ref": "Runtime.RemoteObject"
+                        },
+                        {
+                            "name": "canBeRestarted",
+                            "description": "Valid only while the VM is paused and indicates whether this frame\ncan be restarted or not. Note that a `true` value here does not\nguarantee that Debugger#restartFrame with this CallFrameId will be\nsuccessful, but it is very likely.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "boolean"
                         }
                     ]
                 },
@@ -325,6 +333,29 @@
                     ]
                 },
                 {
+                    "id": "WasmDisassemblyChunk",
+                    "experimental": true,
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "lines",
+                            "description": "The next chunk of disassembled lines.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "name": "bytecodeOffsets",
+                            "description": "The bytecode offsets describing the start of each line.",
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    ]
+                },
+                {
                     "id": "ScriptLanguage",
                     "description": "Enum of possible script languages.",
                     "type": "string",
@@ -343,7 +374,6 @@
                             "description": "Type of the debug symbols.",
                             "type": "string",
                             "enum": [
-                                "None",
                                 "SourceMap",
                                 "EmbeddedDWARF",
                                 "ExternalDWARF"
@@ -535,6 +565,61 @@
                     ]
                 },
                 {
+                    "name": "disassembleWasmModule",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "scriptId",
+                            "description": "Id of the script to disassemble",
+                            "$ref": "Runtime.ScriptId"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "name": "streamId",
+                            "description": "For large modules, return a stream from which additional chunks of\ndisassembly can be read successively.",
+                            "optional": true,
+                            "type": "string"
+                        },
+                        {
+                            "name": "totalNumberOfLines",
+                            "description": "The total number of lines in the disassembly text.",
+                            "type": "integer"
+                        },
+                        {
+                            "name": "functionBodyOffsets",
+                            "description": "The offsets of all function bodies, in the format [start1, end1,\nstart2, end2, ...] where all ends are exclusive.",
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        },
+                        {
+                            "name": "chunk",
+                            "description": "The first chunk of disassembly.",
+                            "$ref": "WasmDisassemblyChunk"
+                        }
+                    ]
+                },
+                {
+                    "name": "nextWasmDisassemblyChunk",
+                    "description": "Disassemble the next chunk of lines for the module corresponding to the\nstream. If disassembly is complete, this API will invalidate the streamId\nand return an empty chunk. Any subsequent calls for the now invalid stream\nwill return errors.",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "streamId",
+                            "type": "string"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "name": "chunk",
+                            "description": "The next chunk of disassembly.",
+                            "$ref": "WasmDisassemblyChunk"
+                        }
+                    ]
+                },
+                {
                     "name": "getWasmBytecode",
                     "description": "This command is deprecated. Use getScriptSource instead.",
                     "deprecated": true,
@@ -598,19 +683,29 @@
                 },
                 {
                     "name": "restartFrame",
-                    "description": "Restarts particular call frame from the beginning.",
-                    "deprecated": true,
+                    "description": "Restarts particular call frame from the beginning. The old, deprecated\nbehavior of `restartFrame` is to stay paused and allow further CDP commands\nafter a restart was scheduled. This can cause problems with restarting, so\nwe now continue execution immediatly after it has been scheduled until we\nreach the beginning of the restarted frame.\n\nTo stay back-wards compatible, `restartFrame` now expects a `mode`\nparameter to be present. If the `mode` parameter is missing, `restartFrame`\nerrors out.\n\nThe various return values are deprecated and `callFrames` is always empty.\nUse the call frames from the `Debugger#paused` events instead, that fires\nonce V8 pauses at the beginning of the restarted function.",
                     "parameters": [
                         {
                             "name": "callFrameId",
                             "description": "Call frame identifier to evaluate on.",
                             "$ref": "CallFrameId"
+                        },
+                        {
+                            "name": "mode",
+                            "description": "The `mode` parameter must be present and set to 'StepInto', otherwise\n`restartFrame` will error out.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "string",
+                            "enum": [
+                                "StepInto"
+                            ]
                         }
                     ],
                     "returns": [
                         {
                             "name": "callFrames",
                             "description": "New stack trace.",
+                            "deprecated": true,
                             "type": "array",
                             "items": {
                                 "$ref": "CallFrame"
@@ -619,13 +714,14 @@
                         {
                             "name": "asyncStackTrace",
                             "description": "Async stack trace, if any.",
+                            "deprecated": true,
                             "optional": true,
                             "$ref": "Runtime.StackTrace"
                         },
                         {
                             "name": "asyncStackTraceId",
                             "description": "Async stack trace, if any.",
-                            "experimental": true,
+                            "deprecated": true,
                             "optional": true,
                             "$ref": "Runtime.StackTraceId"
                         }
@@ -693,6 +789,21 @@
                     ]
                 },
                 {
+                    "name": "setBlackboxExecutionContexts",
+                    "description": "Replace previous blackbox execution contexts with passed ones. Forces backend to skip\nstepping/pausing in scripts in these execution contexts. VM will try to leave blackboxed script by\nperforming 'step in' several times, finally resorting to 'step out' if unsuccessful.",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "uniqueIds",
+                            "description": "Array of execution context unique ids for the debugger to ignore.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "setBlackboxPatterns",
                     "description": "Replace previous blackbox patterns with passed ones. Forces backend to skip stepping/pausing in\nscripts with url matching one of the patterns. VM will try to leave blackboxed script by\nperforming 'step in' several times, finally resorting to 'step out' if unsuccessful.",
                     "experimental": true,
@@ -704,6 +815,12 @@
                             "items": {
                                 "type": "string"
                             }
+                        },
+                        {
+                            "name": "skipAnonymous",
+                            "description": "If true, also ignore scripts with no source url.",
+                            "optional": true,
+                            "type": "boolean"
                         }
                     ]
                 },
@@ -871,7 +988,7 @@
                 },
                 {
                     "name": "setPauseOnExceptions",
-                    "description": "Defines pause on exceptions state. Can be set to stop on all exceptions, uncaught exceptions or\nno exceptions. Initial pause on exceptions state is `none`.",
+                    "description": "Defines pause on exceptions state. Can be set to stop on all exceptions, uncaught exceptions,\nor caught exceptions, no exceptions. Initial pause on exceptions state is `none`.",
                     "parameters": [
                         {
                             "name": "state",
@@ -879,6 +996,7 @@
                             "type": "string",
                             "enum": [
                                 "none",
+                                "caught",
                                 "uncaught",
                                 "all"
                             ]
@@ -899,7 +1017,7 @@
                 },
                 {
                     "name": "setScriptSource",
-                    "description": "Edits JavaScript source live.",
+                    "description": "Edits JavaScript source live.\n\nIn general, functions that are currently on the stack can not be edited with\na single exception: If the edited function is the top-most stack frame and\nthat is the only activation of that function on the stack. In this case\nthe live edit will be successful and a `Debugger.restartFrame` for the\ntop-most function is automatically triggered.",
                     "parameters": [
                         {
                             "name": "scriptId",
@@ -916,12 +1034,20 @@
                             "description": "If true the change will not actually be applied. Dry run may be used to get result\ndescription without actually modifying the code.",
                             "optional": true,
                             "type": "boolean"
+                        },
+                        {
+                            "name": "allowTopFrameEditing",
+                            "description": "If true, then `scriptSource` is allowed to change the function on top of the stack\nas long as the top-most stack frame is the only activation of that function.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "boolean"
                         }
                     ],
                     "returns": [
                         {
                             "name": "callFrames",
                             "description": "New stack trace in case editing has happened while VM was stopped.",
+                            "deprecated": true,
                             "optional": true,
                             "type": "array",
                             "items": {
@@ -931,25 +1057,40 @@
                         {
                             "name": "stackChanged",
                             "description": "Whether current call stack  was modified after applying the changes.",
+                            "deprecated": true,
                             "optional": true,
                             "type": "boolean"
                         },
                         {
                             "name": "asyncStackTrace",
                             "description": "Async stack trace, if any.",
+                            "deprecated": true,
                             "optional": true,
                             "$ref": "Runtime.StackTrace"
                         },
                         {
                             "name": "asyncStackTraceId",
                             "description": "Async stack trace, if any.",
-                            "experimental": true,
+                            "deprecated": true,
                             "optional": true,
                             "$ref": "Runtime.StackTraceId"
                         },
                         {
+                            "name": "status",
+                            "description": "Whether the operation was successful or not. Only `Ok` denotes a\nsuccessful live edit while the other enum variants denote why\nthe live edit failed.",
+                            "experimental": true,
+                            "type": "string",
+                            "enum": [
+                                "Ok",
+                                "CompileError",
+                                "BlockedByActiveGenerator",
+                                "BlockedByActiveFunction",
+                                "BlockedByTopLevelEsModuleChange"
+                            ]
+                        },
+                        {
                             "name": "exceptionDetails",
-                            "description": "Exception details if any.",
+                            "description": "Exception details if any. Only present when `status` is `CompileError`.",
                             "optional": true,
                             "$ref": "Runtime.ExceptionDetails"
                         }
@@ -1081,7 +1222,8 @@
                                 "OOM",
                                 "other",
                                 "promiseRejection",
-                                "XHR"
+                                "XHR",
+                                "step"
                             ]
                         },
                         {
@@ -1167,12 +1309,12 @@
                         },
                         {
                             "name": "hash",
-                            "description": "Content hash of the script.",
+                            "description": "Content hash of the script, SHA-256.",
                             "type": "string"
                         },
                         {
                             "name": "executionContextAuxData",
-                            "description": "Embedder-specific auxiliary data.",
+                            "description": "Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'|'isolated'|'worker', frameId: string}",
                             "optional": true,
                             "type": "object"
                         },
@@ -1271,12 +1413,12 @@
                         },
                         {
                             "name": "hash",
-                            "description": "Content hash of the script.",
+                            "description": "Content hash of the script, SHA-256.",
                             "type": "string"
                         },
                         {
                             "name": "executionContextAuxData",
-                            "description": "Embedder-specific auxiliary data.",
+                            "description": "Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'|'isolated'|'worker', frameId: string}",
                             "optional": true,
                             "type": "object"
                         },
@@ -1334,10 +1476,13 @@
                         },
                         {
                             "name": "debugSymbols",
-                            "description": "If the scriptLanguage is WebASsembly, the source of debug symbols for the module.",
+                            "description": "If the scriptLanguage is WebAssembly, the source of debug symbols for the module.",
                             "experimental": true,
                             "optional": true,
-                            "$ref": "Debugger.DebugSymbols"
+                            "type": "array",
+                            "items": {
+                                "$ref": "Debugger.DebugSymbols"
+                            }
                         },
                         {
                             "name": "embedderName",
@@ -1511,6 +1656,18 @@
                             "description": "Average sample interval in bytes. Poisson distribution is used for the intervals. The\ndefault value is 32768 bytes.",
                             "optional": true,
                             "type": "number"
+                        },
+                        {
+                            "name": "includeObjectsCollectedByMajorGC",
+                            "description": "By default, the sampling heap profiler reports only objects which are\nstill alive when the profile is returned via getSamplingProfile or\nstopSampling, which is useful for determining what functions contribute\nthe most to steady-state memory usage. This flag instructs the sampling\nheap profiler to also include information about objects discarded by\nmajor GC, which will show which functions cause large temporary memory\nusage or long GC pauses.",
+                            "optional": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "includeObjectsCollectedByMinorGC",
+                            "description": "By default, the sampling heap profiler reports only objects which are\nstill alive when the profile is returned via getSamplingProfile or\nstopSampling, which is useful for determining what functions contribute\nthe most to steady-state memory usage. This flag instructs the sampling\nheap profiler to also include information about objects discarded by\nminor GC, which is useful when tuning a latency-sensitive application\nfor minimal GC activity.",
+                            "optional": true,
+                            "type": "boolean"
                         }
                     ]
                 },
@@ -1545,12 +1702,21 @@
                         },
                         {
                             "name": "treatGlobalObjectsAsRoots",
+                            "description": "Deprecated in favor of `exposeInternals`.",
+                            "deprecated": true,
                             "optional": true,
                             "type": "boolean"
                         },
                         {
                             "name": "captureNumericValue",
                             "description": "If true, numerical values are included in the snapshot",
+                            "optional": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "exposeInternals",
+                            "description": "If true, exposes internals of the snapshot.",
+                            "experimental": true,
                             "optional": true,
                             "type": "boolean"
                         }
@@ -1567,13 +1733,21 @@
                         },
                         {
                             "name": "treatGlobalObjectsAsRoots",
-                            "description": "If true, a raw snapshot without artificial roots will be generated",
+                            "description": "If true, a raw snapshot without artificial roots will be generated.\nDeprecated in favor of `exposeInternals`.",
+                            "deprecated": true,
                             "optional": true,
                             "type": "boolean"
                         },
                         {
                             "name": "captureNumericValue",
                             "description": "If true, numerical values are included in the snapshot",
+                            "optional": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "exposeInternals",
+                            "description": "If true, exposes internals of the snapshot.",
+                            "experimental": true,
                             "optional": true,
                             "type": "boolean"
                         }
@@ -1826,66 +2000,6 @@
                             }
                         }
                     ]
-                },
-                {
-                    "id": "TypeObject",
-                    "description": "Describes a type collected during runtime.",
-                    "experimental": true,
-                    "type": "object",
-                    "properties": [
-                        {
-                            "name": "name",
-                            "description": "Name of a type collected with type profiling.",
-                            "type": "string"
-                        }
-                    ]
-                },
-                {
-                    "id": "TypeProfileEntry",
-                    "description": "Source offset and types for a parameter or return value.",
-                    "experimental": true,
-                    "type": "object",
-                    "properties": [
-                        {
-                            "name": "offset",
-                            "description": "Source offset of the parameter or end of function for return values.",
-                            "type": "integer"
-                        },
-                        {
-                            "name": "types",
-                            "description": "The types for this parameter or return value.",
-                            "type": "array",
-                            "items": {
-                                "$ref": "TypeObject"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "id": "ScriptTypeProfile",
-                    "description": "Type profile data collected during runtime for a JavaScript script.",
-                    "experimental": true,
-                    "type": "object",
-                    "properties": [
-                        {
-                            "name": "scriptId",
-                            "description": "JavaScript script id.",
-                            "$ref": "Runtime.ScriptId"
-                        },
-                        {
-                            "name": "url",
-                            "description": "JavaScript script name or url.",
-                            "type": "string"
-                        },
-                        {
-                            "name": "entries",
-                            "description": "Type profile entries for parameters and return values of the functions in the script.",
-                            "type": "array",
-                            "items": {
-                                "$ref": "TypeProfileEntry"
-                            }
-                        }
-                    ]
                 }
             ],
             "commands": [
@@ -1955,11 +2069,6 @@
                     ]
                 },
                 {
-                    "name": "startTypeProfile",
-                    "description": "Enable type profile.",
-                    "experimental": true
-                },
-                {
                     "name": "stop",
                     "returns": [
                         {
@@ -1972,11 +2081,6 @@
                 {
                     "name": "stopPreciseCoverage",
                     "description": "Disable precise code coverage. Disabling releases unnecessary execution count records and allows\nexecuting optimized code."
-                },
-                {
-                    "name": "stopTypeProfile",
-                    "description": "Disable type profile. Disabling releases type profile data collected so far.",
-                    "experimental": true
                 },
                 {
                     "name": "takePreciseCoverage",
@@ -1994,21 +2098,6 @@
                             "name": "timestamp",
                             "description": "Monotonically increasing time (in seconds) when the coverage update was taken in the backend.",
                             "type": "number"
-                        }
-                    ]
-                },
-                {
-                    "name": "takeTypeProfile",
-                    "description": "Collect type profile.",
-                    "experimental": true,
-                    "returns": [
-                        {
-                            "name": "result",
-                            "description": "Type profile for all scripts since startTypeProfile() was turned on.",
-                            "type": "array",
-                            "items": {
-                                "$ref": "ScriptTypeProfile"
-                            }
                         }
                     ]
                 }
@@ -2096,6 +2185,87 @@
                     "type": "string"
                 },
                 {
+                    "id": "SerializationOptions",
+                    "description": "Represents options for serialization. Overrides `generatePreview` and `returnByValue`.",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "serialization",
+                            "type": "string",
+                            "enum": [
+                                "deep",
+                                "json",
+                                "idOnly"
+                            ]
+                        },
+                        {
+                            "name": "maxDepth",
+                            "description": "Deep serialization depth. Default is full depth. Respected only in `deep` serialization mode.",
+                            "optional": true,
+                            "type": "integer"
+                        },
+                        {
+                            "name": "additionalParameters",
+                            "description": "Embedder-specific parameters. For example if connected to V8 in Chrome these control DOM\nserialization via `maxNodeDepth: integer` and `includeShadowTree: \"none\" | \"open\" | \"all\"`.\nValues can be only of type string or integer.",
+                            "optional": true,
+                            "type": "object"
+                        }
+                    ]
+                },
+                {
+                    "id": "DeepSerializedValue",
+                    "description": "Represents deep serialized value.",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "type",
+                            "type": "string",
+                            "enum": [
+                                "undefined",
+                                "null",
+                                "string",
+                                "number",
+                                "boolean",
+                                "bigint",
+                                "regexp",
+                                "date",
+                                "symbol",
+                                "array",
+                                "object",
+                                "function",
+                                "map",
+                                "set",
+                                "weakmap",
+                                "weakset",
+                                "error",
+                                "proxy",
+                                "promise",
+                                "typedarray",
+                                "arraybuffer",
+                                "node",
+                                "window",
+                                "generator"
+                            ]
+                        },
+                        {
+                            "name": "value",
+                            "optional": true,
+                            "type": "any"
+                        },
+                        {
+                            "name": "objectId",
+                            "optional": true,
+                            "type": "string"
+                        },
+                        {
+                            "name": "weakLocalObjectReference",
+                            "description": "Set if value reference met more then once during serialization. In such\ncase, value is provided only to one of the serialized values. Unique\nper value in the scope of one CDP call.",
+                            "optional": true,
+                            "type": "integer"
+                        }
+                    ]
+                },
+                {
                     "id": "RemoteObjectId",
                     "description": "Unique object identifier.",
                     "type": "string"
@@ -2175,6 +2345,13 @@
                             "description": "String representation of the object.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "deepSerializedValue",
+                            "description": "Deep serialized value.",
+                            "experimental": true,
+                            "optional": true,
+                            "$ref": "DeepSerializedValue"
                         },
                         {
                             "name": "objectId",
@@ -2549,7 +2726,7 @@
                         },
                         {
                             "name": "auxData",
-                            "description": "Embedder-specific auxiliary data.",
+                            "description": "Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'|'isolated'|'worker', frameId: string}",
                             "optional": true,
                             "type": "object"
                         }
@@ -2788,7 +2965,7 @@
                         },
                         {
                             "name": "returnByValue",
-                            "description": "Whether the result is expected to be a JSON object which should be sent by value.",
+                            "description": "Whether the result is expected to be a JSON object which should be sent by value.\nCan be overriden by `serializationOptions`.",
                             "optional": true,
                             "type": "boolean"
                         },
@@ -2829,6 +3006,20 @@
                             "experimental": true,
                             "optional": true,
                             "type": "boolean"
+                        },
+                        {
+                            "name": "uniqueContextId",
+                            "description": "An alternative way to specify the execution context to call function on.\nCompared to contextId that may be reused across processes, this is guaranteed to be\nsystem-unique, so it can be used to prevent accidental function call\nin context different than intended (e.g. as a result of navigation across process\nboundaries).\nThis is mutually exclusive with `executionContextId`.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "string"
+                        },
+                        {
+                            "name": "serializationOptions",
+                            "description": "Specifies the result serialization. If provided, overrides\n`generatePreview` and `returnByValue`.",
+                            "experimental": true,
+                            "optional": true,
+                            "$ref": "SerializationOptions"
                         }
                     ],
                     "returns": [
@@ -2997,6 +3188,13 @@
                             "experimental": true,
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "serializationOptions",
+                            "description": "Specifies the result serialization. If provided, overrides\n`generatePreview` and `returnByValue`.",
+                            "experimental": true,
+                            "optional": true,
+                            "$ref": "SerializationOptions"
                         }
                     ],
                     "returns": [
@@ -3291,7 +3489,6 @@
                 {
                     "name": "addBinding",
                     "description": "If executionContextId is empty, adds binding with the given name on the\nglobal objects of all inspected contexts, including those created later,\nbindings survive reloads.\nBinding function takes exactly one argument, this argument should be string,\nin case of any other input, function throws an exception.\nEach binding function call produces Runtime.bindingCalled notification.",
-                    "experimental": true,
                     "parameters": [
                         {
                             "name": "name",
@@ -3300,6 +3497,7 @@
                         {
                             "name": "executionContextId",
                             "description": "If specified, the binding would only be exposed to the specified\nexecution context. If omitted and `executionContextName` is not set,\nthe binding is exposed to all execution contexts of the target.\nThis parameter is mutually exclusive with `executionContextName`.\nDeprecated in favor of `executionContextName` due to an unclear use case\nand bugs in implementation (crbug.com/1169639). `executionContextId` will be\nremoved in the future.",
+                            "experimental": true,
                             "deprecated": true,
                             "optional": true,
                             "$ref": "ExecutionContextId"
@@ -3307,7 +3505,6 @@
                         {
                             "name": "executionContextName",
                             "description": "If specified, the binding is exposed to the executionContext with\nmatching name, even for contexts created after the binding is added.\nSee also `ExecutionContext.name` and `worldName` parameter to\n`Page.addScriptToEvaluateOnNewDocument`.\nThis parameter is mutually exclusive with `executionContextId`.",
-                            "experimental": true,
                             "optional": true,
                             "type": "string"
                         }
@@ -3316,11 +3513,29 @@
                 {
                     "name": "removeBinding",
                     "description": "This method does not remove binding function from global object but\nunsubscribes current runtime agent from Runtime.bindingCalled notifications.",
-                    "experimental": true,
                     "parameters": [
                         {
                             "name": "name",
                             "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "name": "getExceptionDetails",
+                    "description": "This method tries to lookup and populate exception details for a\nJavaScript Error object.\nNote that the stackTrace portion of the resulting exceptionDetails will\nonly be populated if the Runtime domain was enabled at the time when the\nError was thrown.",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "errorObjectId",
+                            "description": "The error object for which to resolve the exception details.",
+                            "$ref": "RemoteObjectId"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "name": "exceptionDetails",
+                            "optional": true,
+                            "$ref": "ExceptionDetails"
                         }
                     ]
                 }
@@ -3457,7 +3672,14 @@
                         {
                             "name": "executionContextId",
                             "description": "Id of the destroyed context",
+                            "deprecated": true,
                             "$ref": "ExecutionContextId"
+                        },
+                        {
+                            "name": "executionContextUniqueId",
+                            "description": "Unique Id of the destroyed context",
+                            "experimental": true,
+                            "type": "string"
                         }
                     ]
                 },
