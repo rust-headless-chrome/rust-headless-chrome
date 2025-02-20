@@ -155,7 +155,12 @@ impl WebSocketConnection {
     )> {
         let mut client = tungstenite::client::connect_with_config(
             ws_url.as_str(),
-            Some(WebSocketConfig::default().accept_unmasked_frames(true)),
+            Some(
+                WebSocketConfig::default()
+                    .accept_unmasked_frames(true)
+                    .max_message_size(None)
+                    .max_frame_size(None),
+            ),
             u8::MAX - 1,
         )?;
 
