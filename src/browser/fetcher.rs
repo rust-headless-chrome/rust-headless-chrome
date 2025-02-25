@@ -10,7 +10,7 @@ use std::fs::File;
 #[cfg(not(target_os = "macos"))]
 use std::io::BufWriter;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use directories::ProjectDirs;
 use log::*;
 use ureq;

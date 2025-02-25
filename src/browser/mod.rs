@@ -1,14 +1,14 @@
-use std::sync::mpsc;
-use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::mpsc;
+use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use log::{debug, error, info, trace};
 
 use process::Process;
-pub use process::{LaunchOptions, LaunchOptionsBuilder, DEFAULT_ARGS};
+pub use process::{DEFAULT_ARGS, LaunchOptions, LaunchOptionsBuilder};
 pub use tab::Tab;
 pub use transport::ConnectionClosed;
 use transport::Transport;
@@ -16,14 +16,14 @@ use url::Url;
 use which::which;
 
 use crate::protocol::cdp::{
-    self, types::Event, types::Method, Browser as B, Target, Target::GetTargets,
+    self, Browser as B, Target, Target::GetTargets, types::Event, types::Method,
 };
 
 use crate::browser::context::Context;
 use crate::util;
-use Target::{CreateTarget, SetDiscoverTargets};
 use B::GetVersion;
 pub use B::GetVersionReturnObject;
+use Target::{CreateTarget, SetDiscoverTargets};
 
 #[cfg(feature = "fetch")]
 pub use fetcher::FetcherOptions;
@@ -411,7 +411,8 @@ impl Browser {
                                     let locked_tabs = tabs.lock().unwrap();
                                     if let Some(updated_tab) = locked_tabs
                                         .iter()
-                                        .find(|tab| *tab.get_target_id() == target_info.target_id) {
+                                        .find(|tab| *tab.get_target_id() == target_info.target_id)
+                                    {
                                         updated_tab.update_target_info(target_info.clone());
                                     } else {
                                         let raw_event = format!("{ev:?}");

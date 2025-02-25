@@ -12,17 +12,17 @@ use thiserror::Error;
 
 use log::{debug, error, info, trace, warn};
 
-use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json::{json, Value as Json};
+use serde::de::DeserializeOwned;
+use serde_json::{Value as Json, json};
 
 use dialog::Dialog;
 use element::Element;
 use point::Point;
 
 use crate::protocol::cdp::{
+    Browser, DOM, Debugger, Emulation, Fetch, Input, Log, Network, Page, Profiler, Runtime, Target,
     types::{Event, Method},
-    Browser, Debugger, Emulation, Fetch, Input, Log, Network, Page, Profiler, Runtime, Target, DOM,
 };
 
 use Runtime::AddBinding;
@@ -42,13 +42,13 @@ use Target::{TargetID, TargetInfo};
 use Log::ViolationSetting;
 
 use Fetch::{
-    events::RequestPausedEvent, AuthChallengeResponse, ContinueRequest, ContinueWithAuth,
-    FailRequest, FulfillRequest,
+    AuthChallengeResponse, ContinueRequest, ContinueWithAuth, FailRequest, FulfillRequest,
+    events::RequestPausedEvent,
 };
 
 use Network::{
-    events::LoadingFailedEventParams, events::ResponseReceivedEventParams, Cookie, GetResponseBody,
-    GetResponseBodyReturnObject, SetExtraHTTPHeaders, SetUserAgentOverride,
+    Cookie, GetResponseBody, GetResponseBodyReturnObject, SetExtraHTTPHeaders,
+    SetUserAgentOverride, events::LoadingFailedEventParams, events::ResponseReceivedEventParams,
 };
 
 use crate::util;

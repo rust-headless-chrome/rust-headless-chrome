@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use headless_chrome::browser::tab::Tab;
 use headless_chrome::Browser;
+use headless_chrome::browser::tab::Tab;
 use server::Server;
 
 mod logging;

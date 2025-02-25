@@ -2,7 +2,7 @@ use std::{env, fs};
 
 use anyhow::Result;
 
-use headless_chrome::{types::PrintToPdfOptions, Browser};
+use headless_chrome::{Browser, types::PrintToPdfOptions};
 
 /// Run the example as follows:
 /// ./print_to_pdf {debug_ws_url} /rust-headless-chrome/tests/pdfassets/index.html

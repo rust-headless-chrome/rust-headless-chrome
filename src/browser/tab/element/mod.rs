@@ -15,7 +15,7 @@ mod box_model;
 use crate::util;
 pub use box_model::{BoxModel, ElementQuad};
 
-use crate::protocol::cdp::{Page, Runtime, CSS, DOM};
+use crate::protocol::cdp::{CSS, DOM, Page, Runtime};
 
 #[derive(Debug, Error)]
 #[error("Couldnt get element quad")]

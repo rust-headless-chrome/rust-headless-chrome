@@ -1,5 +1,5 @@
-use crate::protocol::cdp::types::JsUInt;
 use crate::protocol::cdp::Input::{DispatchKeyEvent, DispatchKeyEventTypeOption};
+use crate::protocol::cdp::types::JsUInt;
 use anyhow::Result;
 
 use thiserror::Error;

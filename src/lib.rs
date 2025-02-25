@@ -103,8 +103,8 @@ clippy::should_implement_trait, // for browser/mod.rs:106
 )]
 
 pub use browser::{
-    tab::{element::Element, Tab},
     Browser, LaunchOptions, LaunchOptionsBuilder,
+    tab::{Tab, element::Element},
 };
 
 #[cfg(feature = "fetch")]

@@ -2,9 +2,9 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 
+use headless_chrome::Browser;
 use headless_chrome::browser::tab::Tab;
 use headless_chrome::protocol::cdp::types::Event;
-use headless_chrome::Browser;
 
 mod server;
 

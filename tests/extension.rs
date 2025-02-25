@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 
 use anyhow::Result;
 
-use headless_chrome::{browser::default_executable, Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptions, browser::default_executable};
 
 #[test]
 fn test_extension() -> Result<()> {

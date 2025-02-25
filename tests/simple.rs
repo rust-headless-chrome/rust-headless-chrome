@@ -6,8 +6,9 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use base64::Engine;
-use headless_chrome::protocol::cdp::types::Event;
+use headless_chrome::LaunchOptionsBuilder;
 use headless_chrome::protocol::cdp::Browser::WindowState;
+use headless_chrome::protocol::cdp::DOM::RGBA;
 use headless_chrome::protocol::cdp::Fetch::events::RequestPausedEvent;
 use headless_chrome::protocol::cdp::Fetch::{
     FulfillRequest, HeaderEntry, RequestPattern, RequestStage,
@@ -15,9 +16,8 @@ use headless_chrome::protocol::cdp::Fetch::{
 use headless_chrome::protocol::cdp::Network::{Cookie, CookieParam};
 use headless_chrome::protocol::cdp::Page::{CaptureScreenshotFormatOption, DialogType};
 use headless_chrome::protocol::cdp::Runtime::{RemoteObjectSubtype, RemoteObjectType};
-use headless_chrome::protocol::cdp::DOM::RGBA;
+use headless_chrome::protocol::cdp::types::Event;
 use headless_chrome::types::{Bounds, RemoteError};
-use headless_chrome::LaunchOptionsBuilder;
 use log::*;
 use rand::prelude::*;
 
@@ -170,15 +170,17 @@ fn form_interaction() -> Result<()> {
         .type_into("mothership")?;
     tab.wait_for_element("button")?.click()?;
     let d = tab.wait_for_element("div#protocol")?.get_description()?;
-    assert!(d
-        .find(|n| n.node_value == "Missiles launched against mothership")
-        .is_some());
+    assert!(
+        d.find(|n| n.node_value == "Missiles launched against mothership")
+            .is_some()
+    );
     tab.wait_for_element("input#sneakattack")?.click()?;
     tab.wait_for_element("button")?.click()?;
     let d = tab.wait_for_element("div#protocol")?.get_description()?;
-    assert!(d
-        .find(|n| n.node_value == "Comrades, have a nice day!")
-        .is_some());
+    assert!(
+        d.find(|n| n.node_value == "Comrades, have a nice day!")
+            .is_some()
+    );
     Ok(())
 }
 
@@ -190,9 +192,10 @@ fn send_character() -> Result<()> {
     tab.send_character("mothership")?;
     tab.find_element("button")?.click()?;
     let d = tab.wait_for_element("div#protocol")?.get_description()?;
-    assert!(d
-        .find(|n| n.node_value == "Missiles launched against mothership")
-        .is_some());
+    assert!(
+        d.find(|n| n.node_value == "Missiles launched against mothership")
+            .is_some()
+    );
 
     Ok(())
 }
@@ -411,17 +414,19 @@ fn reload() -> Result<()> {
     };
     let server = server::Server::new(responder);
     let (browser, tab) = dumb_client(&server);
-    assert!(tab
-        .wait_for_element("div#counter")?
-        .get_description()?
-        .find(|n| n.node_value == "0")
-        .is_some());
-    assert!(tab
-        .reload(false, None)?
-        .wait_for_element("div#counter")?
-        .get_description()?
-        .find(|n| n.node_value == "1")
-        .is_some());
+    assert!(
+        tab.wait_for_element("div#counter")?
+            .get_description()?
+            .find(|n| n.node_value == "0")
+            .is_some()
+    );
+    assert!(
+        tab.reload(false, None)?
+            .wait_for_element("div#counter")?
+            .get_description()?
+            .find(|n| n.node_value == "1")
+            .is_some()
+    );
     // TODO test effect of scriptEvaluateOnLoad
     Ok(())
 }
@@ -484,13 +489,14 @@ document.write(navigator.userAgent + ";" + navigator.platform + ";" + navigator.
     // The test-tab has already navigated once, so reload to ensure that js
     // environment is using the correct values.
     tab.reload(true, None)?;
-    assert!(tab
-        .wait_for_element("body")?
-        .get_description()?
-        .find(|n| n
-            .node_value
-            .starts_with("UnitTestClient;UnitTest;de-DE-1996"))
-        .is_some());
+    assert!(
+        tab.wait_for_element("body")?
+            .get_description()?
+            .find(|n| n
+                .node_value
+                .starts_with("UnitTestClient;UnitTest;de-DE-1996"))
+            .is_some()
+    );
     Ok(())
 }
 
@@ -667,8 +673,8 @@ fn response_handler() -> Result<()> {
 
     let responses2 = responses.clone();
     let responses3 = responses.clone();
-    assert!(tab
-        .register_response_handling(
+    assert!(
+        tab.register_response_handling(
             "test1",
             Box::new(move |response, fetch_body| {
                 // NOTE: you can only fetch the body after it's been downloaded, which might be some time
@@ -679,10 +685,11 @@ fn response_handler() -> Result<()> {
                 responses2.lock().unwrap().push((response, body));
             })
         )?
-        .is_none());
+        .is_none()
+    );
 
-    assert!(tab
-        .register_response_handling(
+    assert!(
+        tab.register_response_handling(
             "test2",
             Box::new(move |response, fetch_body| {
                 // NOTE: you can only fetch the body after it's been downloaded, which might be some time
@@ -693,7 +700,8 @@ fn response_handler() -> Result<()> {
                 responses3.lock().unwrap().push((response, body));
             })
         )?
-        .is_none());
+        .is_none()
+    );
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -721,8 +729,8 @@ fn loading_failed_handler() -> Result<()> {
     let failed_event = Arc::new(Mutex::new(Vec::new()));
 
     let failed_event_clone = failed_event.clone();
-    assert!(tab
-        .register_loading_failed_handling(
+    assert!(
+        tab.register_loading_failed_handling(
             "test1",
             Box::new(move |response, loading_failed| {
                 failed_event_clone
@@ -731,7 +739,8 @@ fn loading_failed_handler() -> Result<()> {
                     .push((response, loading_failed))
             })
         )?
-        .is_none());
+        .is_none()
+    );
 
     tab.navigate_to(&format!("http://127.0.0.1:{}", server.port()))
         .unwrap();
@@ -890,11 +899,7 @@ fn close_tabs() -> Result<()> {
     };
     let wait_tabs = |num: usize| {
         let num_tabs = tabs.lock().unwrap().len();
-        if num_tabs == num {
-            Some(true)
-        } else {
-            None
-        }
+        if num_tabs == num { Some(true) } else { None }
     };
 
     check_tabs(1);

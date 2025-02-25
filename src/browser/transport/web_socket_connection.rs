@@ -1,7 +1,7 @@
 use std::net::TcpStream;
-use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::mpsc;
 
 use anyhow::Result;
 use log::{debug, info, trace, warn};
@@ -10,7 +10,7 @@ use tungstenite::protocol::WebSocketConfig;
 use tungstenite::stream::MaybeTlsStream;
 use url::Url;
 
-use crate::types::{parse_raw_message, Message};
+use crate::types::{Message, parse_raw_message};
 
 type TungsteniteWebsocketConnection = tungstenite::protocol::WebSocket<MaybeTlsStream<TcpStream>>;
 

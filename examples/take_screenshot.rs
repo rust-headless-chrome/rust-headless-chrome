@@ -2,7 +2,7 @@ use std::fs;
 
 use anyhow::Result;
 
-use headless_chrome::{protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptions, protocol::cdp::Page::CaptureScreenshotFormatOption};
 
 fn main() -> Result<()> {
     // Create a headless browser, navigate to wikipedia.org, wait for the page

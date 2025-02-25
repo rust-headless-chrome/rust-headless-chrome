@@ -1,7 +1,7 @@
 use std::{
     borrow::BorrowMut,
     ffi::OsStr,
-    io::{prelude::*, BufRead, BufReader},
+    io::{BufRead, BufReader, prelude::*},
     net,
     process::{Child, Command, Stdio},
     time::Duration,
@@ -12,7 +12,7 @@ use std::cell::RefCell;
 
 use derive_builder::Builder;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use log::*;
 use rand::rng;
 use rand::seq::SliceRandom;
@@ -20,7 +20,7 @@ use regex::Regex;
 use thiserror::Error;
 use url::Url;
 #[cfg(windows)]
-use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
+use winreg::{RegKey, enums::HKEY_LOCAL_MACHINE};
 
 #[cfg(not(feature = "fetch"))]
 use crate::browser::default_executable;

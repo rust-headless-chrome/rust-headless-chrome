@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use headless_chrome::browser::tab::Tab;
 use headless_chrome::Browser;
+use headless_chrome::browser::tab::Tab;
 
 mod server;
 

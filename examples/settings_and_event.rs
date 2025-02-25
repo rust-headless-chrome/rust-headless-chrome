@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use headless_chrome::{protocol::cdp::types::Event, Browser, LaunchOptions};
+use headless_chrome::{Browser, LaunchOptions, protocol::cdp::types::Event};
 
 fn start() -> Result<()> {
     let browser = Browser::new(LaunchOptions {

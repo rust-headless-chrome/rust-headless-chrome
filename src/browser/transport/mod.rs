@@ -1,10 +1,10 @@
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, TryRecvError};
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -17,9 +17,9 @@ use url::Url;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
 
-use crate::protocol::cdp::{types::Event, types::Method, Target};
+use crate::protocol::cdp::{Target, types::Event, types::Method};
 
-use crate::types::{parse_raw_message, parse_response, CallId, Message};
+use crate::types::{CallId, Message, parse_raw_message, parse_response};
 
 use crate::util;
 
@@ -272,7 +272,9 @@ impl Transport {
                                 .resolve_call(response_to_browser_method_call)
                                 .is_err()
                             {
-                                warn!("The browser registered a call but then closed its receiving channel");
+                                warn!(
+                                    "The browser registered a call but then closed its receiving channel"
+                                );
                                 break;
                             }
                         }
@@ -298,7 +300,9 @@ impl Transport {
 
                                         Message::Response(resp) => {
                                             if waiting_call_registry.resolve_call(resp).is_err() {
-                                                warn!("The browser registered a call but then closed its receiving channel");
+                                                warn!(
+                                                    "The browser registered a call but then closed its receiving channel"
+                                                );
                                                 break;
                                             }
                                         }
@@ -307,8 +311,7 @@ impl Transport {
                                     Err(e) => {
                                         trace!(
                                             "Message from target isn't recognised: {:?} - {}",
-                                            &raw_message,
-                                            e,
+                                            &raw_message, e,
                                         );
                                     }
                                 }

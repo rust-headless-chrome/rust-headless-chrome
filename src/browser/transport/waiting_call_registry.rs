@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::sync::mpsc;
 use std::sync::Mutex;
+use std::sync::mpsc;
 
 use anyhow::Result;
 use log::trace;
@@ -74,8 +74,7 @@ impl WaitingCallRegistry {
             if let Err(e) = sender.send(Err(ConnectionClosed {}.into())) {
                 trace!(
                     "Couldn't send ConnectionClosed to waiting method call: {:?} because {:?}",
-                    call_id,
-                    e
+                    call_id, e
                 );
             }
         }
