@@ -403,17 +403,23 @@ impl Browser {
                                 }
                             }
                             Event::TargetInfoChanged(ev) => {
-                                let target_info = ev.params.target_info;
+                                let target_info = &ev.params.target_info;
                                 trace!("Target info changed: {:?}", target_info);
                                 if target_info.Type == "page"
                                     && !target_info.url.starts_with("devtools://")
                                 {
                                     let locked_tabs = tabs.lock().unwrap();
-                                    let updated_tab = locked_tabs
+                                    if let Some(updated_tab) = locked_tabs
                                         .iter()
-                                        .find(|tab| *tab.get_target_id() == target_info.target_id)
-                                        .expect("got TargetInfoChanged event about a tab not in our list");
-                                    updated_tab.update_target_info(target_info);
+                                        .find(|tab| *tab.get_target_id() == target_info.target_id) {
+                                        updated_tab.update_target_info(target_info.clone());
+                                    } else {
+                                        let raw_event = format!("{ev:?}");
+                                        trace!(
+                                            "Target info changed unhandled event: {}",
+                                            raw_event.chars().take(50).collect::<String>()
+                                        );
+                                    }
                                 }
                             }
                             Event::AttachedToTarget(ev) => {
