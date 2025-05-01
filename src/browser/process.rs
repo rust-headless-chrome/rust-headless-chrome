@@ -178,6 +178,7 @@ pub struct LaunchOptions<'a> {
     pub proxy_server: Option<&'a str>,
 
     /// The callback executed when creating a Tab.
+    #[builder(default = "None")]
     pub on_tab_created: Option<fn(tab: Arc<Tab>)>,
 }
 
