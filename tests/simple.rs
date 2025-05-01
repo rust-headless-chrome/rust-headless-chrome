@@ -46,6 +46,7 @@ fn browser() -> Browser {
         LaunchOptionsBuilder::default()
             .headless(true)
             .on_tab_created(Some(on_tab_created))
+            .on_browser_closed(Some(on_browser_cloesed))
             .build()
             .unwrap(),
     )
@@ -54,6 +55,10 @@ fn browser() -> Browser {
 
 fn on_tab_created(tab: Arc<Tab>) {
     println!("new tab: {:?}", tab.get_target_id());
+}
+
+fn on_browser_cloesed() {
+    println!("browser closed");
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {

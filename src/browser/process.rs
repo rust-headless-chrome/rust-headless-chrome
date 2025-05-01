@@ -180,6 +180,9 @@ pub struct LaunchOptions<'a> {
     /// The callback executed when creating a Tab.
     #[builder(default = "None")]
     pub on_tab_created: Option<fn(tab: Arc<Tab>)>,
+
+    #[builder(default = "None")]
+    pub on_browser_closed: Option<fn()>,
 }
 
 impl Default for LaunchOptions<'_> {
@@ -205,6 +208,7 @@ impl Default for LaunchOptions<'_> {
             disable_default_args: false,
             proxy_server: None,
             on_tab_created: None,
+            on_browser_closed: None,
         }
     }
 }

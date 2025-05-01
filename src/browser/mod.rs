@@ -86,6 +86,7 @@ pub struct BrowserInner {
     tabs: Arc<Mutex<Vec<Arc<Tab>>>>,
     loop_shutdown_tx: mpsc::SyncSender<()>,
     close_on_drop: bool,
+    on_browser_closed: Option<fn()>,
 }
 
 impl Browser {
@@ -96,6 +97,7 @@ impl Browser {
     pub fn new(launch_options: LaunchOptions) -> Result<Self> {
         let idle_browser_timeout = launch_options.idle_browser_timeout;
         let on_tab_created = launch_options.on_tab_created;
+        let on_browser_closed = launch_options.on_browser_closed;
         let process = Process::new(launch_options)?;
         let process_id = process.get_id();
 
@@ -105,7 +107,14 @@ impl Browser {
             idle_browser_timeout,
         )?);
 
-        Self::create_browser(Some(process), transport, idle_browser_timeout, on_tab_created,  true)
+        Self::create_browser(
+            Some(process),
+            transport,
+            idle_browser_timeout,
+            on_tab_created,
+            on_browser_closed,
+            true,
+        )
     }
 
     /// Calls [`Browser::new`] with options to launch a headless browser using whatever Chrome / Chromium
@@ -134,7 +143,7 @@ impl Browser {
         let transport = Arc::new(Transport::new(url, None, idle_browser_timeout)?);
         trace!("created transport");
 
-        Self::create_browser(None, transport, idle_browser_timeout, None, false)
+        Self::create_browser(None, transport, idle_browser_timeout, None, None, false)
     }
 
     fn create_browser(
@@ -142,6 +151,7 @@ impl Browser {
         transport: Arc<Transport>,
         idle_browser_timeout: Duration,
         on_tab_created: Option<fn(Arc<Tab>)>,
+        on_browser_closed: Option<fn()>,
         close_on_drop: bool,
     ) -> Result<Self> {
         let tabs = Arc::new(Mutex::new(Vec::with_capacity(1)));
@@ -154,6 +164,7 @@ impl Browser {
                 tabs,
                 transport,
                 loop_shutdown_tx: shutdown_tx,
+                on_browser_closed,
                 close_on_drop,
             }),
         };
@@ -389,7 +400,6 @@ impl Browser {
                     Ok(event) => {
                         match event {
                             Event::TargetCreated(ev) => {
-                                
                                 let target_info = ev.params.target_info;
                                 trace!("Creating target: {:?}", target_info);
                                 // when Type == other and url == "" the next trigger would be AttachedToTarget
@@ -491,6 +501,9 @@ impl Drop for BrowserInner {
             self.transport
                 .call_method_on_browser(cdp::Browser::Close(None))
                 .ok();
+            if let Some(on_closed) = self.on_browser_closed {
+                on_closed();
+            }
         }
         self.loop_shutdown_tx.send(()).ok();
         self.transport.shutdown();
