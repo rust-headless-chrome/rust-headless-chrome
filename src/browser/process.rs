@@ -4,6 +4,7 @@ use std::{
     io::{BufRead, BufReader, prelude::*},
     net,
     process::{Child, Command, Stdio},
+    sync::Arc,
     time::Duration,
 };
 
@@ -26,6 +27,7 @@ use winreg::{RegKey, enums::HKEY_LOCAL_MACHINE};
 use crate::browser::default_executable;
 use crate::util;
 
+use super::Tab;
 #[cfg(feature = "fetch")]
 use super::fetcher::{Fetcher, FetcherOptions};
 use std::collections::HashMap;
@@ -174,6 +176,9 @@ pub struct LaunchOptions<'a> {
     /// Setup the proxy server for headless chrome instance
     #[builder(default = "None")]
     pub proxy_server: Option<&'a str>,
+
+    /// The callback executed when creating a Tab.
+    pub on_tab_created: Option<fn(tab: Arc<Tab>)>,
 }
 
 impl Default for LaunchOptions<'_> {
@@ -198,6 +203,7 @@ impl Default for LaunchOptions<'_> {
             ignore_default_args: Vec::new(),
             disable_default_args: false,
             proxy_server: None,
+            on_tab_created: None,
         }
     }
 }

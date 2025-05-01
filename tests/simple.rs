@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 
+use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -45,10 +46,15 @@ fn browser() -> Browser {
     Browser::new(
         LaunchOptionsBuilder::default()
             .headless(true)
+            .on_tab_created(Some(on_tab_created))
             .build()
             .unwrap(),
     )
     .unwrap()
+}
+
+fn on_tab_created(tab: Arc<Tab>) {
+    println!("new tab: {:?}", tab.get_target_id());
 }
 
 fn dumb_client(server: &server::Server) -> (Browser, Arc<Tab>) {

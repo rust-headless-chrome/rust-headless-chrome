@@ -95,6 +95,7 @@ impl Browser {
     /// The browser process will be killed when this struct is dropped.
     pub fn new(launch_options: LaunchOptions) -> Result<Self> {
         let idle_browser_timeout = launch_options.idle_browser_timeout;
+        let on_tab_created = launch_options.on_tab_created;
         let process = Process::new(launch_options)?;
         let process_id = process.get_id();
 
@@ -104,7 +105,7 @@ impl Browser {
             idle_browser_timeout,
         )?);
 
-        Self::create_browser(Some(process), transport, idle_browser_timeout, true)
+        Self::create_browser(Some(process), transport, idle_browser_timeout, on_tab_created,  true)
     }
 
     /// Calls [`Browser::new`] with options to launch a headless browser using whatever Chrome / Chromium
@@ -133,13 +134,14 @@ impl Browser {
         let transport = Arc::new(Transport::new(url, None, idle_browser_timeout)?);
         trace!("created transport");
 
-        Self::create_browser(None, transport, idle_browser_timeout, false)
+        Self::create_browser(None, transport, idle_browser_timeout, None, false)
     }
 
     fn create_browser(
         process: Option<Process>,
         transport: Arc<Transport>,
         idle_browser_timeout: Duration,
+        on_tab_created: Option<fn(Arc<Tab>)>,
         close_on_drop: bool,
     ) -> Result<Self> {
         let tabs = Arc::new(Mutex::new(Vec::with_capacity(1)));
@@ -162,6 +164,7 @@ impl Browser {
             incoming_events_rx,
             browser.get_process_id(),
             shutdown_rx,
+            on_tab_created,
             idle_browser_timeout,
         );
         trace!("created browser event listener");
@@ -348,6 +351,7 @@ impl Browser {
         events_rx: mpsc::Receiver<Event>,
         process_id: Option<u32>,
         shutdown_rx: mpsc::Receiver<()>,
+        on_tab_created: Option<fn(Arc<Tab>)>,
         idle_browser_timeout: Duration,
     ) {
         let tabs = Arc::clone(&self.inner.tabs);
@@ -385,6 +389,7 @@ impl Browser {
                     Ok(event) => {
                         match event {
                             Event::TargetCreated(ev) => {
+                                
                                 let target_info = ev.params.target_info;
                                 trace!("Creating target: {:?}", target_info);
                                 // when Type == other and url == "" the next trigger would be AttachedToTarget
@@ -393,7 +398,11 @@ impl Browser {
                                 if target_info.Type == "page" {
                                     match Tab::new(target_info, Arc::clone(&transport)) {
                                         Ok(new_tab) => {
-                                            tabs.lock().unwrap().push(Arc::new(new_tab));
+                                            let new_tab_raw = Arc::new(new_tab);
+                                            if let Some(on_tab_created) = on_tab_created {
+                                                on_tab_created(new_tab_raw.clone());
+                                            }
+                                            tabs.lock().unwrap().push(new_tab_raw.clone());
                                         }
                                         Err(_tab_creation_err) => {
                                             info!("Failed to create a handle to new tab");
