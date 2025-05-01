@@ -451,7 +451,7 @@ impl Process {
 
         let process = TemporaryProcess(
             command.args(&args).stderr(Stdio::piped()).spawn()?,
-            temp_user_data_dir,
+            temp_user_data_dir
         );
         Ok(process)
     }

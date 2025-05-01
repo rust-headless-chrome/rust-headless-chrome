@@ -367,7 +367,7 @@ impl Browser {
     ) {
         let tabs = Arc::clone(&self.inner.tabs);
         let transport = Arc::clone(&self.inner.transport);
-
+        let on_browser_closed = self.inner.on_browser_closed;
         std::thread::spawn(move || {
             trace!("Starting browser's event handling loop");
             loop {
@@ -470,6 +470,10 @@ impl Browser {
                     }
                 }
             }
+
+            if let Some(on_browser_close) = on_browser_closed {
+                on_browser_close();
+            }
             info!("Finished browser's event handling loop");
         });
     }
@@ -501,9 +505,6 @@ impl Drop for BrowserInner {
             self.transport
                 .call_method_on_browser(cdp::Browser::Close(None))
                 .ok();
-            if let Some(on_closed) = self.on_browser_closed {
-                on_closed();
-            }
         }
         self.loop_shutdown_tx.send(()).ok();
         self.transport.shutdown();
