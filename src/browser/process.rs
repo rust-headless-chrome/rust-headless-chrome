@@ -208,7 +208,7 @@ impl<'a> LaunchOptions<'a> {
     }
 }
 
-impl<'a> Hash for LaunchOptions<'a> {
+impl Hash for LaunchOptions<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.headless.hash(state);
         self.sandbox.hash(state);
@@ -233,13 +233,13 @@ impl<'a> Hash for LaunchOptions<'a> {
         // Convert HashMap to sorted Vec<&(String, String)> for deterministic hashing
         if let Some(envs) = &self.process_envs {
             let mut sorted_envs: Vec<_> = envs.iter().collect();
-            sorted_envs.sort_by(|a, b| a.0.cmp(&b.0)); // Sort by key
+            sorted_envs.sort_by(|a, b| a.0.cmp(b.0)); // Sort by key
             for (k, v) in sorted_envs {
                 k.hash(state);
                 v.hash(state);
             }
         } else {
-            ().hash(state); // To differentiate None from Some(...)
+            0_u8.hash(state); // To differentiate None from Some(...)
         }
 
         self.proxy_server.hash(state);

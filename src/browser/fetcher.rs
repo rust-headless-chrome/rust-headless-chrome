@@ -32,13 +32,13 @@ const PLATFORM: &str = "mac";
 #[cfg(windows)]
 const PLATFORM: &str = "win";
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Revision {
     Specific(String),
     Latest,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FetcherOptions {
     /// The desired chrome revision.
     ///
