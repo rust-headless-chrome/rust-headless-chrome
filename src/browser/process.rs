@@ -1,11 +1,11 @@
-use std::{
-    borrow::BorrowMut,
-    ffi::OsStr,
-    io::{BufRead, BufReader, prelude::*},
-    net,
-    process::{Child, Command, Stdio},
-    time::Duration,
-};
+use std::borrow::BorrowMut;
+use std::ffi::OsStr;
+use std::hash::{Hash, Hasher};
+use std::io::prelude::*;
+use std::io::{BufRead, BufReader};
+use std::net;
+use std::process::{Child, Command, Stdio};
+use std::time::Duration;
 
 #[cfg(test)]
 use std::cell::RefCell;
@@ -81,7 +81,7 @@ impl Drop for TemporaryProcess {
 
 /// Represents the way in which Chrome is run. By default it will search for a Chrome
 /// binary on the system, use an available port for debugging, and start in headless mode.
-#[derive(Clone, Debug, Builder)]
+#[derive(Clone, Debug, Builder, PartialEq, Eq)]
 pub struct LaunchOptions<'a> {
     /// Determines whether to run headless version of the browser. Defaults to true.
     #[builder(default = "true")]
@@ -205,6 +205,44 @@ impl Default for LaunchOptions<'_> {
 impl<'a> LaunchOptions<'a> {
     pub fn default_builder() -> LaunchOptionsBuilder<'a> {
         LaunchOptionsBuilder::default()
+    }
+}
+
+impl<'a> Hash for LaunchOptions<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.headless.hash(state);
+        self.sandbox.hash(state);
+        self.devtools.hash(state);
+        self.enable_gpu.hash(state);
+        self.enable_logging.hash(state);
+        self.window_size.hash(state);
+        self.port.hash(state);
+        self.ignore_certificate_errors.hash(state);
+        self.path.hash(state);
+        self.user_data_dir.hash(state);
+        self.extensions.hash(state);
+        self.args.hash(state);
+        self.ignore_default_args.hash(state);
+        self.disable_default_args.hash(state);
+
+        #[cfg(feature = "fetch")]
+        self.fetcher_options.hash(state);
+
+        self.idle_browser_timeout.hash(state);
+
+        // Convert HashMap to sorted Vec<&(String, String)> for deterministic hashing
+        if let Some(envs) = &self.process_envs {
+            let mut sorted_envs: Vec<_> = envs.iter().collect();
+            sorted_envs.sort_by(|a, b| a.0.cmp(&b.0)); // Sort by key
+            for (k, v) in sorted_envs {
+                k.hash(state);
+                v.hash(state);
+            }
+        } else {
+            ().hash(state); // To differentiate None from Some(...)
+        }
+
+        self.proxy_server.hash(state);
     }
 }
 
