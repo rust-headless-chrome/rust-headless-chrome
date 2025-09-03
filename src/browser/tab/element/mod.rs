@@ -220,7 +220,7 @@ impl<'a> Element<'a> {
         selector: &str,
         timeout: std::time::Duration,
     ) -> Result<Element<'_>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element(selector),
             Error::downcast::<NoElementFound>,
@@ -232,7 +232,7 @@ impl<'a> Element<'a> {
         selector: &str,
         timeout: std::time::Duration,
     ) -> Result<Element<'_>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element_by_xpath(selector),
             Error::downcast::<NoElementFound>,
@@ -240,7 +240,7 @@ impl<'a> Element<'a> {
     }
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
             || self.find_elements(selector),
             Error::downcast::<NoElementFound>,
@@ -248,7 +248,7 @@ impl<'a> Element<'a> {
     }
 
     pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Result<Vec<Element<'_>>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(Duration::from_secs(3)).strict_until(
             || self.find_elements_by_xpath(selector),
             Error::downcast::<NoElementFound>,

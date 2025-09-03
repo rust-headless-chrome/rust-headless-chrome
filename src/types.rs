@@ -262,7 +262,9 @@ impl<'a, F: FnMut(&Node) -> bool> SearchVisitor<'a, F> {
             self.item = Some(n);
         } else if self.item.is_none() {
             if let Some(c) = &n.children {
-                c.iter().for_each(|n| self.visit(n));
+                for n in c {
+                    self.visit(n);
+                }
             }
         }
     }
@@ -345,7 +347,7 @@ mod tests {
         let event: Event = serde_json::from_value(received_target_msg_event).unwrap();
         match event {
             Event::ReceivedMessageFromTarget(ev) => {
-                trace!("{:?}", ev);
+                trace!("{ev:?}");
             }
             _ => panic!("bad news"),
         }

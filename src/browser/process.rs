@@ -73,9 +73,9 @@ impl Drop for TemporaryProcess {
         self.0.kill().and_then(|()| self.0.wait()).ok();
         if let Some(dir) = self.1.take() {
             if let Err(e) = dir.close() {
-                warn!("Failed to close temporary directory: {}", e);
+                warn!("Failed to close temporary directory: {e}");
             }
-        };
+        }
     }
 }
 
@@ -265,11 +265,11 @@ impl Process {
             match Self::ws_url_from_output(process.0.borrow_mut()) {
                 Ok(debug_ws_url) => {
                     url = debug_ws_url;
-                    debug!("Found debugging WS URL: {:?}", url);
+                    debug!("Found debugging WS URL: {url:?}");
                     break;
                 }
                 Err(error) => {
-                    trace!("Problem getting WebSocket URL from Chrome: {}", error);
+                    trace!("Problem getting WebSocket URL from Chrome: {error}");
 
                     if let Some(&ChromeLaunchError::RunningAsRootWithoutNoSandbox) =
                         error.downcast_ref::<ChromeLaunchError>()
@@ -285,10 +285,7 @@ impl Process {
                 }
             }
 
-            trace!(
-                "Trying again to find available debugging port. Attempts: {}",
-                attempts
-            );
+            trace!("Trying again to find available debugging port. Attempts: {attempts}",);
             attempts += 1;
         }
 
@@ -338,7 +335,7 @@ impl Process {
             *dir.borrow_mut() = user_data_dir.to_str().map(std::borrow::ToOwned::to_owned);
         });
 
-        trace!("Chrome will have profile: {}", data_dir_option);
+        trace!("Chrome will have profile: {data_dir_option}");
 
         let mut args = vec![
             port_option.as_str(),
@@ -421,8 +418,8 @@ impl Process {
             .as_ref()
             .ok_or_else(|| anyhow!("Chrome path required"))?;
 
-        info!("Launching Chrome binary at {:?}", &path);
-        trace!("with CLI arguments: {:?}", args);
+        info!("Launching Chrome binary at {}", path.display());
+        trace!("with CLI arguments: {args:?}");
 
         let mut command = Command::new(path);
 
@@ -462,7 +459,7 @@ impl Process {
 
         for line in reader.lines() {
             let chrome_output = line?;
-            trace!("Chrome output: {}", chrome_output);
+            trace!("Chrome output: {chrome_output}");
 
             if chrome_output.contains(root_sandbox) {
                 return Err(ChromeLaunchError::RunningAsRootWithoutNoSandbox {}.into());

@@ -222,9 +222,9 @@ fn element_get_content() -> Result<()> {
 }
 
 fn decode_png(i: &[u8]) -> Result<Vec<u8>> {
-    let decoder = png::Decoder::new(i);
+    let decoder = png::Decoder::new(std::io::Cursor::new(i));
     let mut reader = decoder.read_info()?;
-    let mut buf = vec![0; reader.output_buffer_size()];
+    let mut buf = vec![0; reader.output_buffer_size().unwrap()];
     reader.next_frame(&mut buf)?;
     Ok(buf)
 }

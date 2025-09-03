@@ -88,7 +88,7 @@ impl WebSocketConnection {
                         ) {
                             std::thread::park_timeout(READ_TIMEOUT_DURATION);
                         } else {
-                            debug!("WS IO Error for Chrome #{:?}: {}", process_id, err);
+                            debug!("WS IO Error for Chrome #{process_id:?}: {err}");
                             break;
                         }
                     }
@@ -109,16 +109,14 @@ impl WebSocketConnection {
                             }
                         } else {
                             trace!(
-                                "Incoming message isn't recognised as event or method response: {}",
-                                message_string
+                                "Incoming message isn't recognised as event or method response: {message_string}",
                             );
                         }
                     } else if let tungstenite::protocol::Message::Close(close_frame) = message {
                         match close_frame {
                             Some(tungstenite::protocol::CloseFrame { code, reason }) => {
                                 debug!(
-                                    "Received close frame from Chrome #{:?}: {:?} {:?}",
-                                    process_id, code, reason
+                                    "Received close frame from Chrome #{process_id:?}: {code:?} {reason:?}",
                                 );
                                 match code {
                                     tungstenite::protocol::frame::coding::CloseCode::Normal => {
@@ -130,7 +128,7 @@ impl WebSocketConnection {
                                 }
                             }
                             None => {
-                                debug!("Received close frame from Chrome #{:?}: None", process_id);
+                                debug!("Received close frame from Chrome #{process_id:?}: None");
                             }
                         }
                         break;
@@ -178,7 +176,7 @@ impl WebSocketConnection {
         };
         stream.set_read_timeout(Some(READ_TIMEOUT_DURATION))?;
 
-        debug!("Successfully connected to WebSocket: {}", ws_url);
+        debug!("Successfully connected to WebSocket: {ws_url}");
 
         Ok(client)
     }
