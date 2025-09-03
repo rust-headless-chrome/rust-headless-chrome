@@ -278,7 +278,7 @@ impl Browser {
     }
 
     /// Creates the equivalent of a new incognito window, AKA a browser context
-    pub fn new_context(&self) -> Result<context::Context> {
+    pub fn new_context(&self) -> Result<context::Context<'_>> {
         debug!("Creating new browser context");
         let context_id = self
             .call_method(Target::CreateBrowserContext {
@@ -288,7 +288,7 @@ impl Browser {
                 origins_with_universal_network_access: None,
             })?
             .browser_context_id;
-        debug!("Created new browser context: {:?}", context_id);
+        debug!("Created new browser context: {context_id:?}");
         Ok(Context::new(self, context_id))
     }
 
@@ -369,14 +369,12 @@ impl Browser {
                         match recv_timeout_error {
                             RecvTimeoutError::Timeout => {
                                 error!(
-                                    "Got a timeout while listening for browser events (Chrome #{:?})",
-                                    process_id
+                                    "Got a timeout while listening for browser events (Chrome #{process_id:?})"
                                 );
                             }
                             RecvTimeoutError::Disconnected => {
                                 debug!(
-                                    "Browser event sender disconnected while loop was waiting (Chrome #{:?})",
-                                    process_id
+                                    "Browser event sender disconnected while loop was waiting (Chrome #{process_id:?})"
                                 );
                             }
                         }
@@ -386,7 +384,7 @@ impl Browser {
                         match event {
                             Event::TargetCreated(ev) => {
                                 let target_info = ev.params.target_info;
-                                trace!("Creating target: {:?}", target_info);
+                                trace!("Creating target: {target_info:?}");
                                 // when Type == other and url == "" the next trigger would be AttachedToTarget
                                 // meaning the devtools has ben opened automatically..
                                 // for now ignoring devtools tabs to be in tabs..
@@ -404,7 +402,7 @@ impl Browser {
                             }
                             Event::TargetInfoChanged(ev) => {
                                 let target_info = &ev.params.target_info;
-                                trace!("Target info changed: {:?}", target_info);
+                                trace!("Target info changed: {target_info:?}");
                                 if target_info.Type == "page"
                                     && !target_info.url.starts_with("devtools://")
                                 {
@@ -425,7 +423,7 @@ impl Browser {
                             }
                             Event::AttachedToTarget(ev) => {
                                 let target_info = ev.params.target_info;
-                                trace!("Attached To Target : {:?}", target_info);
+                                trace!("Attached To Target : {target_info:?}");
                                 // can be useful when knowing if there is a devtools tab open and
                                 // to which tab it is connected (parent)
                             }

@@ -149,7 +149,7 @@ impl Transport {
                     message_text.chars().take(300).collect::<String>()
                 );
                 if let Err(e) = self.call_method_on_browser(target_method) {
-                    warn!("Failed to call method on browser: {:?}", e);
+                    warn!("Failed to call method on browser: {e:?}");
                     self.waiting_call_registry.unregister_call(call.id);
                     trace!("Unregistered callback: {:?}", call.id);
                     return Err(e);
@@ -249,14 +249,12 @@ impl Transport {
                         match recv_timeout_error {
                             RecvTimeoutError::Timeout => {
                                 error!(
-                                    "Transport loop got a timeout while listening for messages (Chrome #{:?})",
-                                    process_id
+                                    "Transport loop got a timeout while listening for messages (Chrome #{process_id:?})",
                                 );
                             }
                             RecvTimeoutError::Disconnected => {
                                 error!(
-                                    "Transport loop got disconnected from WS's sender (Chrome #{:?})",
-                                    process_id
+                                    "Transport loop got disconnected from WS's sender (Chrome #{process_id:?})",
                                 );
                             }
                         }

@@ -51,7 +51,7 @@ impl WaitingCallRegistry {
         let (tx, rx) = mpsc::channel::<Result<Response>>();
         let mut calls = self.calls.lock().unwrap();
         calls.insert(call_id, tx);
-        trace!("registered {:?}", call_id);
+        trace!("registered {call_id:?}");
         rx
     }
 
@@ -67,14 +67,10 @@ impl WaitingCallRegistry {
         trace!("Cancelling outstanding method calls");
         let calls = self.calls.lock().unwrap();
         for (call_id, sender) in &*calls {
-            trace!(
-                "Telling waiting method call {:?} that the connection closed",
-                call_id
-            );
+            trace!("Telling waiting method call {call_id:?} that the connection closed",);
             if let Err(e) = sender.send(Err(ConnectionClosed {}.into())) {
                 trace!(
-                    "Couldn't send ConnectionClosed to waiting method call: {:?} because {:?}",
-                    call_id, e
+                    "Couldn't send ConnectionClosed to waiting method call: {call_id:?} because {e:?}",
                 );
             }
         }

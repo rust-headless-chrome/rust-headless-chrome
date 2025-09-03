@@ -175,7 +175,7 @@ pub struct Tab {
 pub struct NoElementFound {}
 
 #[derive(Debug, Error)]
-#[error("Navigate failed: {}", error_text)]
+#[error("Navigate failed: {error_text}")]
 pub struct NavigationFailed {
     error_text: String,
 }
@@ -219,7 +219,7 @@ impl Tab {
             .session_id
             .into();
 
-        debug!("New tab attached with session ID: {:?}", session_id);
+        debug!("New tab attached with session ID: {session_id:?}");
 
         let target_info_mutex = Arc::new(Mutex::new(target_info));
 
@@ -266,7 +266,7 @@ impl Tab {
     pub fn get_target_info(&self) -> Result<TargetInfo> {
         Ok(self
             .call_method(Target::GetTargetInfo {
-                target_id: Some(self.get_target_id().to_string()),
+                target_id: Some(self.get_target_id().clone()),
             })?
             .target_info)
     }
@@ -322,7 +322,7 @@ impl Tab {
                 match event {
                     Event::PageLifecycleEvent(lifecycle_event) => {
                         let event_name = lifecycle_event.params.name.as_ref();
-                        trace!("Lifecycle event: {}", event_name);
+                        trace!("Lifecycle event: {event_name}");
                         match event_name {
                             "networkAlmostIdle" => {
                                 navigating.store(false, Ordering::SeqCst);
@@ -507,7 +507,7 @@ impl Tab {
     where
         C: Method + serde::Serialize + std::fmt::Debug,
     {
-        trace!("Calling method: {:?}", method);
+        trace!("Calling method: {method:?}");
         let result = self
             .transport
             .call_method_on_target(self.session_id.clone(), method);
@@ -555,7 +555,7 @@ impl Tab {
         let navigating = Arc::clone(&self.navigating);
         navigating.store(true, Ordering::SeqCst);
 
-        info!("Navigating a tab to {}", url);
+        info!("Navigating a tab to {url}");
 
         Ok(self)
     }
@@ -627,7 +627,7 @@ impl Tab {
         selector: &str,
         timeout: std::time::Duration,
     ) -> Result<Element<'_>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element(selector),
             Error::downcast::<NoElementFound>,
@@ -639,7 +639,7 @@ impl Tab {
         selector: &str,
         timeout: std::time::Duration,
     ) -> Result<Element<'_>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element_by_xpath(selector),
             Error::downcast::<NoElementFound>,
@@ -647,7 +647,7 @@ impl Tab {
     }
 
     pub fn wait_for_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements(selector),
             Error::downcast::<NoElementFound>,
@@ -655,7 +655,7 @@ impl Tab {
     }
 
     pub fn wait_for_elements_by_xpath(&self, selector: &str) -> Result<Vec<Element<'_>>> {
-        debug!("Waiting for element with selector: {:?}", selector);
+        debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(*self.default_timeout.read().unwrap()).strict_until(
             || self.find_elements_by_xpath(selector),
             Error::downcast::<NoElementFound>,
@@ -695,7 +695,7 @@ impl Tab {
     /// ```
     pub fn find_element(&self, selector: &str) -> Result<Element<'_>> {
         let root_node_id = self.get_document()?.node_id;
-        trace!("Looking up element via selector: {}", selector);
+        trace!("Looking up element via selector: {selector}");
 
         self.run_query_selector_on_node(root_node_id, selector)
     }
@@ -786,7 +786,7 @@ impl Tab {
     }
 
     pub fn find_elements(&self, selector: &str) -> Result<Vec<Element<'_>>> {
-        trace!("Looking up elements via selector: {}", selector);
+        trace!("Looking up elements via selector: {selector}");
 
         let root_node_id = self.get_document()?.node_id;
         let node_ids = self
@@ -994,7 +994,7 @@ impl Tab {
     }
 
     pub fn click_point(&self, point: Point) -> Result<&Self> {
-        trace!("Clicking point: {:?}", point);
+        trace!("Clicking point: {point:?}");
         if point.x == 0.0 && point.y == 0.0 {
             warn!("Midpoint of element shouldn't be 0,0. Something is probably wrong.");
         }
@@ -1519,7 +1519,7 @@ impl Tab {
     /// Closes the target Page
     pub fn close_target(&self) -> Result<bool> {
         self.call_method(Target::CloseTarget {
-            target_id: self.get_target_id().to_string(),
+            target_id: self.get_target_id().clone(),
         })
         .map(|r| r.success)
     }
@@ -1555,7 +1555,7 @@ impl Tab {
     pub fn get_bounds(&self) -> Result<CurrentBounds, Error> {
         self.transport
             .call_method_on_browser(Browser::GetWindowForTarget {
-                target_id: Some(self.get_target_id().to_string()),
+                target_id: Some(self.get_target_id().clone()),
             })
             .map(|r| r.bounds.into())
     }
@@ -1568,7 +1568,7 @@ impl Tab {
         let window_id = self
             .transport
             .call_method_on_browser(Browser::GetWindowForTarget {
-                target_id: Some(self.get_target_id().to_string()),
+                target_id: Some(self.get_target_id().clone()),
             })?
             .window_id;
         // If we set Normal window state, we *have* to make two API calls
