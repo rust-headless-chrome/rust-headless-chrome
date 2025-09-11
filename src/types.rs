@@ -104,12 +104,14 @@ pub struct PrintToPdfOptions {
     pub header_template: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub footer_template: Option<String>,
+    #[serde(rename = "preferCSSPageSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_css_page_size: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transfer_mode: Option<TransferMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub generate_document_outline: Option<bool>,
+    #[serde(rename = "generateTaggedPDF")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub generate_tagged_pdf: Option<bool>,
 }
