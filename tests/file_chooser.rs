@@ -29,7 +29,7 @@ fn file_chooser_works() -> Result<()> {
 
     tab.navigate_to(&server.url())?;
 
-    tab.set_file_chooser_dialog_interception(true)?;
+    tab.set_file_chooser_dialog_interception(true, None)?;
 
     let file_upload_button = tab.wait_for_element("input[type='file']")?;
     // file_upload_button.click()?;

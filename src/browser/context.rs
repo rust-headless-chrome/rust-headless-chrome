@@ -24,13 +24,17 @@ impl<'a> Context<'a> {
     pub fn new_tab(&self) -> Result<Arc<Tab>> {
         let tab_in_context = CreateTarget {
             url: "about:blank".to_string(),
+            left: None,
+            top: None,
             width: None,
             height: None,
+            window_state: None,
             browser_context_id: Some(self.id.clone()),
             enable_begin_frame_control: None,
             new_window: None,
             background: None,
             for_tab: None,
+            hidden: None,
         };
         self.browser.new_tab_with_options(tab_in_context)
     }

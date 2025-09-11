@@ -245,7 +245,9 @@ impl Tab {
             slow_motion_multiplier: Arc::new(RwLock::new(0.0)),
         };
 
-        tab.call_method(Page::Enable(None))?;
+        tab.call_method(Page::Enable {
+            enable_file_chooser_opened_event: None,
+        })?;
         tab.call_method(Page::SetLifecycleEventsEnabled { enabled: true })?;
 
         tab.start_event_handler_thread();
@@ -1325,6 +1327,8 @@ impl Tab {
             max_total_buffer_size: None,
             max_resource_buffer_size: None,
             max_post_data_size: None,
+            report_direct_socket_traffic: None,
+            enable_durable_messages: None,
         })?;
         Ok(self
             .response_handler
@@ -1342,6 +1346,8 @@ impl Tab {
             max_total_buffer_size: None,
             max_resource_buffer_size: None,
             max_post_data_size: None,
+            report_direct_socket_traffic: None,
+            enable_durable_messages: None,
         })?;
         Ok(self
             .loading_failed_handler
@@ -1680,8 +1686,12 @@ impl Tab {
     /// If enabled, instead of using the GUI to select files, the browser will
     /// wait for the `Tab.handle_file_chooser` method to be called.
     /// **WARNING**: Only works on Chromium / Chrome 77 and above.
-    pub fn set_file_chooser_dialog_interception(&self, enabled: bool) -> Result<()> {
-        self.call_method(SetInterceptFileChooserDialog { enabled })?;
+    pub fn set_file_chooser_dialog_interception(
+        &self,
+        enabled: bool,
+        cancel: Option<bool>,
+    ) -> Result<()> {
+        self.call_method(SetInterceptFileChooserDialog { enabled, cancel })?;
         Ok(())
     }
 
@@ -1707,6 +1717,8 @@ impl Tab {
             max_total_buffer_size: None,
             max_resource_buffer_size: None,
             max_post_data_size: None,
+            report_direct_socket_traffic: None,
+            enable_durable_messages: None,
         })?;
         self.call_method(SetExtraHTTPHeaders {
             headers: Network::Headers(Some(json!(headers))),
