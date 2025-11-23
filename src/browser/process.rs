@@ -285,7 +285,7 @@ impl Process {
             }
             #[cfg(not(feature = "fetch"))]
             {
-                launch_options.path = Some(default_executable().map_err(|e| anyhow!("{}", e))?);
+                launch_options.path = Some(default_executable().map_err(|e| anyhow!("{e}"))?);
             }
         }
 
