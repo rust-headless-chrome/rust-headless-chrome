@@ -214,10 +214,9 @@ impl Fetcher {
         };
         path = path.with_extension("zip");
         // we need to create this directory in case it doesn't exist yet
-        fs::create_dir_all(
-            path.parent()
-                .ok_or_else(|| anyhow!("Path {path:?} does not have a parent directory"))?,
-        )
+        fs::create_dir_all(path.parent().ok_or_else(|| {
+            anyhow!("Path {:?} does not have a parent directory", path.display())
+        })?)
         .map_err(|_err| anyhow!("Could not create directory at {:?}", path.parent()))?;
 
         info!("Creating file for download: {}", &path.display());
