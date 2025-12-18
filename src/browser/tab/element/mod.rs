@@ -5,7 +5,7 @@ use anyhow::{Error, Result};
 
 use thiserror::Error;
 
-use log::{debug, error};
+use log::debug;
 
 use crate::browser::tab::NoElementFound;
 use crate::{browser::tab::point::Point, protocol::cdp::CSS::CSSComputedStyleProperty};
