@@ -10,7 +10,7 @@ use anyhow::{Error, Result};
 
 use thiserror::Error;
 
-use log::{debug, error, info, trace, warn};
+use log::{debug, info, trace, warn};
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
