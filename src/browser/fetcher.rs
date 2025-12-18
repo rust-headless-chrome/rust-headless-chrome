@@ -216,7 +216,7 @@ impl Fetcher {
         // we need to create this directory in case it doesn't exist yet
         fs::create_dir_all(
             path.parent()
-                .ok_or_else(|| anyhow!("Path {:?} does not have a parent directory", path))?,
+                .ok_or_else(|| anyhow!("Path {path:?} does not have a parent directory"))?,
         )
         .map_err(|_err| anyhow!("Could not create directory at {:?}", path.parent()))?;
 

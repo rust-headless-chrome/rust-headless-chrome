@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.19"
+version = "1.0.20"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2024"
 rust-version = "1.85"
@@ -41,7 +41,7 @@ png = { version = "0.18" }
 tiny_http = "0.12"
 
 [build-dependencies]
-auto_generate_cdp = { git = "https://github.com/mdrokz/auto_generate_cdp.git", rev = "dddd0f28e0bd7d9f78e3863e6c59023bca0edf75" }
+auto_generate_cdp = "0.4.6"
 
 [lib]
 name = "headless_chrome"
