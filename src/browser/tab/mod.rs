@@ -640,10 +640,7 @@ impl Tab {
         )
     }
 
-    pub fn wait_until_visible(
-        &self,
-        selector: &str,
-    ) -> Result<Element<'_>> {
+    pub fn wait_until_visible(&self, selector: &str) -> Result<Element<'_>> {
         self.wait_until_visible_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
     }
 
@@ -652,18 +649,14 @@ impl Tab {
         selector: &str,
         timeout: std::time::Duration,
     ) -> Result<Element<'_>> {
-        debug!("Waiting for element with selector to be visible: {:?}", selector);
+        debug!("Waiting for element with selector to be visible: {selector:?}");
         util::Wait::with_timeout(timeout).strict_until(
-            || {
-                match self.find_element(selector) {
-                    Ok(elm) => {
-                        match elm.is_visible_with_timeout(timeout) {
-                            Ok(_) => Ok(elm),
-                            Err(_) => Err(Error::msg("Element not visible")),
-                        }
-                    },
-                    Err(_) => Err(Error::msg("Element not found in DOM")),
-                }
+            || match self.find_element(selector) {
+                Ok(elm) => match elm.is_visible_with_timeout(timeout) {
+                    Ok(_) => Ok(elm),
+                    Err(_) => Err(Error::msg("Element not visible")),
+                },
+                Err(_) => Err(Error::msg("Element not found in DOM")),
             },
             Error::downcast::<NoElementFound>,
         )

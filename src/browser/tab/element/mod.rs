@@ -590,7 +590,7 @@ impl<'a> Element<'a> {
     }
 
     pub fn is_visible(&self) -> Result<bool> {
-         self.is_visible_with_timeout(Duration::from_secs(3))
+        self.is_visible_with_timeout(Duration::from_secs(3))
     }
 
     pub fn is_visible_with_timeout(&self, timeout: Duration) -> Result<bool> {
@@ -609,7 +609,6 @@ impl<'a> Element<'a> {
 
         Ok(p)
     }
-
 }
 
 #[derive(Debug, Error)]
