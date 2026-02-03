@@ -175,6 +175,10 @@ pub struct Tab {
 pub struct NoElementFound {}
 
 #[derive(Debug, Error)]
+#[error("Element not visible")]
+pub struct ElementNotVisible {}
+
+#[derive(Debug, Error)]
 #[error("Navigate failed: {error_text}")]
 pub struct NavigationFailed {
     error_text: String,
@@ -632,6 +636,28 @@ impl Tab {
         debug!("Waiting for element with selector: {selector:?}");
         util::Wait::with_timeout(timeout).strict_until(
             || self.find_element(selector),
+            Error::downcast::<NoElementFound>,
+        )
+    }
+
+    pub fn wait_until_visible(&self, selector: &str) -> Result<Element<'_>> {
+        self.wait_until_visible_with_custom_timeout(selector, *self.default_timeout.read().unwrap())
+    }
+
+    pub fn wait_until_visible_with_custom_timeout(
+        &self,
+        selector: &str,
+        timeout: std::time::Duration,
+    ) -> Result<Element<'_>> {
+        debug!("Waiting for element with selector to be visible: {selector:?}");
+        util::Wait::with_timeout(timeout).strict_until(
+            || match self.find_element(selector) {
+                Ok(elm) => match elm.is_visible_with_timeout(timeout) {
+                    Ok(_) => Ok(elm),
+                    Err(_) => Err(Error::msg("Element not visible")),
+                },
+                Err(_) => Err(Error::msg("Element not found in DOM")),
+            },
             Error::downcast::<NoElementFound>,
         )
     }
