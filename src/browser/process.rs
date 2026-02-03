@@ -474,7 +474,7 @@ impl Process {
         }
 
         let process = TemporaryProcess(
-            command.args(&args).stderr(Stdio::piped()).spawn()?,
+            command.args(&args).stdout(Stdio::null()).stderr(Stdio::piped()).spawn()?,
             temp_user_data_dir,
         );
         Ok(process)
