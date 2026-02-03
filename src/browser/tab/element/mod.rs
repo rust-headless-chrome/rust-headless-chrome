@@ -588,6 +588,28 @@ impl<'a> Element<'a> {
 
         util::extract_midpoint(result)
     }
+
+    pub fn is_visible(&self) -> Result<bool> {
+         self.is_visible_with_timeout(Duration::from_secs(3))
+    }
+
+    pub fn is_visible_with_timeout(&self, timeout: Duration) -> Result<bool> {
+        let p = util::Wait::with_timeout(timeout).until(|| {
+            let r = self.call_js_fn(
+                "function() { return this.checkVisibility(); }",
+                vec![],
+                false,
+            );
+
+            match r {
+                Ok(x) => x.value.unwrap().as_bool(),
+                Err(_) => Some(false),
+            }
+        })?;
+
+        Ok(p)
+    }
+
 }
 
 #[derive(Debug, Error)]
