@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.20"
+version = "1.0.21"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2024"
 rust-version = "1.85"
