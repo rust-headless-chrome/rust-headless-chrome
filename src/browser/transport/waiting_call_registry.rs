@@ -67,7 +67,7 @@ impl WaitingCallRegistry {
         trace!("Cancelling outstanding method calls");
         let calls = self.calls.lock().unwrap();
         for (call_id, sender) in &*calls {
-            trace!("Telling waiting method call {call_id:?} that the connection closed",);
+            trace!("Telling waiting method call {call_id:?} that the connection closed");
             if let Err(e) = sender.send(Err(ConnectionClosed {}.into())) {
                 trace!(
                     "Couldn't send ConnectionClosed to waiting method call: {call_id:?} because {e:?}",
