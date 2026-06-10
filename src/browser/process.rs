@@ -323,7 +323,7 @@ impl Process {
                 }
             }
 
-            trace!("Trying again to find available debugging port. Attempts: {attempts}",);
+            trace!("Trying again to find available debugging port. Attempts: {attempts}");
             attempts += 1;
         }
 

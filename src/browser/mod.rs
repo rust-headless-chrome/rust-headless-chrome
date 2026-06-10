@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::mpsc;
 use std::sync::mpsc::{RecvTimeoutError, TryRecvError};
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use anyhow::{Result, anyhow};
@@ -78,6 +78,7 @@ pub mod transport;
 #[derive(Clone)]
 pub struct Browser {
     inner: Arc<BrowserInner>,
+    default_timeout: Arc<RwLock<Duration>>,
 }
 
 pub struct BrowserInner {
@@ -154,6 +155,7 @@ impl Browser {
                 loop_shutdown_tx: shutdown_tx,
                 close_on_drop,
             }),
+            default_timeout: Arc::new(RwLock::new(Duration::from_secs(20))),
         };
 
         let incoming_events_rx = browser.inner.transport.listen_to_browser_events();
@@ -193,6 +195,26 @@ impl Browser {
         &self.inner.tabs
     }
 
+    /// Set default timeout for the browser
+    ///
+    /// This will be applied to all [new_tab](Browser::new_tab), [new_tab_with_options](Browser::new_tab_with_options) and [wait_for_initial_tab](Browser::wait_for_initial_tab) calls for the browser
+    ///
+    /// ```rust
+    /// # use anyhow::Result;
+    /// # fn main() -> Result<()> {
+    /// # use std::time::Duration;
+    /// use headless_chrome::Browser;
+    /// let browser = Browser::default()?;
+    /// browser.set_default_timeout(Duration::from_secs(10));
+    /// # Ok(()
+    /// # }
+    /// ```
+    pub fn set_default_timeout(&self, timeout: Duration) -> &Self {
+        let mut current_timeout = self.default_timeout.write().unwrap();
+        *current_timeout = timeout;
+        self
+    }
+
     // THIS NO LONGER SEEMS TRUE |
     //                           v
     /// Chrome always launches with at least one tab. The reason we have to 'wait' is because information
@@ -202,7 +224,7 @@ impl Browser {
     /// Wait timeout: 10 secs
     #[deprecated(since = "1.0.4", note = "Use new_tab() instead.")]
     pub fn wait_for_initial_tab(&self) -> Result<Arc<Tab>> {
-        match util::Wait::with_timeout(Duration::from_secs(10))
+        match util::Wait::with_timeout(*self.default_timeout.read().unwrap())
             .until(|| self.inner.tabs.lock().unwrap().first().cloned())
         {
             Ok(tab) => Ok(tab),
@@ -267,7 +289,7 @@ impl Browser {
     pub fn new_tab_with_options(&self, create_target_params: CreateTarget) -> Result<Arc<Tab>> {
         let target_id = self.call_method(create_target_params)?.target_id;
 
-        util::Wait::with_timeout(Duration::from_secs(20))
+        util::Wait::with_timeout(*self.default_timeout.read().unwrap())
             .until(|| {
                 let tabs = self.inner.tabs.lock().unwrap();
                 tabs.iter().find_map(|tab| {
