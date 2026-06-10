@@ -77,8 +77,12 @@ impl Transport {
         root_cert: Option<Vec<u8>>,
     ) -> Result<Self> {
         let (messages_tx, messages_rx) = mpsc::channel();
-        let web_socket_connection =
-            Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx, root_cert)?);
+        let web_socket_connection = Arc::new(WebSocketConnection::new(
+            &ws_url,
+            process_id,
+            messages_tx,
+            root_cert,
+        )?);
 
         let waiting_call_registry = Arc::new(WaitingCallRegistry::new());
 

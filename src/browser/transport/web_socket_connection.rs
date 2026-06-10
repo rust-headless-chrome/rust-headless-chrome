@@ -9,7 +9,7 @@ use tungstenite::protocol::WebSocketConfig;
 use tungstenite::stream::MaybeTlsStream;
 use url::Url;
 
-use crate::types::{parse_raw_message, Message};
+use crate::types::{Message, parse_raw_message};
 
 type TungsteniteWebsocketConnection = tungstenite::protocol::WebSocket<MaybeTlsStream<TcpStream>>;
 
@@ -189,9 +189,7 @@ impl WebSocketConnection {
                                     "Received close frame from Chrome #{process_id:?}: {code:?} {reason:?}",
                                 );
 
-                                if code
-                                    != tungstenite::protocol::frame::coding::CloseCode::Normal
-                                {
+                                if code != tungstenite::protocol::frame::coding::CloseCode::Normal {
                                     debug!("Abnormal close code {code:?}, shutting down");
                                 }
                             }
@@ -279,8 +277,8 @@ impl WebSocketConnection {
         #[cfg(not(feature = "rustls-tls-webpki-roots"))]
         {
             Err(anyhow::anyhow!(
-            "root_cert was provided, but feature rustls-tls-webpki-roots is not enabled"
-        ))
+                "root_cert was provided, but feature rustls-tls-webpki-roots is not enabled"
+            ))
         }
     }
 
