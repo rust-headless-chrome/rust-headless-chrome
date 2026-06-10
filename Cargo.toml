@@ -28,8 +28,9 @@ tungstenite = "0.28"
 url = "2.5"
 which = "8.0"
 zip = { version = "6.0.0", optional = true }
-rustls = { version = "0.23" }
-rustls-pemfile = "2.2.0"
+rustls = { version = "0.23", optional = true }
+rustls-pemfile = { version = "2.2.0", optional = true }
+webpki-roots = { version = "1.0.7", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55.0"
@@ -55,5 +56,5 @@ fetch = ["ureq", "directories", "zip", "walkdir"]
 nightly = []
 offline = ["auto_generate_cdp/offline"]
 rustls-tls-native-roots = ["tungstenite/rustls", "tungstenite/rustls-tls-native-roots"]
-rustls-tls-webpki-roots = ["tungstenite/rustls", "tungstenite/rustls-tls-webpki-roots", "rustls/ring"]
+rustls-tls-webpki-roots = ["tungstenite/rustls", "tungstenite/rustls-tls-webpki-roots", "rustls", "rustls-pemfile", "webpki-roots",  "rustls/ring"]
 native-tls = ["tungstenite/native-tls"]
