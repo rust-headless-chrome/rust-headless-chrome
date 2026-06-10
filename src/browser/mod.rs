@@ -103,6 +103,7 @@ impl Browser {
             process.debug_ws_url.clone(),
             Some(process_id),
             idle_browser_timeout,
+            None
         )?);
 
         Self::create_browser(Some(process), transport, idle_browser_timeout, true)
@@ -123,6 +124,16 @@ impl Browser {
         Self::connect_with_timeout(debug_ws_url, Duration::from_secs(30))
     }
 
+    pub fn connect_with_root_cert(
+        debug_ws_url: String,
+        root_cert: Vec<u8>,
+    ) -> Result<Self> {
+        let url = Url::parse(&debug_ws_url)?;
+        let transport = Arc::new(Transport::new(url, None, Duration::from_secs(20), Some(root_cert))?);
+        trace!("created transport");
+        Self::create_browser(None, transport, Duration::from_secs(20), false)
+    }
+
     /// Allows you to drive an externally-launched Chrome process instead of launch one via [`Browser::new`].
     /// If the browser is idle for `idle_browser_timeout`, the connection will be dropped.
     pub fn connect_with_timeout(
@@ -131,7 +142,7 @@ impl Browser {
     ) -> Result<Self> {
         let url = Url::parse(&debug_ws_url)?;
 
-        let transport = Arc::new(Transport::new(url, None, idle_browser_timeout)?);
+        let transport = Arc::new(Transport::new(url, None, idle_browser_timeout, None)?);
         trace!("created transport");
 
         Self::create_browser(None, transport, idle_browser_timeout, false)

@@ -12,7 +12,6 @@ use anyhow::Result;
 use thiserror::Error;
 
 use log::{error, info, trace, warn};
-
 use url::Url;
 use waiting_call_registry::WaitingCallRegistry;
 use web_socket_connection::WebSocketConnection;
@@ -29,6 +28,7 @@ mod web_socket_connection;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SessionId(String);
 
+#[derive(Debug)]
 pub enum MethodDestination {
     Target(SessionId),
     Browser,
@@ -74,10 +74,11 @@ impl Transport {
         ws_url: Url,
         process_id: Option<u32>,
         idle_browser_timeout: Duration,
+        root_cert: Option<Vec<u8>>,
     ) -> Result<Self> {
         let (messages_tx, messages_rx) = mpsc::channel();
         let web_socket_connection =
-            Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx)?);
+            Arc::new(WebSocketConnection::new(&ws_url, process_id, messages_tx, root_cert)?);
 
         let waiting_call_registry = Arc::new(WaitingCallRegistry::new());
 
