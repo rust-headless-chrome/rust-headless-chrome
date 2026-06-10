@@ -255,6 +255,8 @@ impl WebSocketConnection {
             let tcp = TcpStream::connect((host, port))?;
 
             let mut roots = rustls::RootCertStore::empty();
+            roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+
             add_root_certificates(&mut roots, root_cert)?;
 
             let tls_config = rustls::ClientConfig::builder()
