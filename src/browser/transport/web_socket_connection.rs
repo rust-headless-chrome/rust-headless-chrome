@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 use std::sync::mpsc;
-use std::sync::{Arc, Mutex, Once};
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use log::{debug, info, trace, warn};
@@ -16,7 +16,7 @@ type TungsteniteWebsocketConnection = tungstenite::protocol::WebSocket<MaybeTlsS
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
 #[cfg(feature = "rustls-tls-webpki-roots")]
-static RUSTLS_INIT: Once = Once::new();
+static RUSTLS_INIT: std::sync::Once = std::sync::Once::new();
 
 #[cfg(feature = "rustls-tls-webpki-roots")]
 fn init_rustls_provider() {

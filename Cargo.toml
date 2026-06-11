@@ -1,6 +1,6 @@
 [package]
 name = "headless_chrome"
-version = "1.0.21"
+version = "1.0.22"
 authors = ["Alistair Roche <alistair@sunburnt.country>"]
 edition = "2024"
 rust-version = "1.85"
@@ -11,37 +11,37 @@ repository = "https://github.com/rust-headless-chrome/rust-headless-chrome"
 readme = "README.md"
 
 [dependencies]
-anyhow = "1"
+anyhow = "1.0.102"
 base64 = "0.22.1"
 derive_builder = "0.20.2"
 directories = { version = "6.0.0", optional = true }
-log = "0.4"
-rand = "0.9.0"
-regex = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-tempfile = "3"
-thiserror = "2.0.11"
-ureq = { version = "3.1", optional = true }
-walkdir = { version = "2", optional = true }
-tungstenite = "0.28"
-url = "2.5"
-which = "8.0"
-zip = { version = "6.0.0", optional = true }
-rustls = { version = "0.23", optional = true }
+log = "0.4.32"
+rand = "0.10.1"
+regex = "1.12.4"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+tempfile = "3.27.0"
+thiserror = "2.0.18"
+ureq = { version = "3.3.0", optional = true }
+walkdir = { version = "2.5.0", optional = true }
+tungstenite = "0.29.0"
+url = "2.5.8"
+which = "8.0.3"
+zip = { version = "8.6.0", optional = true }
+rustls = { version = "0.23.40", optional = true }
 rustls-pemfile = { version = "2.2.0", optional = true }
 webpki-roots = { version = "1.0.7", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.55.0"
+winreg = "0.56.0"
 
 [dev-dependencies]
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
-env_logger = "0.11.3"
+chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+env_logger = "0.11.10"
 filepath = "0.2.0"
-jpeg-decoder = { version = "0.3", default-features = false }
-png = { version = "0.18" }
-tiny_http = "0.12"
+jpeg-decoder = { version = "0.3.2", default-features = false }
+png = { version = "0.18.1" }
+tiny_http = "0.12.0"
 
 [build-dependencies]
 auto_generate_cdp = "0.4.6"
