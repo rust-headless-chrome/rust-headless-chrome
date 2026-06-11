@@ -331,7 +331,7 @@ impl Transport {
                                             event_string.chars().take(400).collect::<String>(),
                                             err
                                         );
-                                        break;
+                                        listeners.lock().unwrap().remove(&ListenerId::Browser);
                                     }
                                 }
                             }
